@@ -1,0 +1,11 @@
+version: v1
+plugins:
+  - name: prost
+    out: src/api
+  - name: tonic
+    out: src/api
+  - name: prost-crate
+    out: src/api
+    strategy: all
+    opt:
+      - no_features
