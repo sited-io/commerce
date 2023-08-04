@@ -4,11 +4,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+chrono = "0.4.26"
+deadpool-postgres = "0.10.5"
 http = "0.2.9"
+jwtk = "0.2.4"
 prost = "0.11.9"
+sea-query = "0.29"
+sea-query-postgres = { version = "0.3", features = [
+  "with-uuid",
+  "with-chrono",
+] }
+serde = { version = "1.0.180", features = ["derive"] }
 tokio = { version = "1.29.1", features = ["rt", "macros"] }
 tonic = "0.9.2"
 tonic-web = "0.9.2"
 tower-http = { version = "0.4.3", features = ["cors", "trace"] }
 tracing = { version = "0.1.37", features = ["log"] }
 tracing-subscriber = { version = "0.3.17", features = ["tracing-log"] }
+uuid = { version = "1.4.1", features = ["v4"] }

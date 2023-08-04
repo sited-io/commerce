@@ -1,3 +1,3 @@
-mod shops;
+mod shop;
 
-pub use shops::ShopsService;
+pub use shop::ShopsService;
