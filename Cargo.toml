@@ -8,6 +8,7 @@ chrono = "0.4.26"
 deadpool-postgres = "0.10.5"
 http = "0.2.9"
 jwtk = "0.2.4"
+openssl = { version = "0.10.56", features = ["vendored"] }
 prost = "0.11.9"
 refinery = { version = "0.8.10", features = ["tokio-postgres"] }
 sea-query = "0.29"

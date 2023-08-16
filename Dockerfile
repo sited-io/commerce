@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim
 
-RUN apt update && apt install -y --no-install-recommends ca-certificates adduser libssl-dev
+RUN apt update && apt install -y --no-install-recommends ca-certificates adduser
 RUN update-ca-certificates
 
 # Copy our build
