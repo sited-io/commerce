@@ -20,6 +20,6 @@ RUN adduser \
     "${USER}"
 
 # Use an unprivileged user.
-USER commerce:commerce
+USER ${USER}:${USER}
 
 ENTRYPOINT ["commerce"]
