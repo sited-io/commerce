@@ -42,7 +42,7 @@ job "commerce" {
         data        = <<EOF
 RUST_LOG='DEBUG'
 
-HOST='[::1]:10000'
+HOST='0.0.0.0:10000'
 
 DB_HOST='{{ env "NOMAD_UPSTREAM_IP_cockroach-sql" }}'
 DB_PORT='{{ env "NOMAD_UPSTREAM_PORT_cockroach-sql" }}'
