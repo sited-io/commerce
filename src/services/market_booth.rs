@@ -3,18 +3,15 @@ use jwtk::{jwk::RemoteJwksVerifier, Claims};
 use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
-use crate::api::peoplesmarkets::commerce::v1::market_booth_service_server;
-use crate::api::peoplesmarkets::commerce::v1::market_booth_service_server::MarketBoothServiceServer;
-use crate::api::peoplesmarkets::commerce::v1::CreateMarketBoothRequest;
-use crate::api::peoplesmarkets::commerce::v1::CreateMarketBoothResponse;
-use crate::api::peoplesmarkets::commerce::v1::DeleteMarketBoothRequest;
-use crate::api::peoplesmarkets::commerce::v1::DeleteMarketBoothResponse;
-use crate::api::peoplesmarkets::commerce::v1::GetMarketBoothRequest;
-use crate::api::peoplesmarkets::commerce::v1::GetMarketBoothResponse;
-use crate::api::peoplesmarkets::commerce::v1::ListMarketBoothsRequest;
-use crate::api::peoplesmarkets::commerce::v1::ListMarketBoothsResponse;
-use crate::api::peoplesmarkets::commerce::v1::UpdateMarketBoothRequest;
-use crate::api::peoplesmarkets::commerce::v1::UpdateMarketBoothResponse;
+use crate::api::peoplesmarkets::commerce::v1::market_booth_service_server::{
+    self, MarketBoothServiceServer,
+};
+use crate::api::peoplesmarkets::commerce::v1::{
+    CreateMarketBoothRequest, CreateMarketBoothResponse,
+    DeleteMarketBoothRequest, DeleteMarketBoothResponse, GetMarketBoothRequest,
+    GetMarketBoothResponse, ListMarketBoothsRequest, ListMarketBoothsResponse,
+    UpdateMarketBoothRequest, UpdateMarketBoothResponse,
+};
 use crate::api::peoplesmarkets::pagination::v1::Pagination;
 use crate::auth::get_auth_token;
 use crate::error::db_err_to_grpc_status;

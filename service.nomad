@@ -26,6 +26,13 @@ job "commerce" {
           }
         }
       }
+
+      check {
+        type     = "grpc"
+        port     = "10000"
+        interval = "20s"
+        timeout  = "2s"
+      }
     }
 
     task "commerce-api" {
