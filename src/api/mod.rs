@@ -7,6 +7,13 @@ pub mod peoplesmarkets {
             // @@protoc_insertion_point(peoplesmarkets.commerce.v1)
         }
     }
+    pub mod ordering {
+        // @@protoc_insertion_point(attribute:peoplesmarkets.ordering.v1)
+        pub mod v1 {
+            include!("peoplesmarkets.ordering.v1.rs");
+            // @@protoc_insertion_point(peoplesmarkets.ordering.v1)
+        }
+    }
     pub mod pagination {
         // @@protoc_insertion_point(attribute:peoplesmarkets.pagination.v1)
         pub mod v1 {

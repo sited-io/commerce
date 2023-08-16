@@ -1,13 +1,12 @@
 use std::time::Duration;
 
 use jwtk::jwk::RemoteJwksVerifier;
-use tonic::{service::interceptor, transport::Server};
-use tonic_web::GrpcWebLayer;
-use tower_http::cors::CorsLayer;
+use tonic::transport::Server;
+use tower_http::trace::TraceLayer;
 
 use commerce::db::{init_db_pool, migrate};
-use commerce::logging::intercept_log;
-use commerce::{get_env_var, ShopsService};
+use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
+use commerce::{get_env_var, MarketBoothService};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -23,14 +22,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let jwt_verifier =
         RemoteJwksVerifier::new(jwks_url, None, Duration::from_secs(120));
 
-    tracing::log::info!("Web server listening on {}", host);
+    tracing::log::info!("gRPC server listening on {}", host);
 
     Server::builder()
-        .accept_http1(true)
-        .layer(CorsLayer::very_permissive())
-        .layer(GrpcWebLayer::new())
-        .layer(interceptor(intercept_log))
-        .add_service(ShopsService::build(db_pool, jwt_verifier))
+        .layer(
+            TraceLayer::new_for_grpc()
+                .on_request(LogOnRequest::default())
+                .on_response(LogOnResponse::default())
+                .on_failure(LogOnFailure::default()),
+        )
+        .add_service(MarketBoothService::build(db_pool, jwt_verifier))
         .serve(host.parse().unwrap())
         .await?;
 

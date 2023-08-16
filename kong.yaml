@@ -1,0 +1,26 @@
+_format_version: "3.0"
+services:
+  - protocol: grpc
+    host: "[::1]"
+    port: 10000
+    plugins:
+      - name: cors
+        config:
+          credentials: false
+          preflight_continue: false
+          origins: ["*"]
+          headers:
+            - "*"
+            - Authorization
+          methods:
+            - POST
+          exposed_headers:
+            - "grpc-message"
+            - "grpc-status"
+    routes:
+      - protocols:
+          - http
+        paths:
+          - /
+        plugins:
+          - name: grpc-web

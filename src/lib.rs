@@ -4,9 +4,9 @@ pub mod db;
 pub mod logging;
 mod model;
 mod services;
+mod error;
 
 pub use services::*;
-use tonic::metadata::MetadataMap;
 
 pub fn get_env_var(var: &str) -> String {
     std::env::var(var)

@@ -1,14 +1,14 @@
 // @generated
 /// Generated client implementations.
-pub mod shop_service_client {
+pub mod market_booth_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
-    pub struct ShopServiceClient<T> {
+    pub struct MarketBoothServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl ShopServiceClient<tonic::transport::Channel> {
+    impl MarketBoothServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -19,7 +19,7 @@ pub mod shop_service_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> ShopServiceClient<T>
+    impl<T> MarketBoothServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -37,7 +37,7 @@ pub mod shop_service_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> ShopServiceClient<InterceptedService<T, F>>
+        ) -> MarketBoothServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -51,7 +51,7 @@ pub mod shop_service_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + Send + Sync,
         {
-            ShopServiceClient::new(InterceptedService::new(inner, interceptor))
+            MarketBoothServiceClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -84,11 +84,11 @@ pub mod shop_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn create_shop(
+        pub async fn create_market_booth(
             &mut self,
-            request: impl tonic::IntoRequest<super::CreateShopRequest>,
+            request: impl tonic::IntoRequest<super::CreateMarketBoothRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::CreateShopResponse>,
+            tonic::Response<super::CreateMarketBoothResponse>,
             tonic::Status,
         > {
             self.inner
@@ -102,23 +102,23 @@ pub mod shop_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/peoplesmarkets.commerce.v1.ShopService/CreateShop",
+                "/peoplesmarkets.commerce.v1.MarketBoothService/CreateMarketBooth",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "peoplesmarkets.commerce.v1.ShopService",
-                        "CreateShop",
+                        "peoplesmarkets.commerce.v1.MarketBoothService",
+                        "CreateMarketBooth",
                     ),
                 );
             self.inner.unary(req, path, codec).await
         }
-        pub async fn get_shop(
+        pub async fn get_market_booth(
             &mut self,
-            request: impl tonic::IntoRequest<super::GetShopRequest>,
+            request: impl tonic::IntoRequest<super::GetMarketBoothRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::GetShopResponse>,
+            tonic::Response<super::GetMarketBoothResponse>,
             tonic::Status,
         > {
             self.inner
@@ -132,50 +132,23 @@ pub mod shop_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/peoplesmarkets.commerce.v1.ShopService/GetShop",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new("peoplesmarkets.commerce.v1.ShopService", "GetShop"),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn list_shops(
-            &mut self,
-            request: impl tonic::IntoRequest<super::ListShopsRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::ListShopsResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/peoplesmarkets.commerce.v1.ShopService/ListShops",
+                "/peoplesmarkets.commerce.v1.MarketBoothService/GetMarketBooth",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "peoplesmarkets.commerce.v1.ShopService",
-                        "ListShops",
+                        "peoplesmarkets.commerce.v1.MarketBoothService",
+                        "GetMarketBooth",
                     ),
                 );
             self.inner.unary(req, path, codec).await
         }
-        pub async fn update_shop(
+        pub async fn list_market_booths(
             &mut self,
-            request: impl tonic::IntoRequest<super::UpdateShopRequest>,
+            request: impl tonic::IntoRequest<super::ListMarketBoothsRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::UpdateShopResponse>,
+            tonic::Response<super::ListMarketBoothsResponse>,
             tonic::Status,
         > {
             self.inner
@@ -189,23 +162,23 @@ pub mod shop_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/peoplesmarkets.commerce.v1.ShopService/UpdateShop",
+                "/peoplesmarkets.commerce.v1.MarketBoothService/ListMarketBooths",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "peoplesmarkets.commerce.v1.ShopService",
-                        "UpdateShop",
+                        "peoplesmarkets.commerce.v1.MarketBoothService",
+                        "ListMarketBooths",
                     ),
                 );
             self.inner.unary(req, path, codec).await
         }
-        pub async fn delete_shop(
+        pub async fn update_market_booth(
             &mut self,
-            request: impl tonic::IntoRequest<super::DeleteShopRequest>,
+            request: impl tonic::IntoRequest<super::UpdateMarketBoothRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::DeleteShopResponse>,
+            tonic::Response<super::UpdateMarketBoothResponse>,
             tonic::Status,
         > {
             self.inner
@@ -219,14 +192,44 @@ pub mod shop_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/peoplesmarkets.commerce.v1.ShopService/DeleteShop",
+                "/peoplesmarkets.commerce.v1.MarketBoothService/UpdateMarketBooth",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "peoplesmarkets.commerce.v1.ShopService",
-                        "DeleteShop",
+                        "peoplesmarkets.commerce.v1.MarketBoothService",
+                        "UpdateMarketBooth",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn delete_market_booth(
+            &mut self,
+            request: impl tonic::IntoRequest<super::DeleteMarketBoothRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::DeleteMarketBoothResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/peoplesmarkets.commerce.v1.MarketBoothService/DeleteMarketBooth",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "peoplesmarkets.commerce.v1.MarketBoothService",
+                        "DeleteMarketBooth",
                     ),
                 );
             self.inner.unary(req, path, codec).await
@@ -234,47 +237,50 @@ pub mod shop_service_client {
     }
 }
 /// Generated server implementations.
-pub mod shop_service_server {
+pub mod market_booth_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with ShopServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with MarketBoothServiceServer.
     #[async_trait]
-    pub trait ShopService: Send + Sync + 'static {
-        async fn create_shop(
+    pub trait MarketBoothService: Send + Sync + 'static {
+        async fn create_market_booth(
             &self,
-            request: tonic::Request<super::CreateShopRequest>,
+            request: tonic::Request<super::CreateMarketBoothRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::CreateShopResponse>,
+            tonic::Response<super::CreateMarketBoothResponse>,
             tonic::Status,
         >;
-        async fn get_shop(
+        async fn get_market_booth(
             &self,
-            request: tonic::Request<super::GetShopRequest>,
-        ) -> std::result::Result<tonic::Response<super::GetShopResponse>, tonic::Status>;
-        async fn list_shops(
-            &self,
-            request: tonic::Request<super::ListShopsRequest>,
+            request: tonic::Request<super::GetMarketBoothRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::ListShopsResponse>,
+            tonic::Response<super::GetMarketBoothResponse>,
             tonic::Status,
         >;
-        async fn update_shop(
+        async fn list_market_booths(
             &self,
-            request: tonic::Request<super::UpdateShopRequest>,
+            request: tonic::Request<super::ListMarketBoothsRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::UpdateShopResponse>,
+            tonic::Response<super::ListMarketBoothsResponse>,
             tonic::Status,
         >;
-        async fn delete_shop(
+        async fn update_market_booth(
             &self,
-            request: tonic::Request<super::DeleteShopRequest>,
+            request: tonic::Request<super::UpdateMarketBoothRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::DeleteShopResponse>,
+            tonic::Response<super::UpdateMarketBoothResponse>,
+            tonic::Status,
+        >;
+        async fn delete_market_booth(
+            &self,
+            request: tonic::Request<super::DeleteMarketBoothRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::DeleteMarketBoothResponse>,
             tonic::Status,
         >;
     }
     #[derive(Debug)]
-    pub struct ShopServiceServer<T: ShopService> {
+    pub struct MarketBoothServiceServer<T: MarketBoothService> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
@@ -282,7 +288,7 @@ pub mod shop_service_server {
         max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
-    impl<T: ShopService> ShopServiceServer<T> {
+    impl<T: MarketBoothService> MarketBoothServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -334,9 +340,9 @@ pub mod shop_service_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for ShopServiceServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for MarketBoothServiceServer<T>
     where
-        T: ShopService,
+        T: MarketBoothService,
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -352,24 +358,26 @@ pub mod shop_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/peoplesmarkets.commerce.v1.ShopService/CreateShop" => {
+                "/peoplesmarkets.commerce.v1.MarketBoothService/CreateMarketBooth" => {
                     #[allow(non_camel_case_types)]
-                    struct CreateShopSvc<T: ShopService>(pub Arc<T>);
+                    struct CreateMarketBoothSvc<T: MarketBoothService>(pub Arc<T>);
                     impl<
-                        T: ShopService,
-                    > tonic::server::UnaryService<super::CreateShopRequest>
-                    for CreateShopSvc<T> {
-                        type Response = super::CreateShopResponse;
+                        T: MarketBoothService,
+                    > tonic::server::UnaryService<super::CreateMarketBoothRequest>
+                    for CreateMarketBoothSvc<T> {
+                        type Response = super::CreateMarketBoothResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::CreateShopRequest>,
+                            request: tonic::Request<super::CreateMarketBoothRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).create_shop(request).await };
+                            let fut = async move {
+                                (*inner).create_market_booth(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -380,7 +388,7 @@ pub mod shop_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = CreateShopSvc(inner);
+                        let method = CreateMarketBoothSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -396,24 +404,26 @@ pub mod shop_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopService/GetShop" => {
+                "/peoplesmarkets.commerce.v1.MarketBoothService/GetMarketBooth" => {
                     #[allow(non_camel_case_types)]
-                    struct GetShopSvc<T: ShopService>(pub Arc<T>);
+                    struct GetMarketBoothSvc<T: MarketBoothService>(pub Arc<T>);
                     impl<
-                        T: ShopService,
-                    > tonic::server::UnaryService<super::GetShopRequest>
-                    for GetShopSvc<T> {
-                        type Response = super::GetShopResponse;
+                        T: MarketBoothService,
+                    > tonic::server::UnaryService<super::GetMarketBoothRequest>
+                    for GetMarketBoothSvc<T> {
+                        type Response = super::GetMarketBoothResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::GetShopRequest>,
+                            request: tonic::Request<super::GetMarketBoothRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).get_shop(request).await };
+                            let fut = async move {
+                                (*inner).get_market_booth(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -424,7 +434,7 @@ pub mod shop_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = GetShopSvc(inner);
+                        let method = GetMarketBoothSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -440,24 +450,26 @@ pub mod shop_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopService/ListShops" => {
+                "/peoplesmarkets.commerce.v1.MarketBoothService/ListMarketBooths" => {
                     #[allow(non_camel_case_types)]
-                    struct ListShopsSvc<T: ShopService>(pub Arc<T>);
+                    struct ListMarketBoothsSvc<T: MarketBoothService>(pub Arc<T>);
                     impl<
-                        T: ShopService,
-                    > tonic::server::UnaryService<super::ListShopsRequest>
-                    for ListShopsSvc<T> {
-                        type Response = super::ListShopsResponse;
+                        T: MarketBoothService,
+                    > tonic::server::UnaryService<super::ListMarketBoothsRequest>
+                    for ListMarketBoothsSvc<T> {
+                        type Response = super::ListMarketBoothsResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::ListShopsRequest>,
+                            request: tonic::Request<super::ListMarketBoothsRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).list_shops(request).await };
+                            let fut = async move {
+                                (*inner).list_market_booths(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -468,7 +480,7 @@ pub mod shop_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = ListShopsSvc(inner);
+                        let method = ListMarketBoothsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -484,24 +496,26 @@ pub mod shop_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopService/UpdateShop" => {
+                "/peoplesmarkets.commerce.v1.MarketBoothService/UpdateMarketBooth" => {
                     #[allow(non_camel_case_types)]
-                    struct UpdateShopSvc<T: ShopService>(pub Arc<T>);
+                    struct UpdateMarketBoothSvc<T: MarketBoothService>(pub Arc<T>);
                     impl<
-                        T: ShopService,
-                    > tonic::server::UnaryService<super::UpdateShopRequest>
-                    for UpdateShopSvc<T> {
-                        type Response = super::UpdateShopResponse;
+                        T: MarketBoothService,
+                    > tonic::server::UnaryService<super::UpdateMarketBoothRequest>
+                    for UpdateMarketBoothSvc<T> {
+                        type Response = super::UpdateMarketBoothResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::UpdateShopRequest>,
+                            request: tonic::Request<super::UpdateMarketBoothRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).update_shop(request).await };
+                            let fut = async move {
+                                (*inner).update_market_booth(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -512,7 +526,7 @@ pub mod shop_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = UpdateShopSvc(inner);
+                        let method = UpdateMarketBoothSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -528,24 +542,26 @@ pub mod shop_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopService/DeleteShop" => {
+                "/peoplesmarkets.commerce.v1.MarketBoothService/DeleteMarketBooth" => {
                     #[allow(non_camel_case_types)]
-                    struct DeleteShopSvc<T: ShopService>(pub Arc<T>);
+                    struct DeleteMarketBoothSvc<T: MarketBoothService>(pub Arc<T>);
                     impl<
-                        T: ShopService,
-                    > tonic::server::UnaryService<super::DeleteShopRequest>
-                    for DeleteShopSvc<T> {
-                        type Response = super::DeleteShopResponse;
+                        T: MarketBoothService,
+                    > tonic::server::UnaryService<super::DeleteMarketBoothRequest>
+                    for DeleteMarketBoothSvc<T> {
+                        type Response = super::DeleteMarketBoothResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::DeleteShopRequest>,
+                            request: tonic::Request<super::DeleteMarketBoothRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).delete_shop(request).await };
+                            let fut = async move {
+                                (*inner).delete_market_booth(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -556,7 +572,7 @@ pub mod shop_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = DeleteShopSvc(inner);
+                        let method = DeleteMarketBoothSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -587,7 +603,7 @@ pub mod shop_service_server {
             }
         }
     }
-    impl<T: ShopService> Clone for ShopServiceServer<T> {
+    impl<T: MarketBoothService> Clone for MarketBoothServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -599,7 +615,7 @@ pub mod shop_service_server {
             }
         }
     }
-    impl<T: ShopService> Clone for _Inner<T> {
+    impl<T: MarketBoothService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(Arc::clone(&self.0))
         }
@@ -609,7 +625,8 @@ pub mod shop_service_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: ShopService> tonic::server::NamedService for ShopServiceServer<T> {
-        const NAME: &'static str = "peoplesmarkets.commerce.v1.ShopService";
+    impl<T: MarketBoothService> tonic::server::NamedService
+    for MarketBoothServiceServer<T> {
+        const NAME: &'static str = "peoplesmarkets.commerce.v1.MarketBoothService";
     }
 }
