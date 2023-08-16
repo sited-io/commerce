@@ -6,9 +6,6 @@ on:
     branches: [dev]
 env:
   NOMAD_ADDR: ${{ secrets.DEV_NOMAD_ADDR }}
-  VAULT_ADDR: ${{ secrets.DEV_VAULT_ADDR }}
-  VAULT_USERNAME: ${{ secrets.DEV_SERVICE_DEPLOYER_USERNAME }}
-  VAULT_PASSWORD: ${{ secrets.DEV_SERVICE_DEPLOYER_PASSWORD }}
   IMAGE_TAG: ghcr.io/${{ github.repository }}:${{ github.sha }}
 jobs:
   build:
@@ -44,11 +41,11 @@ jobs:
       - name: Get Nomad token from Vault
         uses: hashicorp/vault-action@v2
         with:
-          url: ${VAULT_ADDR}
+          url: ${{ secrets.DEV_VAULT_ADDR }}
           method: userpass
-          username: ${VAULT_USERNAME}
-          password: ${VAULT_PASSWORD}
-          secrets: nomad/creds/${VAULT_USERNAME} secret_id | NOMAD_TOKEN ;
+          username: ${{ secrets.DEV_SERVICE_DEPLOYER_USERNAME }}
+          password: ${{ secrets.DEV_SERVICE_DEPLOYER_PASSWORD }}
+          secrets: nomad/creds/${{ secrets.DEV_SERVICE_DEPLOYER_USERNAME }} secret_id | NOMAD_TOKEN ;
 
       - name: Update image tag nomad variable
         run: nomad var get /nomad/jobs/commerce | nomad var put -in=json -out=table - IMAGE=$IMAGE_TAG
