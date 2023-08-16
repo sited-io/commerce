@@ -49,9 +49,7 @@ jobs:
           secrets: nomad/creds/${VAULT_USERNAME} secret_id | NOMAD_TOKEN ;
 
       - name: Update image tag nomad variable
-        run: >-
-          nomad var get /nomad/jobs/commerce |
-            nomad var put -in=json -out=table - IMAGE=$IMAGE_TAG
+        run: nomad var get /nomad/jobs/commerce | nomad var put -in=json -out=table - IMAGE=$IMAGE_TAG
 
       - name: Deploy job
         run: nomad job run -verbose service.nomad
