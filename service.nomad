@@ -32,7 +32,7 @@ job "commerce" {
       driver = "docker"
 
       vault {
-        policies = ["services-deployer"]
+        policies = ["service-commerce"]
       }
 
       template {
