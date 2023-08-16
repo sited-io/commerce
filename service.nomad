@@ -11,6 +11,7 @@ job "commerce" {
 
     service {
       name = "commerce-api"
+      port = 10000
 
       connect {
         sidecar_service {
@@ -29,7 +30,6 @@ job "commerce" {
 
       check {
         type     = "grpc"
-        port     = "10000"
         interval = "20s"
         timeout  = "2s"
       }

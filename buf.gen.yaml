@@ -2,6 +2,8 @@ version: v1
 plugins:
   - name: prost
     out: src/api
+    opt:
+      - file_descriptor_set=true
   - name: tonic
     out: src/api
   - name: prost-crate

@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use jwtk::jwk::RemoteJwksVerifier;
 use tonic::transport::Server;
-use tonic_health::server::HealthReporter;
 use tower_http::trace::TraceLayer;
 
 use commerce::api::peoplesmarkets::commerce::v1::market_booth_service_server::MarketBoothServiceServer;
@@ -30,6 +29,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .set_serving::<MarketBoothServiceServer<MarketBoothService>>()
         .await;
 
+    let reflection_service = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(
+            tonic_health::pb::FILE_DESCRIPTOR_SET,
+        )
+        .register_encoded_file_descriptor_set(
+            commerce::api::peoplesmarkets::ordering::v1::FILE_DESCRIPTOR_SET,
+        )
+        .register_encoded_file_descriptor_set(
+            commerce::api::peoplesmarkets::pagination::v1::FILE_DESCRIPTOR_SET,
+        )
+        .register_encoded_file_descriptor_set(
+            commerce::api::peoplesmarkets::commerce::v1::FILE_DESCRIPTOR_SET,
+        )
+        .build()
+        .unwrap();
+
     tracing::log::info!("gRPC server listening on {}", host);
 
     Server::builder()
@@ -39,6 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .on_response(LogOnResponse::default())
                 .on_failure(LogOnFailure::default()),
         )
+        .add_service(reflection_service)
         .add_service(health_service)
         .add_service(MarketBoothService::build(db_pool, jwt_verifier))
         .serve(host.parse().unwrap())
