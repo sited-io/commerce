@@ -64,6 +64,9 @@ DB_USER='commerce_user'
 DB_PASSWORD='{{ .Data.password }}'
 {{ end }}
 
+{{ with nomadVar "nomad/jobs/" }}
+JWKS_HOST='{{ .JWKS_HOST }}'
+{{ end }}
 JWKS_URL='http://{{ env "NOMAD_UPSTREAM_ADDR_zitadel" }}/oauth/v2/keys'
 
 {{ with nomadVar "nomad/jobs/commerce" }}

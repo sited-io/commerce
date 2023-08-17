@@ -11,24 +11,42 @@ use commerce::{get_env_var, MarketBoothService};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // initialize logging
     tracing_subscriber::fmt::init();
 
+    // get required environment variables
     let host = get_env_var("HOST");
     let jwks_url = get_env_var("JWKS_URL");
+    let jwks_host = get_env_var("JWKS_HOST");
 
+    // initialize database connection and migrate
     let db_pool = init_db_pool()?;
-
     migrate(&db_pool).await?;
 
-    let jwt_verifier =
-        RemoteJwksVerifier::new(jwks_url, None, Duration::from_secs(120));
+    // initialize client for JWT verification against public JWKS
+    //   adding host header in order to work in private network
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(
+        reqwest::header::HOST,
+        reqwest::header::HeaderValue::from_str(&jwks_host)?,
+    );
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()?;
+    let jwt_verifier = RemoteJwksVerifier::new(
+        jwks_url,
+        Some(client),
+        Duration::from_secs(120),
+    );
 
+    // configure gRPC health reporter
     let (mut health_reporter, health_service) =
         tonic_health::server::health_reporter();
     health_reporter
         .set_serving::<MarketBoothServiceServer<MarketBoothService>>()
         .await;
 
+    // configure gRPC reflection service
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(
             tonic_health::pb::FILE_DESCRIPTOR_SET,
@@ -47,8 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::log::info!("gRPC server listening on {}", host);
 
-    let market_booth_service =
-        MarketBoothService::build(db_pool, jwt_verifier);
+    let market_booth_service = MarketBoothService::build(db_pool, jwt_verifier);
 
     Server::builder()
         .layer(
