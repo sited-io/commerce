@@ -47,6 +47,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::log::info!("gRPC server listening on {}", host);
 
+    let market_booth_service =
+        MarketBoothService::build(db_pool, jwt_verifier);
+
     Server::builder()
         .layer(
             TraceLayer::new_for_grpc()
@@ -56,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .add_service(reflection_service)
         .add_service(health_service)
-        .add_service(MarketBoothService::build(db_pool, jwt_verifier))
+        .add_service(market_booth_service)
         .serve(host.parse().unwrap())
         .await?;
 

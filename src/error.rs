@@ -4,6 +4,8 @@ use tonic::Status;
 use crate::db::DbError;
 
 pub fn db_err_to_grpc_status(db_err: DbError) -> Status {
+    tracing::log::debug!("Got error from DB: {db_err:?}");
+
     match db_err {
         DbError::TokioPostgres(tp_err) => {
             if let Some(err) = tp_err.as_db_error() {

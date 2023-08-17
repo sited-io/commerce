@@ -1,9 +1,14 @@
 use std::fmt::Debug;
 
+use http::StatusCode;
 use tower_http::{
     classify::GrpcFailureClass,
     trace::{OnFailure, OnRequest, OnResponse},
 };
+
+const HEALTH_PATH: &str = "/grpc.health.v1.Health/Check";
+const REFLECTION_PATH: &str =
+    "/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo";
 
 #[derive(Debug, Clone, Default)]
 pub struct LogOnRequest {}
@@ -14,6 +19,12 @@ impl<B> OnRequest<B> for LogOnRequest {
         request: &http::Request<B>,
         _span: &tracing::Span,
     ) {
+        if request.uri().path() == HEALTH_PATH
+            || request.uri().path() == REFLECTION_PATH
+        {
+            return;
+        }
+
         tracing::log::info!(
             target: "grpc-request",
             "{:?} {} {} {:?}",
@@ -35,6 +46,10 @@ impl<B> OnResponse<B> for LogOnResponse {
         _latency: std::time::Duration,
         _span: &tracing::Span,
     ) {
+        if response.status().is_success() {
+            return;
+        }
+
         tracing::log::info!(
             target: "grpc-response",
             "{:?} {} {:?}",

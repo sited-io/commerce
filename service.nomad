@@ -34,9 +34,9 @@ job "commerce" {
       }
 
       check {
-        type            = "grpc"
-        interval        = "20s"
-        timeout         = "2s"
+        type     = "grpc"
+        interval = "20s"
+        timeout  = "2s"
       }
     }
 
@@ -52,7 +52,7 @@ job "commerce" {
         env         = true
         change_mode = "restart"
         data        = <<EOF
-RUST_LOG='DEBUG'
+RUST_LOG='INFO'
 
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 

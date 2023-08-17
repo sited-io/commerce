@@ -68,12 +68,11 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         let CreateMarketBoothRequest { name, description } =
             request.into_inner();
 
-        let claims = self.verifier.verify::<Claims<()>>(&token).await.map_err(
-            |err| {
-                tracing::log::error!("{err}");
-                Status::internal(err.to_string())
-            },
-        )?;
+        let claims = self
+            .verifier
+            .verify::<Claims<()>>(&token)
+            .await
+            .map_err(|err| Status::unauthenticated(err.to_string()))?;
 
         let user_id = claims
             .claims()
