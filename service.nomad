@@ -7,15 +7,20 @@ job "commerce" {
 
     network {
       mode = "bridge"
+
+      port "grpc" {}
     }
 
     service {
       name = "commerce-api"
-      port = 10000
+      port = "grpc"
 
       connect {
         sidecar_service {
           proxy {
+            config {
+              protocol = "http2"
+            }
             upstreams {
               destination_name = "zitadel"
               local_bind_port  = 8080
@@ -29,9 +34,9 @@ job "commerce" {
       }
 
       check {
-        type     = "grpc"
-        interval = "20s"
-        timeout  = "2s"
+        type            = "grpc"
+        interval        = "20s"
+        timeout         = "2s"
       }
     }
 
@@ -49,7 +54,7 @@ job "commerce" {
         data        = <<EOF
 RUST_LOG='DEBUG'
 
-HOST='0.0.0.0:10000'
+HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
 DB_HOST='{{ env "NOMAD_UPSTREAM_IP_cockroach-sql" }}'
 DB_PORT='{{ env "NOMAD_UPSTREAM_PORT_cockroach-sql" }}'
