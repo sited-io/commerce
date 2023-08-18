@@ -108,33 +108,35 @@ impl MarketBooth {
     pub async fn update(
         pool: &Pool,
         market_booth_id: &Uuid,
-        name: Option<&String>,
-        description: Option<&String>,
+        name: Option<String>,
+        description: Option<String>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
-        let mut query = Query::update();
-        query.table(MarketBooths::Table);
+        let (sql, values) = {
+            let mut query = Query::update();
+            query.table(MarketBooths::Table);
 
-        if let Some(name) = name {
-            query.value(MarketBooths::Name, name);
-        }
+            if let Some(name) = name {
+                query.value(MarketBooths::Name, name);
+            }
 
-        if let Some(description) = description {
-            query.value(MarketBooths::Description, description);
-        }
+            if let Some(description) = description {
+                query.value(MarketBooths::Description, description);
+            }
 
-        query
-            .and_where(
-                Expr::col(MarketBooths::MarketBoothId).eq(*market_booth_id),
-            )
-            .returning_all();
+            query
+                .and_where(
+                    Expr::col(MarketBooths::MarketBoothId).eq(*market_booth_id),
+                )
+                .returning_all();
 
-        let (sql, values) = query.build_postgres(PostgresQueryBuilder);
+            query.build_postgres(PostgresQueryBuilder)
+        };
 
-        Ok(Self::from(
-            client.query_one(sql.as_str(), &values.as_params()).await?,
-        ))
+        let row = client.query_one(sql.as_str(), &values.as_params()).await?;
+
+        Ok(Self::from(row))
     }
 
     pub async fn delete(

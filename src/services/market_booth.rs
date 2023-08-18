@@ -1,7 +1,6 @@
 use deadpool_postgres::Pool;
 use jwtk::{jwk::RemoteJwksVerifier, Claims};
 use tonic::{async_trait, Request, Response, Status};
-use uuid::Uuid;
 
 use crate::api::peoplesmarkets::commerce::v1::market_booth_service_server::{
     self, MarketBoothServiceServer,
@@ -16,7 +15,7 @@ use crate::api::peoplesmarkets::pagination::v1::Pagination;
 use crate::auth::get_auth_token;
 use crate::error::db_err_to_grpc_status;
 use crate::model::MarketBooth;
-use crate::uuid_err_to_grpc_status;
+use crate::parse_uuid;
 
 pub struct MarketBoothService {
     pool: Pool,
@@ -94,11 +93,10 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         &self,
         request: Request<GetMarketBoothRequest>,
     ) -> Result<Response<GetMarketBoothResponse>, Status> {
-        let market_booth_id: Uuid = request
-            .into_inner()
-            .market_booth_id
-            .parse()
-            .map_err(|_| uuid_err_to_grpc_status("market_booth_id"))?;
+        let market_booth_id = parse_uuid(
+            request.into_inner().market_booth_id,
+            "market_booth_id",
+        )?;
 
         let found_shop = MarketBooth::get(&self.pool, &market_booth_id)
             .await
@@ -135,19 +133,36 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
 
     async fn update_market_booth(
         &self,
-        _request: Request<UpdateMarketBoothRequest>,
+        request: Request<UpdateMarketBoothRequest>,
     ) -> Result<Response<UpdateMarketBoothResponse>, Status> {
-        todo!()
+        let UpdateMarketBoothRequest {
+            market_booth_id,
+            name,
+            description,
+        } = request.into_inner();
+
+        let updated_market_booth = MarketBooth::update(
+            &self.pool,
+            &parse_uuid(market_booth_id, "market_booth_id")?,
+            name,
+            description,
+        )
+        .await
+        .map_err(db_err_to_grpc_status)?;
+
+        Ok(Response::new(UpdateMarketBoothResponse {
+            market_booth: Some(updated_market_booth.into()),
+        }))
     }
 
     async fn delete_market_booth(
         &self,
         request: Request<DeleteMarketBoothRequest>,
     ) -> Result<Response<DeleteMarketBoothResponse>, Status> {
-        let DeleteMarketBoothRequest { market_booth_id } = request.into_inner();
-        let market_booth_id = market_booth_id
-            .parse()
-            .map_err(|_| uuid_err_to_grpc_status("market_booth_id"))?;
+        let market_booth_id = parse_uuid(
+            request.into_inner().market_booth_id,
+            "market_booth_id",
+        )?;
 
         MarketBooth::delete(&self.pool, &market_booth_id)
             .await

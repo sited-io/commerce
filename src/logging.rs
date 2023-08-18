@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use http::StatusCode;
 use tower_http::{
     classify::GrpcFailureClass,
     trace::{OnFailure, OnRequest, OnResponse},
@@ -25,7 +24,7 @@ impl<B> OnRequest<B> for LogOnRequest {
             return;
         }
 
-        tracing::log::info!(
+        tracing::log::debug!(
             target: "grpc-request",
             "{:?} {} {} {:?}",
             request.version(),
@@ -50,7 +49,7 @@ impl<B> OnResponse<B> for LogOnResponse {
             return;
         }
 
-        tracing::log::info!(
+        tracing::log::debug!(
             target: "grpc-response",
             "{:?} {} {:?}",
             response.version(),
@@ -70,7 +69,7 @@ impl OnFailure<GrpcFailureClass> for LogOnFailure {
         _latency: std::time::Duration,
         _span: &tracing::Span,
     ) {
-        tracing::log::info!(
+        tracing::log::error!(
             target: "grpc-failure",
             "{}",
             failure_classification
