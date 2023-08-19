@@ -29,6 +29,7 @@ jobs:
           aws-access-key-id: ${{ secrets.DEV_S3_CARGO_CACHE_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.DEV_S3_CARGO_CACHE_SECRET_ACCESS_KEY }}
           aws-endpoint: https://0d78eb8c22ee83b01fa99dd3efb348ae.r2.cloudflarestorage.com
+          aws-s3-force-path-style: true
 
       - name: Build service binary
         run: cargo build --release
