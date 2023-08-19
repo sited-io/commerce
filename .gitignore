@@ -3,4 +3,3 @@
 run.sh
 /.vscode
 /dev-db-data
-Cargo.lock
