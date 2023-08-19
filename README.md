@@ -19,8 +19,6 @@ docker run --rm -d \
   --name cockroachdb \
   --hostname cockroachdb \
   --network "host" \
-  -p 26257:26257 \
-  -p 8080:8080 \
   -v "roach-single:/cockroach/cockroach-data" \
   cockroachdb/cockroach start-single-node --sql-addr=localhost:5432 --http-addr localhost:8080 --insecure
 ```
