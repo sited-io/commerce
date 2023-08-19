@@ -13,15 +13,16 @@ cargo build
 ### local database
 
 ```sh
-docker run --rm
-  --env COCKROACH_DATABASE=commerce
-  --env COCKROACH_USER=commerce_user
-  --name cockroachdb
-  --hostname cockroachdb
-  -p 26257:26257
-  -p 8080:8080
-  -v "roach-single:/cockroach/cockroach-data"
-  cockroachdb/cockroach:v23.1.7 start-single-node --http-addr localhost:8080 --insecure
+docker run --rm -d \
+  --env COCKROACH_DATABASE=commerce \
+  --env COCKROACH_USER=commerce_user \
+  --name cockroachdb \
+  --hostname cockroachdb \
+  --network "host" \
+  -p 26257:26257 \
+  -p 8080:8080 \
+  -v "roach-single:/cockroach/cockroach-data" \
+  cockroachdb/cockroach start-single-node --sql-addr=localhost:5432 --http-addr localhost:8080 --insecure
 ```
 
 ### local kong gateway for gRPC -> gRPC-web
@@ -49,12 +50,12 @@ Ensure environment variables are set.
 export HOST="[::1]:10000"
 
 export DB_HOST='127.0.0.1'
-export DB_PORT='26257'
+export DB_PORT='5432'
 export DB_USER='commerce_user'
 export DB_PASSWORD=''
 export DB_DBNAME='commerce'
 
-export JWKS_URL='https://auth-dev.peoplesmarkets.com/oauth/v2/keys'
+export JWKS_URL='https://auth.peoplesmarkets.com/oauth/v2/keys'
 ```
 
 Then run:
