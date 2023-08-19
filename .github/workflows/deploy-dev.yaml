@@ -15,6 +15,22 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Cache multiple paths
+        uses: whywaita/actions-cache-s3@v2
+        with:
+          with:
+            path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          aws-s3-bucket: dev-github-actions-cargo-cache
+          aws-access-key-id: ${{ secrets.DEV_S3_CARGO_CACHE_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEV_S3_CARGO_CACHE_SECRET_ACCESS_KEY }}
+          aws-endpoint: https://0d78eb8c22ee83b01fa99dd3efb348ae.r2.cloudflarestorage.com
+
       - name: Build service binary
         run: cargo build --release
 
