@@ -7,7 +7,7 @@ use tower_http::trace::TraceLayer;
 use commerce::api::peoplesmarkets::commerce::v1::market_booth_service_server::MarketBoothServiceServer;
 use commerce::db::{init_db_pool, migrate};
 use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
-use commerce::{get_env_var, MarketBoothService};
+use commerce::{get_env_var, MarketBoothService, OfferService};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -33,11 +33,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::Client::builder()
         .default_headers(headers)
         .build()?;
-    let jwt_verifier = RemoteJwksVerifier::new(
-        jwks_url,
-        Some(client),
-        Duration::from_secs(120),
-    );
 
     // configure gRPC health reporter
     let (mut health_reporter, health_service) =
@@ -65,7 +60,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::log::info!("gRPC server listening on {}", host);
 
-    let market_booth_service = MarketBoothService::build(db_pool, jwt_verifier);
+    let market_booth_service = MarketBoothService::build(
+        db_pool.clone(),
+        RemoteJwksVerifier::new(
+            jwks_url.clone(),
+            Some(client.clone()),
+            Duration::from_secs(120),
+        ),
+    );
+    let offer_service = OfferService::build(
+        db_pool,
+        RemoteJwksVerifier::new(
+            jwks_url,
+            Some(client),
+            Duration::from_secs(120),
+        ),
+    );
 
     Server::builder()
         .layer(
@@ -77,6 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(reflection_service)
         .add_service(health_service)
         .add_service(market_booth_service)
+        .add_service(offer_service)
         .serve(host.parse().unwrap())
         .await?;
 

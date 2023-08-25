@@ -5,5 +5,5 @@ CREATE TABLE market_booths (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() ON UPDATE NOW(),
     name VARCHAR NOT NULL,
     description TEXT,
-    CONSTRAINT uq_user_id_name UNIQUE (user_id, name)
+    CONSTRAINT uq_user_id_market_booth_name UNIQUE (user_id, name)
 );

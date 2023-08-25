@@ -11,11 +11,12 @@ use crate::api::peoplesmarkets::commerce::v1::{
     GetMarketBoothResponse, ListMarketBoothsRequest, ListMarketBoothsResponse,
     UpdateMarketBoothRequest, UpdateMarketBoothResponse,
 };
-use crate::api::peoplesmarkets::pagination::v1::Pagination;
 use crate::auth::get_auth_token;
 use crate::error::db_err_to_grpc_status;
 use crate::model::MarketBooth;
 use crate::parse_uuid;
+
+use super::paginate;
 
 pub struct MarketBoothService {
     pool: Pool,
@@ -32,26 +33,6 @@ impl MarketBoothService {
         verifier: RemoteJwksVerifier,
     ) -> MarketBoothServiceServer<Self> {
         MarketBoothServiceServer::new(Self::new(pool, verifier))
-    }
-
-    /**
-     * Returns limit and offset for requested Pagination or defaults.
-     */
-    fn paginate(request: Option<Pagination>) -> (u64, u64, Pagination) {
-        let mut limit = 10;
-        let mut offset = 0;
-        let mut pagination = Pagination {
-            page: 1,
-            size: limit,
-        };
-
-        if let Some(request) = request {
-            limit = request.size;
-            offset = (request.page - 1) * request.size;
-            pagination = request;
-        }
-
-        (limit, offset, pagination)
     }
 }
 
@@ -98,13 +79,13 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             "market_booth_id",
         )?;
 
-        let found_shop = MarketBooth::get(&self.pool, &market_booth_id)
+        let found_market_booth = MarketBooth::get(&self.pool, &market_booth_id)
             .await
             .map_err(db_err_to_grpc_status)?
             .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetMarketBoothResponse {
-            market_booth: Some(found_shop.into()),
+            market_booth: Some(found_market_booth.into()),
         }))
     }
 
@@ -118,15 +99,18 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             ..
         } = request.into_inner();
 
-        let (limit, offset, pagination) = Self::paginate(pagination);
+        let (limit, offset, pagination) = paginate(pagination);
 
-        let found_shops =
+        let found_market_booths =
             MarketBooth::list(&self.pool, user_id.as_ref(), limit, offset)
                 .await
                 .map_err(db_err_to_grpc_status)?;
 
         Ok(Response::new(ListMarketBoothsResponse {
-            market_booths: found_shops.into_iter().map(|s| s.into()).collect(),
+            market_booths: found_market_booths
+                .into_iter()
+                .map(|mb| mb.into())
+                .collect(),
             pagination: Some(pagination),
         }))
     }

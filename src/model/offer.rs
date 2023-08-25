@@ -1,16 +1,18 @@
 use chrono::{DateTime, Utc};
-use deadpool_postgres::{tokio_postgres::Row, Pool};
+use deadpool_postgres::tokio_postgres::Row;
+use deadpool_postgres::Pool;
 use sea_query::{Asterisk, Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::api::peoplesmarkets::commerce::v1::MarketBoothResponse;
+use crate::api::peoplesmarkets::commerce::v1::OfferResponse;
 use crate::db::DbError;
 
 #[derive(Iden)]
-#[iden(rename = "market_booths")]
-pub enum MarketBoothIden {
+#[iden(rename = "offers")]
+pub enum OfferIden {
     Table,
+    OfferId,
     MarketBoothId,
     UserId,
     CreatedAt,
@@ -20,7 +22,8 @@ pub enum MarketBoothIden {
 }
 
 #[derive(Debug, Clone)]
-pub struct MarketBooth {
+pub struct Offer {
+    pub offer_id: Uuid,
     pub market_booth_id: Uuid,
     pub user_id: String,
     pub created_at: DateTime<Utc>,
@@ -29,9 +32,10 @@ pub struct MarketBooth {
     pub description: String,
 }
 
-impl MarketBooth {
+impl Offer {
     pub async fn create(
         pool: &Pool,
+        market_booth_id: Uuid,
         user_id: &String,
         name: String,
         description: Option<String>,
@@ -39,13 +43,15 @@ impl MarketBooth {
         let client = pool.get().await?;
 
         let (sql, values) = Query::insert()
-            .into_table(MarketBoothIden::Table)
+            .into_table(OfferIden::Table)
             .columns([
-                MarketBoothIden::UserId,
-                MarketBoothIden::Name,
-                MarketBoothIden::Description,
+                OfferIden::MarketBoothId,
+                OfferIden::UserId,
+                OfferIden::Name,
+                OfferIden::Description,
             ])
             .values([
+                market_booth_id.into(),
                 user_id.into(),
                 name.into(),
                 description.unwrap_or_default().into(),
@@ -60,16 +66,14 @@ impl MarketBooth {
 
     pub async fn get(
         pool: &Pool,
-        market_booth_id: &Uuid,
+        offer_id: &Uuid,
     ) -> Result<Option<Self>, DbError> {
         let client = pool.get().await?;
 
         let (sql, values) = Query::select()
             .column(Asterisk)
-            .from(MarketBoothIden::Table)
-            .and_where(
-                Expr::col(MarketBoothIden::MarketBoothId).eq(*market_booth_id),
-            )
+            .from(OfferIden::Table)
+            .and_where(Expr::col(OfferIden::OfferId).eq(*offer_id))
             .build_postgres(PostgresQueryBuilder);
 
         Ok(client
@@ -80,6 +84,7 @@ impl MarketBooth {
 
     pub async fn list(
         pool: &Pool,
+        market_booth_id: Option<Uuid>,
         user_id: Option<&String>,
         limit: u64,
         offset: u64,
@@ -89,10 +94,16 @@ impl MarketBooth {
         let (sql, values) = {
             let mut query = Query::select();
 
-            query.column(Asterisk).from(MarketBoothIden::Table);
+            query.column(Asterisk).from(OfferIden::Table);
+
+            if let Some(market_booth_id) = market_booth_id {
+                query.and_where(
+                    Expr::col(OfferIden::MarketBoothId).eq(market_booth_id),
+                );
+            }
 
             if let Some(user_id) = user_id {
-                query.and_where(Expr::col(MarketBoothIden::UserId).eq(user_id));
+                query.and_where(Expr::col(OfferIden::UserId).eq(user_id));
             }
 
             query
@@ -108,7 +119,7 @@ impl MarketBooth {
 
     pub async fn update(
         pool: &Pool,
-        market_booth_id: &Uuid,
+        offer_id: &Uuid,
         name: Option<String>,
         description: Option<String>,
     ) -> Result<Self, DbError> {
@@ -116,21 +127,18 @@ impl MarketBooth {
 
         let (sql, values) = {
             let mut query = Query::update();
-            query.table(MarketBoothIden::Table);
+            query.table(OfferIden::Table);
 
             if let Some(name) = name {
-                query.value(MarketBoothIden::Name, name);
+                query.value(OfferIden::Name, name);
             }
 
             if let Some(description) = description {
-                query.value(MarketBoothIden::Description, description);
+                query.value(OfferIden::Description, description);
             }
 
             query
-                .and_where(
-                    Expr::col(MarketBoothIden::MarketBoothId)
-                        .eq(*market_booth_id),
-                )
+                .and_where(Expr::col(OfferIden::OfferId).eq(*offer_id))
                 .returning_all();
 
             query.build_postgres(PostgresQueryBuilder)
@@ -141,17 +149,12 @@ impl MarketBooth {
         Ok(Self::from(row))
     }
 
-    pub async fn delete(
-        pool: &Pool,
-        market_booth_id: &Uuid,
-    ) -> Result<(), DbError> {
+    pub async fn delete(pool: &Pool, offer_id: &Uuid) -> Result<(), DbError> {
         let client = pool.get().await?;
 
         let (sql, values) = Query::delete()
-            .from_table(MarketBoothIden::Table)
-            .and_where(
-                Expr::col(MarketBoothIden::MarketBoothId).eq(*market_booth_id),
-            )
+            .from_table(OfferIden::Table)
+            .and_where(Expr::col(OfferIden::OfferId).eq(*offer_id))
             .build_postgres(PostgresQueryBuilder);
 
         client.execute(sql.as_str(), &values.as_params()).await?;
@@ -160,22 +163,24 @@ impl MarketBooth {
     }
 }
 
-impl From<MarketBooth> for MarketBoothResponse {
-    fn from(market_booth: MarketBooth) -> Self {
+impl From<Offer> for OfferResponse {
+    fn from(offer: Offer) -> Self {
         Self {
-            market_booth_id: market_booth.market_booth_id.to_string(),
-            user_id: market_booth.user_id,
-            created_at: market_booth.created_at.timestamp(),
-            updated_at: market_booth.updated_at.timestamp(),
-            name: market_booth.name,
-            description: market_booth.description,
+            offer_id: offer.offer_id.to_string(),
+            market_booth_id: offer.market_booth_id.to_string(),
+            user_id: offer.user_id,
+            created_at: offer.created_at.timestamp(),
+            updated_at: offer.updated_at.timestamp(),
+            name: offer.name,
+            description: offer.description,
         }
     }
 }
 
-impl From<&Row> for MarketBooth {
+impl From<&Row> for Offer {
     fn from(row: &Row) -> Self {
         Self {
+            offer_id: row.get("offer_id"),
             market_booth_id: row.get("market_booth_id"),
             user_id: row.get("user_id"),
             created_at: row.get("created_at"),
@@ -186,7 +191,7 @@ impl From<&Row> for MarketBooth {
     }
 }
 
-impl From<Row> for MarketBooth {
+impl From<Row> for Offer {
     fn from(row: Row) -> Self {
         Self::from(&row)
     }
