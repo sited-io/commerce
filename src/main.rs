@@ -1,7 +1,10 @@
 use std::time::Duration;
 
+use http::header::{ACCEPT, AUTHORIZATION};
+use http::{HeaderName, Method};
 use jwtk::jwk::RemoteJwksVerifier;
 use tonic::transport::Server;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 
 use commerce::api::peoplesmarkets::commerce::v1::market_booth_service_server::MarketBoothServiceServer;
@@ -52,8 +55,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()
         .unwrap();
 
-    tracing::log::info!("gRPC server listening on {}", host);
-
     let market_booth_service = MarketBoothService::build(
         db_pool.clone(),
         RemoteJwksVerifier::new(
@@ -71,6 +72,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ),
     );
 
+    tracing::log::info!("gRPC-web server listening on {}", host);
+
     Server::builder()
         .layer(
             TraceLayer::new_for_grpc()
@@ -78,10 +81,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .on_response(LogOnResponse::default())
                 .on_failure(LogOnFailure::default()),
         )
-        .add_service(reflection_service)
-        .add_service(health_service)
-        .add_service(market_booth_service)
-        .add_service(offer_service)
+        .layer(
+            CorsLayer::new()
+                .allow_headers([
+                    AUTHORIZATION,
+                    ACCEPT,
+                    HeaderName::from_static("grpc-status"),
+                    HeaderName::from_static("grpc-message"),
+                ])
+                .allow_methods([Method::POST])
+                .allow_origin(AllowOrigin::any())
+                .allow_private_network(true),
+        )
+        .accept_http1(true)
+        .add_service(tonic_web::enable(reflection_service))
+        .add_service(tonic_web::enable(health_service))
+        .add_service(tonic_web::enable(market_booth_service))
+        .add_service(tonic_web::enable(offer_service))
         .serve(host.parse().unwrap())
         .await?;
 
