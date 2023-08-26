@@ -5,6 +5,7 @@ use deadpool_postgres::{
     tokio_postgres::NoTls, Config, CreatePoolError, Pool, PoolError, Runtime,
     SslMode,
 };
+use refinery::Target;
 use sea_query::{Expr, PgFunc, SimpleExpr};
 use tonic::Status;
 
@@ -111,7 +112,10 @@ pub async fn migrate(pool: &Pool) -> Result<(), Box<dyn std::error::Error>> {
 
     let runner = embedded::migrations::runner();
     runner.get_migrations();
-    runner.run_async(client.deref_mut().deref_mut()).await?;
+    runner
+        .set_target(Target::Latest)
+        .run_async(client.deref_mut().deref_mut())
+        .await?;
 
     Ok(())
 }
