@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use http::header::{ACCEPT, AUTHORIZATION};
+use http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use http::{HeaderName, Method};
 use jwtk::jwk::RemoteJwksVerifier;
 use tonic::transport::Server;
@@ -86,8 +86,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .allow_headers([
                     AUTHORIZATION,
                     ACCEPT,
+                    CONTENT_TYPE,
                     HeaderName::from_static("grpc-status"),
                     HeaderName::from_static("grpc-message"),
+                    HeaderName::from_static("x-grpc-web"),
                 ])
                 .allow_methods([Method::POST])
                 .allow_origin(AllowOrigin::any())
