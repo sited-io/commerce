@@ -1,10 +1,22 @@
 # Commerce service for peoplesmarkets.com
 
+## Prerequesites
+
+Ensure `service-apis` git submodule is initialized. If not yet done run:
+
+```sh
+git submodule update --init --recursive
+```
+
+If `service-apis` git submodule was already initialized, ensure to pull the newest changes:
+
+```sh
+git submodule update --recursive --remote
+```
+
 ## Build
 
 ```sh
-buf mod update service-apis/proto/
-buf generate service-apis/proto --template buf.gen.yaml
 cargo build
 ```
 

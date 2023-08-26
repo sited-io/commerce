@@ -47,13 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tonic_health::pb::FILE_DESCRIPTOR_SET,
         )
         .register_encoded_file_descriptor_set(
-            commerce::api::peoplesmarkets::ordering::v1::FILE_DESCRIPTOR_SET,
-        )
-        .register_encoded_file_descriptor_set(
-            commerce::api::peoplesmarkets::pagination::v1::FILE_DESCRIPTOR_SET,
-        )
-        .register_encoded_file_descriptor_set(
-            commerce::api::peoplesmarkets::commerce::v1::FILE_DESCRIPTOR_SET,
+            commerce::api::peoplesmarkets::FILE_DESCRIPTOR_SET,
         )
         .build()
         .unwrap();

@@ -12,7 +12,6 @@ use crate::api::peoplesmarkets::commerce::v1::{
     UpdateMarketBoothRequest, UpdateMarketBoothResponse,
 };
 use crate::auth::get_auth_token;
-use crate::error::db_err_to_grpc_status;
 use crate::model::MarketBooth;
 use crate::parse_uuid;
 
@@ -61,9 +60,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             .ok_or_else(|| Status::unauthenticated(""))?;
 
         let created_shop =
-            MarketBooth::create(&self.pool, user_id, name, description)
-                .await
-                .map_err(db_err_to_grpc_status)?;
+            MarketBooth::create(&self.pool, user_id, name, description).await?;
 
         Ok(Response::new(CreateMarketBoothResponse {
             market_booth: Some(created_shop.into()),
@@ -80,8 +77,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         )?;
 
         let found_market_booth = MarketBooth::get(&self.pool, &market_booth_id)
-            .await
-            .map_err(db_err_to_grpc_status)?
+            .await?
             .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetMarketBoothResponse {
@@ -96,15 +92,45 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         let ListMarketBoothsRequest {
             user_id,
             pagination,
+            filter,
             ..
         } = request.into_inner();
 
         let (limit, offset, pagination) = paginate(pagination);
 
+        let (name_query, description_query) = match filter {
+            Some(filter) => {
+                if filter.field == 1 {
+                    (Some(filter.query), None)
+                } else if filter.field == 2 {
+                    (None, Some(filter.query))
+                } else if filter.field == 3 {
+                    (Some(filter.query.clone()), Some(filter.query))
+                } else {
+                    (None, None)
+                }
+            }
+            None => (None, None),
+        };
+
         let found_market_booths =
-            MarketBooth::list(&self.pool, user_id.as_ref(), limit, offset)
+            if name_query.is_none() && description_query.is_none() {
+                MarketBooth::list(&self.pool, user_id.as_ref(), limit, offset)
+                    .await?
+            } else {
+                MarketBooth::search(
+                    &self.pool,
+                    limit,
+                    offset,
+                    name_query,
+                    description_query,
+                )
                 .await
-                .map_err(db_err_to_grpc_status)?;
+                .map_or_else(
+                    |err| err.ignore_to_ts_query(Vec::new()),
+                    |res| Ok(res),
+                )?
+            };
 
         Ok(Response::new(ListMarketBoothsResponse {
             market_booths: found_market_booths
@@ -131,8 +157,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             name,
             description,
         )
-        .await
-        .map_err(db_err_to_grpc_status)?;
+        .await?;
 
         Ok(Response::new(UpdateMarketBoothResponse {
             market_booth: Some(updated_market_booth.into()),
@@ -148,9 +173,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             "market_booth_id",
         )?;
 
-        MarketBooth::delete(&self.pool, &market_booth_id)
-            .await
-            .map_err(db_err_to_grpc_status)?;
+        MarketBooth::delete(&self.pool, &market_booth_id).await?;
 
         Ok(Response::new(DeleteMarketBoothResponse {}))
     }

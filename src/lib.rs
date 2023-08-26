@@ -1,7 +1,6 @@
 pub mod api;
 mod auth;
 pub mod db;
-mod error;
 pub mod logging;
 mod model;
 mod services;

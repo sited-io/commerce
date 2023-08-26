@@ -12,7 +12,6 @@ use crate::api::peoplesmarkets::commerce::v1::{
     ListOffersResponse, UpdateOfferRequest, UpdateOfferResponse,
 };
 use crate::auth::get_auth_token;
-use crate::error::db_err_to_grpc_status;
 use crate::model::Offer;
 use crate::parse_uuid;
 
@@ -72,8 +71,7 @@ impl offer_service_server::OfferService for OfferService {
             name,
             description,
         )
-        .await
-        .map_err(db_err_to_grpc_status)?;
+        .await?;
 
         Ok(Response::new(CreateOfferResponse {
             offer: Some(created_offer.into()),
@@ -87,8 +85,7 @@ impl offer_service_server::OfferService for OfferService {
         let offer_id = parse_uuid(request.into_inner().offer_id, "offer_id")?;
 
         let found_offer = Offer::get(&self.pool, &offer_id)
-            .await
-            .map_err(db_err_to_grpc_status)?
+            .await?
             .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetOfferResponse {
@@ -104,25 +101,56 @@ impl offer_service_server::OfferService for OfferService {
             market_booth_id,
             user_id,
             pagination,
+            filter,
             ..
         } = request.into_inner();
 
         let (limit, offset, pagination) = paginate(pagination);
+
+        let (name_query, description_query) = match filter {
+            Some(filter) => {
+                if filter.field == 1 {
+                    (Some(filter.query), None)
+                } else if filter.field == 2 {
+                    (None, Some(filter.query))
+                } else if filter.field == 3 {
+                    (Some(filter.query.clone()), Some(filter.query))
+                } else {
+                    (None, None)
+                }
+            }
+            None => (None, None),
+        };
 
         let market_booth_id = match market_booth_id {
             Some(id) => Some(parse_uuid(id, "market_booth_id")?),
             None => None,
         };
 
-        let found_offers = Offer::list(
-            &self.pool,
-            market_booth_id,
-            user_id.as_ref(),
-            limit,
-            offset,
-        )
-        .await
-        .map_err(db_err_to_grpc_status)?;
+        let found_offers =
+            if name_query.is_none() && description_query.is_none() {
+                Offer::list(
+                    &self.pool,
+                    market_booth_id,
+                    user_id.as_ref(),
+                    limit,
+                    offset,
+                )
+                .await?
+            } else {
+                Offer::search(
+                    &self.pool,
+                    limit,
+                    offset,
+                    name_query,
+                    description_query,
+                )
+                .await
+                .map_or_else(
+                    |err| err.ignore_to_ts_query(Vec::new()),
+                    |res| Ok(res),
+                )?
+            };
 
         Ok(Response::new(ListOffersResponse {
             offers: found_offers.into_iter().map(|o| o.into()).collect(),
@@ -146,8 +174,7 @@ impl offer_service_server::OfferService for OfferService {
             name,
             description,
         )
-        .await
-        .map_err(db_err_to_grpc_status)?;
+        .await?;
 
         Ok(Response::new(UpdateOfferResponse {
             offer: Some(updated_offer.into()),
@@ -160,9 +187,7 @@ impl offer_service_server::OfferService for OfferService {
     ) -> Result<Response<DeleteOfferResponse>, Status> {
         let offer_id = parse_uuid(request.into_inner().offer_id, "offer_id")?;
 
-        Offer::delete(&self.pool, &offer_id)
-            .await
-            .map_err(db_err_to_grpc_status)?;
+        Offer::delete(&self.pool, &offer_id).await?;
 
         Ok(Response::new(DeleteOfferResponse {}))
     }

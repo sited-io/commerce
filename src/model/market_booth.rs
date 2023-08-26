@@ -1,11 +1,15 @@
 use chrono::{DateTime, Utc};
 use deadpool_postgres::{tokio_postgres::Row, Pool};
-use sea_query::{Asterisk, Expr, Iden, PostgresQueryBuilder, Query};
+use sea_query::extension::postgres::PgExpr;
+use sea_query::{
+    Alias, Asterisk, Expr, Func, Iden, LogicalChainOper, Order, PgFunc,
+    PostgresQueryBuilder, Query, SimpleExpr,
+};
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
 use crate::api::peoplesmarkets::commerce::v1::MarketBoothResponse;
-use crate::db::DbError;
+use crate::db::{build_simple_plain_ts_query, DbError};
 
 #[derive(Iden)]
 #[iden(rename = "market_booths")]
@@ -16,7 +20,9 @@ pub enum MarketBoothIden {
     CreatedAt,
     UpdatedAt,
     Name,
+    NameTs,
     Description,
+    DescriptionTs,
 }
 
 #[derive(Debug, Clone)]
@@ -93,6 +99,74 @@ impl MarketBooth {
 
             if let Some(user_id) = user_id {
                 query.and_where(Expr::col(MarketBoothIden::UserId).eq(user_id));
+            } else {
+                query.order_by_expr(
+                    SimpleExpr::FunctionCall(Func::random()),
+                    Order::Asc,
+                );
+            }
+
+            query
+                .limit(limit)
+                .offset(offset)
+                .build_postgres(PostgresQueryBuilder)
+        };
+
+        let rows = client.query(sql.as_str(), &values.as_params()).await?;
+
+        Ok(rows.iter().map(Self::from).collect())
+    }
+
+    pub async fn search(
+        pool: &Pool,
+        limit: u64,
+        offset: u64,
+        name_search: Option<String>,
+        description_search: Option<String>,
+    ) -> Result<Vec<Self>, DbError> {
+        let client = pool.get().await?;
+
+        let (sql, values) = {
+            let mut query = Query::select();
+            query.column(Asterisk).from(MarketBoothIden::Table);
+
+            if let Some(name_query) = name_search {
+                let tsquery = build_simple_plain_ts_query(name_query);
+
+                let rank_alias = Alias::new("name_rank");
+
+                query
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(MarketBoothIden::NameTs),
+                            tsquery.clone(),
+                        )),
+                        rank_alias.clone(),
+                    )
+                    .and_or_where(LogicalChainOper::Or(
+                        Expr::col(MarketBoothIden::NameTs).matches(tsquery),
+                    ))
+                    .order_by(rank_alias, Order::Desc);
+            }
+
+            if let Some(description_query) = description_search {
+                let tsquery = build_simple_plain_ts_query(description_query);
+
+                let rank_alias = Alias::new("description_rank");
+
+                query
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(MarketBoothIden::DescriptionTs),
+                            tsquery.clone(),
+                        )),
+                        rank_alias.clone(),
+                    )
+                    .and_or_where(LogicalChainOper::Or(
+                        Expr::col(MarketBoothIden::DescriptionTs)
+                            .matches(tsquery),
+                    ))
+                    .order_by(rank_alias, Order::Desc);
             }
 
             query
