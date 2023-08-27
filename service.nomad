@@ -74,6 +74,7 @@ EOF
 
       config {
         image = "${IMAGE}"
+        force_pull = true
       }
     }
   }
