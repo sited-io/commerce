@@ -18,9 +18,6 @@ job "commerce" {
       connect {
         sidecar_service {
           proxy {
-            config {
-              protocol = "http2"
-            }
             upstreams {
               destination_name = "zitadel"
               local_bind_port  = 8080
@@ -52,7 +49,7 @@ job "commerce" {
         env         = true
         change_mode = "restart"
         data        = <<EOF
-RUST_LOG='DEBUG'
+RUST_LOG='INFO'
 
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
