@@ -52,7 +52,7 @@ job "commerce" {
         env         = true
         change_mode = "restart"
         data        = <<EOF
-RUST_LOG='INFO'
+RUST_LOG='DEBUG'
 
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
