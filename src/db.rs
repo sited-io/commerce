@@ -78,6 +78,9 @@ impl From<DbError> for Status {
                             tracing::log::error!("{err:?}");
                             Status::internal("")
                         }
+                        SqlState::FOREIGN_KEY_VIOLATION => {
+                            Status::failed_precondition(err.message())
+                        }
                         _ => {
                             todo!("{err:?}")
                         }
