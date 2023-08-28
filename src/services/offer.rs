@@ -1,6 +1,5 @@
 use deadpool_postgres::Pool;
 use jwtk::jwk::RemoteJwksVerifier;
-use jwtk::Claims;
 use tonic::{async_trait, Request, Response, Status};
 
 use crate::api::peoplesmarkets::commerce::v1::offer_service_server::{
@@ -11,7 +10,7 @@ use crate::api::peoplesmarkets::commerce::v1::{
     DeleteOfferResponse, GetOfferRequest, GetOfferResponse, ListOffersRequest,
     ListOffersResponse, UpdateOfferRequest, UpdateOfferResponse,
 };
-use crate::auth::get_auth_token;
+use crate::auth::get_user_id;
 use crate::model::Offer;
 use crate::parse_uuid;
 
@@ -41,8 +40,7 @@ impl offer_service_server::OfferService for OfferService {
         &self,
         request: Request<CreateOfferRequest>,
     ) -> Result<Response<CreateOfferResponse>, Status> {
-        let token = get_auth_token(request.metadata())
-            .ok_or_else(|| Status::unauthenticated(""))?;
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
 
         let CreateOfferRequest {
             market_booth_id,
@@ -50,24 +48,12 @@ impl offer_service_server::OfferService for OfferService {
             description,
         } = request.into_inner();
 
-        let claims = self
-            .verifier
-            .verify::<Claims<()>>(&token)
-            .await
-            .map_err(|err| Status::unauthenticated(err.to_string()))?;
-
-        let user_id = claims
-            .claims()
-            .sub
-            .as_ref()
-            .ok_or_else(|| Status::unauthenticated(""))?;
-
-        let market_booth_id = parse_uuid(market_booth_id, "market_booth_id")?;
+        let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
 
         let created_offer = Offer::create(
             &self.pool,
             market_booth_id,
-            user_id,
+            &user_id,
             name,
             description,
         )
@@ -82,7 +68,7 @@ impl offer_service_server::OfferService for OfferService {
         &self,
         request: Request<GetOfferRequest>,
     ) -> Result<Response<GetOfferResponse>, Status> {
-        let offer_id = parse_uuid(request.into_inner().offer_id, "offer_id")?;
+        let offer_id = parse_uuid(&request.into_inner().offer_id, "offer_id")?;
 
         let found_offer = Offer::get(&self.pool, &offer_id)
             .await?
@@ -123,7 +109,7 @@ impl offer_service_server::OfferService for OfferService {
         };
 
         let market_booth_id = match market_booth_id {
-            Some(id) => Some(parse_uuid(id, "market_booth_id")?),
+            Some(id) => Some(parse_uuid(&id, "market_booth_id")?),
             None => None,
         };
 
@@ -162,6 +148,8 @@ impl offer_service_server::OfferService for OfferService {
         &self,
         request: Request<UpdateOfferRequest>,
     ) -> Result<Response<UpdateOfferResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
         let UpdateOfferRequest {
             offer_id,
             name,
@@ -170,7 +158,8 @@ impl offer_service_server::OfferService for OfferService {
 
         let updated_offer = Offer::update(
             &self.pool,
-            &parse_uuid(offer_id, "offer_id")?,
+            &user_id,
+            &parse_uuid(&offer_id, "offer_id")?,
             name,
             description,
         )
@@ -185,9 +174,10 @@ impl offer_service_server::OfferService for OfferService {
         &self,
         request: Request<DeleteOfferRequest>,
     ) -> Result<Response<DeleteOfferResponse>, Status> {
-        let offer_id = parse_uuid(request.into_inner().offer_id, "offer_id")?;
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+        let offer_id = parse_uuid(&request.into_inner().offer_id, "offer_id")?;
 
-        Offer::delete(&self.pool, &offer_id).await?;
+        Offer::delete(&self.pool, &user_id, &offer_id).await?;
 
         Ok(Response::new(DeleteOfferResponse {}))
     }

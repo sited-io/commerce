@@ -194,6 +194,7 @@ impl Offer {
 
     pub async fn update(
         pool: &Pool,
+        user_id: &String,
         offer_id: &Uuid,
         name: Option<String>,
         description: Option<String>,
@@ -213,6 +214,7 @@ impl Offer {
             }
 
             query
+                .and_where(Expr::col(OfferIden::UserId).eq(user_id))
                 .and_where(Expr::col(OfferIden::OfferId).eq(*offer_id))
                 .returning_all();
 
@@ -224,11 +226,16 @@ impl Offer {
         Ok(Self::from(row))
     }
 
-    pub async fn delete(pool: &Pool, offer_id: &Uuid) -> Result<(), DbError> {
+    pub async fn delete(
+        pool: &Pool,
+        user_id: &String,
+        offer_id: &Uuid,
+    ) -> Result<(), DbError> {
         let client = pool.get().await?;
 
         let (sql, values) = Query::delete()
             .from_table(OfferIden::Table)
+            .and_where(Expr::col(OfferIden::UserId).eq(user_id))
             .and_where(Expr::col(OfferIden::OfferId).eq(*offer_id))
             .build_postgres(PostgresQueryBuilder);
 

@@ -8,7 +8,6 @@ use sea_query::{
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::api::peoplesmarkets::commerce::v1::MarketBoothResponse;
 use crate::db::{build_simple_plain_ts_query, DbError};
 
 #[derive(Iden)]
@@ -23,6 +22,7 @@ pub enum MarketBoothIden {
     NameTs,
     Description,
     DescriptionTs,
+    ImageUrlPath,
 }
 
 #[derive(Debug, Clone)]
@@ -32,7 +32,8 @@ pub struct MarketBooth {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub name: String,
-    pub description: String,
+    pub description: Option<String>,
+    pub image_url_path: Option<String>,
 }
 
 impl MarketBooth {
@@ -182,6 +183,7 @@ impl MarketBooth {
 
     pub async fn update(
         pool: &Pool,
+        user_id: &String,
         market_booth_id: &Uuid,
         name: Option<String>,
         description: Option<String>,
@@ -201,6 +203,7 @@ impl MarketBooth {
             }
 
             query
+                .and_where(Expr::col(MarketBoothIden::UserId).eq(user_id))
                 .and_where(
                     Expr::col(MarketBoothIden::MarketBoothId)
                         .eq(*market_booth_id),
@@ -217,33 +220,46 @@ impl MarketBooth {
 
     pub async fn delete(
         pool: &Pool,
+        user_id: &String,
         market_booth_id: &Uuid,
-    ) -> Result<(), DbError> {
+    ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
         let (sql, values) = Query::delete()
             .from_table(MarketBoothIden::Table)
+            .and_where(Expr::col(MarketBoothIden::UserId).eq(user_id))
             .and_where(
                 Expr::col(MarketBoothIden::MarketBoothId).eq(*market_booth_id),
             )
+            .returning_all()
             .build_postgres(PostgresQueryBuilder);
 
-        client.execute(sql.as_str(), &values.as_params()).await?;
+        let row = client.query_one(sql.as_str(), &values.as_params()).await?;
 
-        Ok(())
+        Ok(Self::from(row))
     }
-}
 
-impl From<MarketBooth> for MarketBoothResponse {
-    fn from(market_booth: MarketBooth) -> Self {
-        Self {
-            market_booth_id: market_booth.market_booth_id.to_string(),
-            user_id: market_booth.user_id,
-            created_at: market_booth.created_at.timestamp(),
-            updated_at: market_booth.updated_at.timestamp(),
-            name: market_booth.name,
-            description: market_booth.description,
-        }
+    pub async fn update_image_url_path(
+        pool: &Pool,
+        user_id: &String,
+        market_booth_id: &Uuid,
+        image_url_path: Option<String>,
+    ) -> Result<Self, DbError> {
+        let client = pool.get().await?;
+
+        let (sql, values) = Query::update()
+            .table(MarketBoothIden::Table)
+            .value(MarketBoothIden::ImageUrlPath, image_url_path)
+            .and_where(Expr::col(MarketBoothIden::UserId).eq(user_id))
+            .and_where(
+                Expr::col(MarketBoothIden::MarketBoothId).eq(*market_booth_id),
+            )
+            .returning_all()
+            .build_postgres(PostgresQueryBuilder);
+
+        let row = client.query_one(sql.as_str(), &values.as_params()).await?;
+
+        Ok(Self::from(row))
     }
 }
 
@@ -256,6 +272,7 @@ impl From<&Row> for MarketBooth {
             updated_at: row.get("updated_at"),
             name: row.get("name"),
             description: row.get("description"),
+            image_url_path: row.get("image_url_path"),
         }
     }
 }

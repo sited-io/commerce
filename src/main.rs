@@ -9,6 +9,7 @@ use tower_http::trace::TraceLayer;
 
 use commerce::api::peoplesmarkets::commerce::v1::market_booth_service_server::MarketBoothServiceServer;
 use commerce::db::{init_db_pool, migrate};
+use commerce::images::ImageService;
 use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
 use commerce::{get_env_var, MarketBoothService, OfferService};
 
@@ -19,12 +20,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // get required environment variables
     let host = get_env_var("HOST");
+
     let jwks_url = get_env_var("JWKS_URL");
     let jwks_host = get_env_var("JWKS_HOST");
 
     // initialize database connection and migrate
-    let db_pool = init_db_pool()?;
+    let db_pool = init_db_pool(
+        get_env_var("DB_HOST"),
+        get_env_var("DB_PORT").parse().unwrap(),
+        get_env_var("DB_USER"),
+        get_env_var("DB_PASSWORD"),
+        get_env_var("DB_DBNAME"),
+    )?;
     migrate(&db_pool).await?;
+
+    // initialize s3 bucket
+    let image_service = ImageService::new(
+        get_env_var("BUCKET_NAME"),
+        get_env_var("BUCKET_ACCOUTN_ID"),
+        get_env_var("BUCKET_ACCESS_KEY_ID"),
+        get_env_var("BUCKET_SECRET_ACCESS_KEY"),
+        get_env_var("BUCKET_URL"),
+        get_env_var("IMAGE_MAX_SIZE").parse().unwrap(),
+    );
 
     // initialize client for JWT verification against public JWKS
     //   adding host header in order to work in private network
@@ -62,6 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(client.clone()),
             Duration::from_secs(120),
         ),
+        image_service,
     );
     let offer_service = OfferService::build(
         db_pool,

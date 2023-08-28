@@ -1,6 +1,7 @@
 use deadpool_postgres::Pool;
-use jwtk::{jwk::RemoteJwksVerifier, Claims};
+use jwtk::jwk::RemoteJwksVerifier;
 use tonic::{async_trait, Request, Response, Status};
+use uuid::Uuid;
 
 use crate::api::peoplesmarkets::commerce::v1::market_booth_service_server::{
     self, MarketBoothServiceServer,
@@ -9,9 +10,13 @@ use crate::api::peoplesmarkets::commerce::v1::{
     CreateMarketBoothRequest, CreateMarketBoothResponse,
     DeleteMarketBoothRequest, DeleteMarketBoothResponse, GetMarketBoothRequest,
     GetMarketBoothResponse, ListMarketBoothsRequest, ListMarketBoothsResponse,
-    UpdateMarketBoothRequest, UpdateMarketBoothResponse,
+    MarketBoothResponse, RemoveImageFromMarketBoothRequest,
+    RemoveImageFromMarketBoothResponse, UpdateImageOfMarketBoothRequest,
+    UpdateImageOfMarketBoothResponse, UpdateMarketBoothRequest,
+    UpdateMarketBoothResponse,
 };
-use crate::auth::get_auth_token;
+use crate::auth::get_user_id;
+use crate::images::ImageService;
 use crate::model::MarketBooth;
 use crate::parse_uuid;
 
@@ -20,18 +25,52 @@ use super::paginate;
 pub struct MarketBoothService {
     pool: Pool,
     verifier: RemoteJwksVerifier,
+    image_service: ImageService,
 }
 
 impl MarketBoothService {
-    fn new(pool: Pool, verifier: RemoteJwksVerifier) -> Self {
-        Self { pool, verifier }
+    fn new(
+        pool: Pool,
+        verifier: RemoteJwksVerifier,
+        image_service: ImageService,
+    ) -> Self {
+        Self {
+            pool,
+            verifier,
+            image_service,
+        }
     }
 
     pub fn build(
         pool: Pool,
         verifier: RemoteJwksVerifier,
+        image_service: ImageService,
     ) -> MarketBoothServiceServer<Self> {
-        MarketBoothServiceServer::new(Self::new(pool, verifier))
+        let service = Self::new(pool, verifier, image_service);
+        MarketBoothServiceServer::new(service)
+    }
+
+    fn to_response(&self, market_booth: MarketBooth) -> MarketBoothResponse {
+        MarketBoothResponse {
+            market_booth_id: market_booth.market_booth_id.to_string(),
+            user_id: market_booth.user_id,
+            created_at: market_booth.created_at.timestamp(),
+            updated_at: market_booth.updated_at.timestamp(),
+            name: market_booth.name,
+            description: market_booth.description,
+            image_url: self
+                .image_service
+                .get_image_url(market_booth.image_url_path),
+        }
+    }
+
+    fn gen_image_path(user_id: &String, market_booth_id: &Uuid) -> String {
+        format!(
+            "/{}/{}/{}",
+            user_id,
+            market_booth_id.to_string(),
+            Uuid::new_v4().to_string()
+        )
     }
 }
 
@@ -41,29 +80,17 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         &self,
         request: Request<CreateMarketBoothRequest>,
     ) -> Result<Response<CreateMarketBoothResponse>, Status> {
-        let token = get_auth_token(request.metadata())
-            .ok_or_else(|| Status::unauthenticated(""))?;
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
 
         let CreateMarketBoothRequest { name, description } =
             request.into_inner();
 
-        let claims = self
-            .verifier
-            .verify::<Claims<()>>(&token)
-            .await
-            .map_err(|err| Status::unauthenticated(err.to_string()))?;
-
-        let user_id = claims
-            .claims()
-            .sub
-            .as_ref()
-            .ok_or_else(|| Status::unauthenticated(""))?;
-
         let created_shop =
-            MarketBooth::create(&self.pool, user_id, name, description).await?;
+            MarketBooth::create(&self.pool, &user_id, name, description)
+                .await?;
 
         Ok(Response::new(CreateMarketBoothResponse {
-            market_booth: Some(created_shop.into()),
+            market_booth: Some(self.to_response(created_shop)),
         }))
     }
 
@@ -72,7 +99,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         request: Request<GetMarketBoothRequest>,
     ) -> Result<Response<GetMarketBoothResponse>, Status> {
         let market_booth_id = parse_uuid(
-            request.into_inner().market_booth_id,
+            &request.into_inner().market_booth_id,
             "market_booth_id",
         )?;
 
@@ -81,7 +108,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetMarketBoothResponse {
-            market_booth: Some(found_market_booth.into()),
+            market_booth: Some(self.to_response(found_market_booth)),
         }))
     }
 
@@ -135,7 +162,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         Ok(Response::new(ListMarketBoothsResponse {
             market_booths: found_market_booths
                 .into_iter()
-                .map(|mb| mb.into())
+                .map(|mb| self.to_response(mb))
                 .collect(),
             pagination: Some(pagination),
         }))
@@ -145,22 +172,27 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         &self,
         request: Request<UpdateMarketBoothRequest>,
     ) -> Result<Response<UpdateMarketBoothResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
         let UpdateMarketBoothRequest {
             market_booth_id,
             name,
             description,
         } = request.into_inner();
 
+        let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
+
         let updated_market_booth = MarketBooth::update(
             &self.pool,
-            &parse_uuid(market_booth_id, "market_booth_id")?,
+            &user_id,
+            &market_booth_id,
             name,
             description,
         )
         .await?;
 
         Ok(Response::new(UpdateMarketBoothResponse {
-            market_booth: Some(updated_market_booth.into()),
+            market_booth: Some(self.to_response(updated_market_booth)),
         }))
     }
 
@@ -168,13 +200,101 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         &self,
         request: Request<DeleteMarketBoothRequest>,
     ) -> Result<Response<DeleteMarketBoothResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
         let market_booth_id = parse_uuid(
-            request.into_inner().market_booth_id,
+            &request.into_inner().market_booth_id,
             "market_booth_id",
         )?;
 
-        MarketBooth::delete(&self.pool, &market_booth_id).await?;
+        // TODO: ensure consitency of separate storages
+        let deleted_market_booth =
+            MarketBooth::delete(&self.pool, &user_id, &market_booth_id).await?;
+
+        if let Some(image_path) = deleted_market_booth.image_url_path {
+            self.image_service.remove_image(&image_path).await?;
+        }
+        // TODO: ensure consitency of separate storages
 
         Ok(Response::new(DeleteMarketBoothResponse {}))
+    }
+
+    async fn update_image_of_market_booth(
+        &self,
+        request: Request<UpdateImageOfMarketBoothRequest>,
+    ) -> Result<Response<UpdateImageOfMarketBoothResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
+        let UpdateImageOfMarketBoothRequest {
+            market_booth_id,
+            image,
+        } = request.into_inner();
+
+        let image = match image {
+            None => return Err(Status::invalid_argument("image")),
+            Some(i) => i,
+        };
+
+        let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
+
+        let market_booth = MarketBooth::get(&self.pool, &market_booth_id)
+            .await?
+            .ok_or_else(|| Status::not_found(""))?;
+
+        let image_data = ImageService::decode_base64(&image.data)?;
+        self.image_service.validate_image(&image_data)?;
+
+        if let Some(existing) = market_booth.image_url_path {
+            self.image_service.remove_image(&existing).await?;
+        }
+
+        let image_path = Self::gen_image_path(&user_id, &market_booth_id);
+
+        // TODO: ensure consitency of separate storages
+        self.image_service
+            .put_image(&image_path, &image_data)
+            .await?;
+
+        MarketBooth::update_image_url_path(
+            &self.pool,
+            &user_id,
+            &market_booth_id,
+            Some(image_path),
+        )
+        .await?;
+        // TODO: ensure consitency of separate storages
+
+        Ok(Response::new(UpdateImageOfMarketBoothResponse {}))
+    }
+
+    async fn remove_image_from_market_booth(
+        &self,
+        request: Request<RemoveImageFromMarketBoothRequest>,
+    ) -> Result<Response<RemoveImageFromMarketBoothResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
+        let market_booth_id = parse_uuid(
+            &request.into_inner().market_booth_id,
+            "market_booth_id",
+        )?;
+
+        let market_booth = MarketBooth::get(&self.pool, &market_booth_id)
+            .await?
+            .ok_or_else(|| Status::not_found(""))?;
+
+        // TODO: ensure consitency of separate storages
+        if let Some(image_path) = market_booth.image_url_path {
+            self.image_service.remove_image(&image_path).await?;
+        }
+        MarketBooth::update_image_url_path(
+            &self.pool,
+            &user_id,
+            &market_booth_id,
+            None,
+        )
+        .await?;
+        // TODO: ensure consitency of separate storages
+
+        Ok(Response::new(RemoveImageFromMarketBoothResponse {}))
     }
 }

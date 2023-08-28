@@ -9,8 +9,6 @@ use refinery::Target;
 use sea_query::{Expr, PgFunc, SimpleExpr};
 use tonic::Status;
 
-use crate::get_env_var;
-
 mod embedded {
     use refinery::embed_migrations;
     embed_migrations!("./migrations");
@@ -90,20 +88,32 @@ impl From<DbError> for Status {
                     Status::internal("")
                 }
             }
-            _ => {
-                todo!("{err:?}")
+            DbError::Pool(pool_err) => {
+                todo!("{pool_err:?}");
+            }
+            DbError::CreatePool(create_pool_err) => {
+                todo!("{create_pool_err:?}");
+            }
+            DbError::SeaQuery(sea_query_err) => {
+                todo!("{sea_query_err:?}");
             }
         }
     }
 }
 
-pub fn init_db_pool() -> Result<Pool, CreatePoolError> {
+pub fn init_db_pool(
+    host: String,
+    port: u16,
+    user: String,
+    password: String,
+    dbname: String,
+) -> Result<Pool, CreatePoolError> {
     let mut config = Config::new();
-    config.host = Some(get_env_var("DB_HOST"));
-    config.port = Some(get_env_var("DB_PORT").parse().unwrap());
-    config.user = Some(get_env_var("DB_USER"));
-    config.password = Some(get_env_var("DB_PASSWORD"));
-    config.dbname = Some(get_env_var("DB_DBNAME"));
+    config.host = Some(host);
+    config.port = Some(port);
+    config.user = Some(user);
+    config.password = Some(password);
+    config.dbname = Some(dbname);
 
     config.ssl_mode = Some(SslMode::Prefer);
 

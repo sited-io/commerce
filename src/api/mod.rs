@@ -17,4 +17,10 @@ pub mod peoplesmarkets {
             include!("peoplesmarkets.pagination.v1.rs");
         }
     }
+
+    pub mod media {
+        pub mod v1 {
+            include!("peoplesmarkets.media.v1.rs");
+        }
+    }
 }

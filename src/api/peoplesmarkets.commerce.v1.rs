@@ -11,8 +11,10 @@ pub struct MarketBoothResponse {
     pub updated_at: i64,
     #[prost(string, tag = "5")]
     pub name: ::prost::alloc::string::String,
-    #[prost(string, tag = "6")]
-    pub description: ::prost::alloc::string::String,
+    #[prost(string, optional, tag = "6")]
+    pub description: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, optional, tag = "7")]
+    pub image_url: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -101,6 +103,26 @@ pub struct DeleteMarketBoothRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DeleteMarketBoothResponse {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UpdateImageOfMarketBoothRequest {
+    #[prost(string, tag = "1")]
+    pub market_booth_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub image: ::core::option::Option<super::super::media::v1::MediaUpload>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UpdateImageOfMarketBoothResponse {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RemoveImageFromMarketBoothRequest {
+    #[prost(string, tag = "1")]
+    pub market_booth_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RemoveImageFromMarketBoothResponse {}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum MarketBoothsOrderByField {
@@ -219,6 +241,20 @@ pub mod market_booth_service_server {
             request: tonic::Request<super::DeleteMarketBoothRequest>,
         ) -> std::result::Result<
             tonic::Response<super::DeleteMarketBoothResponse>,
+            tonic::Status,
+        >;
+        async fn update_image_of_market_booth(
+            &self,
+            request: tonic::Request<super::UpdateImageOfMarketBoothRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::UpdateImageOfMarketBoothResponse>,
+            tonic::Status,
+        >;
+        async fn remove_image_from_market_booth(
+            &self,
+            request: tonic::Request<super::RemoveImageFromMarketBoothRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::RemoveImageFromMarketBoothResponse>,
             tonic::Status,
         >;
     }
@@ -516,6 +552,107 @@ pub mod market_booth_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = DeleteMarketBoothSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.MarketBoothService/UpdateImageOfMarketBooth" => {
+                    #[allow(non_camel_case_types)]
+                    struct UpdateImageOfMarketBoothSvc<T: MarketBoothService>(
+                        pub Arc<T>,
+                    );
+                    impl<
+                        T: MarketBoothService,
+                    > tonic::server::UnaryService<super::UpdateImageOfMarketBoothRequest>
+                    for UpdateImageOfMarketBoothSvc<T> {
+                        type Response = super::UpdateImageOfMarketBoothResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::UpdateImageOfMarketBoothRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).update_image_of_market_booth(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = UpdateImageOfMarketBoothSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.MarketBoothService/RemoveImageFromMarketBooth" => {
+                    #[allow(non_camel_case_types)]
+                    struct RemoveImageFromMarketBoothSvc<T: MarketBoothService>(
+                        pub Arc<T>,
+                    );
+                    impl<
+                        T: MarketBoothService,
+                    > tonic::server::UnaryService<
+                        super::RemoveImageFromMarketBoothRequest,
+                    > for RemoveImageFromMarketBoothSvc<T> {
+                        type Response = super::RemoveImageFromMarketBoothResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::RemoveImageFromMarketBoothRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).remove_image_from_market_booth(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = RemoveImageFromMarketBoothSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

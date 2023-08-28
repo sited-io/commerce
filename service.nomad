@@ -67,13 +67,25 @@ JWKS_HOST='{{ .JWKS_HOST }}'
 JWKS_URL='http://{{ env "NOMAD_UPSTREAM_ADDR_zitadel" }}/oauth/v2/keys'
 
 {{ with nomadVar "nomad/jobs/commerce" }}
+BUCKET_NAME='{{ .BUCKET_NAME }}'
+BUCKET_URL='{{ .BUCKET_URL }}'
+IMAGE_MAX_SIZE='{{ .IMAGE_MAX_SIZE }}'
+{{ end }}
+
+{{ with secret "kv2/data/services/commerce" }}
+BUCKET_ACCESS_KEY_ID='{{ .BUCKET_ACCESS_KEY_ID }}'
+BUCKET_SECRET_ACCESS_KEY='{{ .BUCKET_SECRET_ACCESS_KEY }}'
+BUCKET_ACCOUTN_ID='{{ .BUCKET_ACCOUTN_ID }}'
+{{ end }}
+
+{{ with nomadVar "nomad/jobs/commerce" }}
 IMAGE='{{ .IMAGE }}'
 {{ end }}
 EOF
       }
 
       config {
-        image = "${IMAGE}"
+        image      = "${IMAGE}"
         force_pull = true
       }
     }
