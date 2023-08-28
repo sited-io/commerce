@@ -49,8 +49,6 @@ job "commerce" {
         env         = true
         change_mode = "restart"
         data        = <<EOF
-RUST_LOG='INFO'
-
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
 DB_HOST='{{ env "NOMAD_UPSTREAM_IP_cockroach-sql" }}'
@@ -67,6 +65,7 @@ JWKS_HOST='{{ .JWKS_HOST }}'
 JWKS_URL='http://{{ env "NOMAD_UPSTREAM_ADDR_zitadel" }}/oauth/v2/keys'
 
 {{ with nomadVar "nomad/jobs/commerce" }}
+RUST_LOG='{{ .LOG_LEVEL }}'
 BUCKET_NAME='{{ .BUCKET_NAME }}'
 BUCKET_URL='{{ .BUCKET_URL }}'
 IMAGE_MAX_SIZE='{{ .IMAGE_MAX_SIZE }}'

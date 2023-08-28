@@ -44,6 +44,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         get_env_var("IMAGE_MAX_SIZE").parse().unwrap(),
     );
 
+    tracing::log::debug!("{:?}", image_service);
+
     // initialize client for JWT verification against public JWKS
     //   adding host header in order to work in private network
     let mut headers = reqwest::header::HeaderMap::new();
