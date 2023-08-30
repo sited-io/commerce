@@ -93,6 +93,7 @@ impl Offer {
             .and_where(
                 Expr::col((OfferIden::Table, OfferIden::OfferId)).eq(*offer_id),
             )
+            .order_by(OfferImageIden::Ordering, Order::Asc)
             .build_postgres(PostgresQueryBuilder);
 
         let rows = client.query(sql.as_str(), &values.as_params()).await?;
