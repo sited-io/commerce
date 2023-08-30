@@ -44,8 +44,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         get_env_var("IMAGE_MAX_SIZE").parse().unwrap(),
     );
 
-    tracing::log::debug!("{:?}", image_service);
-
     // initialize client for JWT verification against public JWKS
     //   adding host header in order to work in private network
     let mut headers = reqwest::header::HeaderMap::new();
@@ -82,7 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(client.clone()),
             Duration::from_secs(120),
         ),
-        image_service,
+        image_service.clone(),
     );
     let offer_service = OfferService::build(
         db_pool,
@@ -91,6 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(client),
             Duration::from_secs(120),
         ),
+        image_service,
     );
 
     tracing::log::info!("gRPC-web server listening on {}", host);

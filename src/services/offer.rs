@@ -1,17 +1,21 @@
 use deadpool_postgres::Pool;
 use jwtk::jwk::RemoteJwksVerifier;
 use tonic::{async_trait, Request, Response, Status};
+use uuid::Uuid;
 
 use crate::api::peoplesmarkets::commerce::v1::offer_service_server::{
     self, OfferServiceServer,
 };
 use crate::api::peoplesmarkets::commerce::v1::{
-    CreateOfferRequest, CreateOfferResponse, DeleteOfferRequest,
-    DeleteOfferResponse, GetOfferRequest, GetOfferResponse, ListOffersRequest,
-    ListOffersResponse, UpdateOfferRequest, UpdateOfferResponse,
+    AddImageToOfferRequest, AddImageToOfferResponse, CreateOfferRequest,
+    CreateOfferResponse, DeleteOfferRequest, DeleteOfferResponse,
+    GetOfferRequest, GetOfferResponse, ListOffersRequest, ListOffersResponse,
+    OfferImageResponse, OfferResponse, RemoveImageFromOfferRequest,
+    RemoveImageFromOfferResponse, UpdateOfferRequest, UpdateOfferResponse,
 };
 use crate::auth::get_user_id;
-use crate::model::Offer;
+use crate::images::ImageService;
+use crate::model::{Offer, OfferImage};
 use crate::parse_uuid;
 
 use super::paginate;
@@ -19,18 +23,63 @@ use super::paginate;
 pub struct OfferService {
     pool: Pool,
     verifier: RemoteJwksVerifier,
+    image_service: ImageService,
 }
 
 impl OfferService {
-    fn new(pool: Pool, verifier: RemoteJwksVerifier) -> Self {
-        Self { pool, verifier }
+    fn new(
+        pool: Pool,
+        verifier: RemoteJwksVerifier,
+        image_service: ImageService,
+    ) -> Self {
+        Self {
+            pool,
+            verifier,
+            image_service,
+        }
     }
 
     pub fn build(
         pool: Pool,
         verifier: RemoteJwksVerifier,
+        image_service: ImageService,
     ) -> OfferServiceServer<Self> {
-        OfferServiceServer::new(Self::new(pool, verifier))
+        OfferServiceServer::new(Self::new(pool, verifier, image_service))
+    }
+
+    fn to_response(&self, offer: Offer) -> OfferResponse {
+        OfferResponse {
+            offer_id: offer.offer_id.to_string(),
+            market_booth_id: offer.market_booth_id.to_string(),
+            user_id: offer.user_id,
+            created_at: offer.created_at.timestamp(),
+            updated_at: offer.updated_at.timestamp(),
+            name: offer.name,
+            description: offer.description,
+            images: offer
+                .images
+                .into_iter()
+                .map(|oi| OfferImageResponse {
+                    offer_image_id: oi.offer_image_id.to_string(),
+                    image_url: self
+                        .image_service
+                        .get_image_url(&oi.image_url_path),
+                    ordering: oi.ordering,
+                })
+                .collect(),
+        }
+    }
+
+    fn build_image_path(
+        user_id: &String,
+        market_booth_id: &Uuid,
+        offer_id: &Uuid,
+        offer_image_id: &Uuid,
+    ) -> String {
+        format!(
+            "/{}/{}/{}/{}",
+            user_id, market_booth_id, offer_id, offer_image_id
+        )
     }
 }
 
@@ -60,7 +109,7 @@ impl offer_service_server::OfferService for OfferService {
         .await?;
 
         Ok(Response::new(CreateOfferResponse {
-            offer: Some(created_offer.into()),
+            offer: Some(self.to_response(created_offer)),
         }))
     }
 
@@ -75,7 +124,7 @@ impl offer_service_server::OfferService for OfferService {
             .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetOfferResponse {
-            offer: Some(found_offer.into()),
+            offer: Some(self.to_response(found_offer)),
         }))
     }
 
@@ -132,14 +181,14 @@ impl offer_service_server::OfferService for OfferService {
                     description_query,
                 )
                 .await
-                .map_or_else(
-                    |err| err.ignore_to_ts_query(Vec::new()),
-                    |res| Ok(res),
-                )?
+                .map_or_else(|err| err.ignore_to_ts_query(Vec::new()), Ok)?
             };
 
         Ok(Response::new(ListOffersResponse {
-            offers: found_offers.into_iter().map(|o| o.into()).collect(),
+            offers: found_offers
+                .into_iter()
+                .map(|o| self.to_response(o))
+                .collect(),
             pagination: Some(pagination),
         }))
     }
@@ -166,7 +215,7 @@ impl offer_service_server::OfferService for OfferService {
         .await?;
 
         Ok(Response::new(UpdateOfferResponse {
-            offer: Some(updated_offer.into()),
+            offer: Some(self.to_response(updated_offer)),
         }))
     }
 
@@ -180,5 +229,78 @@ impl offer_service_server::OfferService for OfferService {
         Offer::delete(&self.pool, &user_id, &offer_id).await?;
 
         Ok(Response::new(DeleteOfferResponse {}))
+    }
+
+    async fn add_image_to_offer(
+        &self,
+        request: Request<AddImageToOfferRequest>,
+    ) -> Result<Response<AddImageToOfferResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
+        let AddImageToOfferRequest {
+            offer_id,
+            image,
+            ordering,
+        } = request.into_inner();
+
+        let image = image.ok_or_else(|| Status::invalid_argument("image"))?;
+
+        let image_data = ImageService::decode_base64(&image.data)?;
+        self.image_service.validate_image(&image_data)?;
+
+        let offer_id = parse_uuid(&offer_id, "offer_id")?;
+
+        let offer = Offer::get(&self.pool, &offer_id)
+            .await?
+            .ok_or_else(|| Status::not_found("offer"))?;
+
+        let offer_image_id = Uuid::new_v4();
+        let image_path = &Self::build_image_path(
+            &user_id,
+            &offer.market_booth_id,
+            &offer_id,
+            &offer_image_id,
+        );
+
+        // TODO: ensure consitency of separate storages
+        self.image_service
+            .put_image(image_path, &image_data)
+            .await?;
+
+        OfferImage::create(
+            &self.pool,
+            &offer_image_id,
+            &offer_id,
+            &user_id,
+            image_path,
+            ordering,
+        )
+        .await?;
+        // TODO: ensure consitency of separate storages
+
+        Ok(Response::new(AddImageToOfferResponse {}))
+    }
+
+    async fn remove_image_from_offer(
+        &self,
+        request: Request<RemoveImageFromOfferRequest>,
+    ) -> Result<Response<RemoveImageFromOfferResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
+        let offer_image_id =
+            parse_uuid(&request.into_inner().offer_image_id, "offer_image_id")?;
+
+        // TODO: ensure consitency of separate storages
+        let offer_image =
+            OfferImage::get(&self.pool, &offer_image_id, Some(&user_id))
+                .await?
+                .ok_or_else(|| Status::not_found("offer_image"))?;
+
+        self.image_service
+            .remove_image(&offer_image.image_url_path)
+            .await?;
+        OfferImage::delete(&self.pool, &user_id, &offer_image_id).await?;
+
+        Ok(Response::new(RemoveImageFromOfferResponse {}))
     }
 }

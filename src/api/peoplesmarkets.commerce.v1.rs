@@ -727,6 +727,18 @@ pub struct OfferResponse {
     pub name: ::prost::alloc::string::String,
     #[prost(string, tag = "7")]
     pub description: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "8")]
+    pub images: ::prost::alloc::vec::Vec<OfferImageResponse>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct OfferImageResponse {
+    #[prost(string, tag = "1")]
+    pub offer_image_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub image_url: ::prost::alloc::string::String,
+    #[prost(int64, tag = "3")]
+    pub ordering: i64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -819,6 +831,28 @@ pub struct DeleteOfferRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DeleteOfferResponse {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddImageToOfferRequest {
+    #[prost(string, tag = "1")]
+    pub offer_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub image: ::core::option::Option<super::super::media::v1::MediaUpload>,
+    #[prost(int64, tag = "3")]
+    pub ordering: i64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddImageToOfferResponse {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RemoveImageFromOfferRequest {
+    #[prost(string, tag = "1")]
+    pub offer_image_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RemoveImageFromOfferResponse {}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum OffersOrderByField {
@@ -925,6 +959,20 @@ pub mod offer_service_server {
             request: tonic::Request<super::DeleteOfferRequest>,
         ) -> std::result::Result<
             tonic::Response<super::DeleteOfferResponse>,
+            tonic::Status,
+        >;
+        async fn add_image_to_offer(
+            &self,
+            request: tonic::Request<super::AddImageToOfferRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::AddImageToOfferResponse>,
+            tonic::Status,
+        >;
+        async fn remove_image_from_offer(
+            &self,
+            request: tonic::Request<super::RemoveImageFromOfferRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::RemoveImageFromOfferResponse>,
             tonic::Status,
         >;
     }
@@ -1218,6 +1266,98 @@ pub mod offer_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = DeleteOfferSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.OfferService/AddImageToOffer" => {
+                    #[allow(non_camel_case_types)]
+                    struct AddImageToOfferSvc<T: OfferService>(pub Arc<T>);
+                    impl<
+                        T: OfferService,
+                    > tonic::server::UnaryService<super::AddImageToOfferRequest>
+                    for AddImageToOfferSvc<T> {
+                        type Response = super::AddImageToOfferResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AddImageToOfferRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).add_image_to_offer(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AddImageToOfferSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.OfferService/RemoveImageFromOffer" => {
+                    #[allow(non_camel_case_types)]
+                    struct RemoveImageFromOfferSvc<T: OfferService>(pub Arc<T>);
+                    impl<
+                        T: OfferService,
+                    > tonic::server::UnaryService<super::RemoveImageFromOfferRequest>
+                    for RemoveImageFromOfferSvc<T> {
+                        type Response = super::RemoveImageFromOfferResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::RemoveImageFromOfferRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).remove_image_from_offer(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = RemoveImageFromOfferSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

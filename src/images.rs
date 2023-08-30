@@ -36,7 +36,13 @@ impl ImageService {
         }
     }
 
-    pub fn get_image_url(&self, image_path: Option<String>) -> Option<String> {
+    pub fn get_image_url(&self, image_path: &String) -> String {
+        format!("{}{}", self.base_url, image_path)
+    }
+    pub fn get_opt_image_url(
+        &self,
+        image_path: Option<String>,
+    ) -> Option<String> {
         image_path.map(|p| format!("{}{}", self.base_url, p))
     }
 

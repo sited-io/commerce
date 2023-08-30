@@ -9,8 +9,10 @@ use sea_query::{
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::api::peoplesmarkets::commerce::v1::OfferResponse;
 use crate::db::{build_simple_plain_ts_query, DbError};
+
+use super::offer_image::OfferImageAsRel;
+use super::OfferImageIden;
 
 #[derive(Iden)]
 #[iden(rename = "offers")]
@@ -36,6 +38,7 @@ pub struct Offer {
     pub updated_at: DateTime<Utc>,
     pub name: String,
     pub description: String,
+    pub images: Vec<OfferImageAsRel>,
 }
 
 impl Offer {
@@ -77,15 +80,31 @@ impl Offer {
         let client = pool.get().await?;
 
         let (sql, values) = Query::select()
-            .column(Asterisk)
+            .column((OfferIden::Table, Asterisk))
+            .column((OfferImageIden::Table, OfferImageIden::OfferImageId))
+            .column((OfferImageIden::Table, OfferImageIden::ImageUrlPath))
+            .column((OfferImageIden::Table, OfferImageIden::Ordering))
             .from(OfferIden::Table)
-            .and_where(Expr::col(OfferIden::OfferId).eq(*offer_id))
+            .left_join(
+                OfferImageIden::Table,
+                Expr::col((OfferIden::Table, OfferIden::OfferId))
+                    .equals((OfferImageIden::Table, OfferImageIden::OfferId)),
+            )
+            .and_where(
+                Expr::col((OfferIden::Table, OfferIden::OfferId)).eq(*offer_id),
+            )
             .build_postgres(PostgresQueryBuilder);
 
-        Ok(client
-            .query_opt(sql.as_str(), &values.as_params())
-            .await?
-            .map(Self::from))
+        let rows = client.query(sql.as_str(), &values.as_params()).await?;
+
+        match rows.first() {
+            None => Ok(None),
+            Some(row) => {
+                let mut offer = Self::from(row);
+                offer.images = OfferImageAsRel::from_rows_or_empty(rows);
+                Ok(Some(offer))
+            }
+        }
     }
 
     pub async fn list(
@@ -245,20 +264,6 @@ impl Offer {
     }
 }
 
-impl From<Offer> for OfferResponse {
-    fn from(offer: Offer) -> Self {
-        Self {
-            offer_id: offer.offer_id.to_string(),
-            market_booth_id: offer.market_booth_id.to_string(),
-            user_id: offer.user_id,
-            created_at: offer.created_at.timestamp(),
-            updated_at: offer.updated_at.timestamp(),
-            name: offer.name,
-            description: offer.description,
-        }
-    }
-}
-
 impl From<&Row> for Offer {
     fn from(row: &Row) -> Self {
         Self {
@@ -269,6 +274,7 @@ impl From<&Row> for Offer {
             updated_at: row.get("updated_at"),
             name: row.get("name"),
             description: row.get("description"),
+            images: vec![],
         }
     }
 }

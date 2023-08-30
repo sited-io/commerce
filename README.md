@@ -5,13 +5,13 @@
 Ensure `service-apis` git submodule is initialized. If not yet done run:
 
 ```sh
-git submodule update --init --recursive
+git submodule update --init
 ```
 
 If `service-apis` git submodule was already initialized, ensure to pull the newest changes:
 
 ```sh
-git submodule update --recursive --remote
+git submodule update --remote
 ```
 
 ## Build
