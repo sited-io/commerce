@@ -60,17 +60,12 @@ impl MarketBoothService {
             description: market_booth.description,
             image_url: self
                 .image_service
-                .get_image_url(market_booth.image_url_path),
+                .get_opt_image_url(market_booth.image_url_path),
         }
     }
 
     fn gen_image_path(user_id: &String, market_booth_id: &Uuid) -> String {
-        format!(
-            "/{}/{}/{}",
-            user_id,
-            market_booth_id.to_string(),
-            Uuid::new_v4().to_string()
-        )
+        format!("/{}/{}/{}", user_id, market_booth_id, Uuid::new_v4())
     }
 }
 
@@ -153,10 +148,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
                     description_query,
                 )
                 .await
-                .map_or_else(
-                    |err| err.ignore_to_ts_query(Vec::new()),
-                    |res| Ok(res),
-                )?
+                .map_or_else(|err| err.ignore_to_ts_query(Vec::new()), Ok)?
             };
 
         Ok(Response::new(ListMarketBoothsResponse {
@@ -278,11 +270,10 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             "market_booth_id",
         )?;
 
+        // TODO: ensure consitency of separate storages
         let market_booth = MarketBooth::get(&self.pool, &market_booth_id)
             .await?
             .ok_or_else(|| Status::not_found(""))?;
-
-        // TODO: ensure consitency of separate storages
         if let Some(image_path) = market_booth.image_url_path {
             self.image_service.remove_image(&image_path).await?;
         }
