@@ -297,7 +297,8 @@ impl From<&Row> for Offer {
     fn from(row: &Row) -> Self {
         let images: Option<OfferImageAsRelVec> =
             row.try_get(Self::OFFER_IMAGES_ALIAS).ok();
-        let images = images.map(|i| i.0).unwrap_or_default();
+        let mut images = images.map(|i| i.0).unwrap_or_default();
+        images.sort_by(|a, b| a.ordering.cmp(&b.ordering));
 
         Self {
             offer_id: row.get("offer_id"),
