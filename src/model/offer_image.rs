@@ -1,5 +1,7 @@
 use chrono::{DateTime, Utc};
-use deadpool_postgres::tokio_postgres::types::{private, FromSql, Type};
+use deadpool_postgres::tokio_postgres::types::{
+    private, FromSql, Type, WrongType,
+};
 use deadpool_postgres::tokio_postgres::Row;
 use deadpool_postgres::Pool;
 use fallible_iterator::FallibleIterator;
@@ -8,7 +10,7 @@ use sea_query::{Asterisk, Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::db::DbError;
+use crate::db::{get_type_from_oid, DbError};
 
 #[derive(Iden)]
 #[iden(rename = "offer_images")]
@@ -163,13 +165,17 @@ impl<'a> FromSql<'a> for OfferImageAsRel {
     ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
         private::read_be_i32(&mut raw)?;
 
-        private::read_be_i32(&mut raw)?;
-        let offer_image_id: Uuid = private::read_value(&Type::UUID, &mut raw)?;
-        private::read_be_i32(&mut raw)?;
-        let image_url_path: String =
-            private::read_value(&Type::VARCHAR, &mut raw)?;
-        private::read_be_i32(&mut raw)?;
-        let ordering: i64 = private::read_value(&Type::INT2, &mut raw)?;
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<Uuid>(oid)?;
+        let offer_image_id: Uuid = private::read_value(&ty, &mut raw)?;
+
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<String>(oid)?;
+        let image_url_path: String = private::read_value(&ty, &mut raw)?;
+
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<i64>(oid)?;
+        let ordering: i64 = private::read_value(&ty, &mut raw)?;
 
         Ok(Self {
             offer_image_id,
