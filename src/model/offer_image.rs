@@ -1,7 +1,5 @@
 use chrono::{DateTime, Utc};
-use deadpool_postgres::tokio_postgres::types::{
-    private, FromSql, Type, WrongType,
-};
+use deadpool_postgres::tokio_postgres::types::{private, FromSql, Type};
 use deadpool_postgres::tokio_postgres::Row;
 use deadpool_postgres::Pool;
 use fallible_iterator::FallibleIterator;

@@ -83,9 +83,12 @@ IMAGE='{{ .IMAGE }}'
 EOF
       }
 
+      env {
+        NOMAD_JOB_REDEPLOY_INDEX = "__NOMAD_JOB_REDEPLOY_INDEX__"
+      }
+
       config {
-        image      = "${IMAGE}"
-        force_pull = true
+        image = "${IMAGE}"
       }
     }
   }
