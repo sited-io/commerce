@@ -1,6 +1,9 @@
 use chrono::{DateTime, Utc};
+use deadpool_postgres::tokio_postgres::types::{private, FromSql, Type};
 use deadpool_postgres::tokio_postgres::Row;
 use deadpool_postgres::Pool;
+use fallible_iterator::FallibleIterator;
+use postgres_protocol::types;
 use sea_query::{Asterisk, Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
@@ -143,45 +146,70 @@ pub struct OfferImageAsRel {
     pub ordering: i64,
 }
 
-impl OfferImageAsRel {
-    pub fn from_rows_or_empty(rows: Vec<Row>) -> Vec<Self> {
-        let mut res = Vec::with_capacity(rows.len());
-
-        for row in rows {
-            let offer_image_id: Option<Uuid> = row.get("offer_image_id");
-            let image_url_path: Option<String> = row.get("image_url_path");
-            let ordering: Option<i64> = row.get("ordering");
-
-            if let (
-                Some(offer_image_id),
-                Some(image_url_path),
-                Some(ordering),
-            ) = (offer_image_id, image_url_path, ordering)
-            {
-                res.push(OfferImageAsRel {
-                    offer_image_id,
-                    image_url_path,
-                    ordering,
-                })
+impl<'a> FromSql<'a> for OfferImageAsRel {
+    fn accepts(ty: &deadpool_postgres::tokio_postgres::types::Type) -> bool {
+        match *ty {
+            Type::RECORD => true,
+            _ => {
+                tracing::log::error!("OfferImageAsRel FromSql accepts: postgres type {:?} not implemented", ty);
+                false
             }
         }
+    }
 
-        res
+    fn from_sql(
+        _: &deadpool_postgres::tokio_postgres::types::Type,
+        mut raw: &'a [u8],
+    ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+        private::read_be_i32(&mut raw)?;
+
+        private::read_be_i32(&mut raw)?;
+        let offer_image_id: Uuid = private::read_value(&Type::UUID, &mut raw)?;
+        private::read_be_i32(&mut raw)?;
+        let image_url_path: String =
+            private::read_value(&Type::VARCHAR, &mut raw)?;
+        private::read_be_i32(&mut raw)?;
+        let ordering: i64 = private::read_value(&Type::INT2, &mut raw)?;
+
+        Ok(Self {
+            offer_image_id,
+            image_url_path,
+            ordering,
+        })
     }
 }
 
-impl From<&Row> for OfferImageAsRel {
-    fn from(row: &Row) -> Self {
-        Self {
-            offer_image_id: row.get("offer_image_id"),
-            image_url_path: row.get("image_url_path"),
-            ordering: row.get("ordering"),
+pub struct OfferImageAsRelVec(pub Vec<OfferImageAsRel>);
+
+impl<'a> FromSql<'a> for OfferImageAsRelVec {
+    fn accepts(ty: &Type) -> bool {
+        match *ty {
+            Type::RECORD_ARRAY => true,
+            _ => {
+                tracing::log::error!("OfferImageAsRelVec FromSql accepts: postgres type {:?} not implemented", ty);
+                false
+            }
         }
     }
-}
 
-impl From<Row> for OfferImageAsRel {
-    fn from(row: Row) -> Self {
-        Self::from(&row)
+    fn from_sql(
+        _: &Type,
+        raw: &'a [u8],
+    ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+        let array = types::array_from_sql(raw)?;
+
+        if array.dimensions().count()? > 1 {
+            return Err("array contains too many dimensions".into());
+        }
+
+        Ok(Self(
+            array
+                .values()
+                .filter_map(|v| {
+                    Ok(OfferImageAsRel::from_sql_nullable(&Type::RECORD, v)
+                        .ok())
+                })
+                .collect()?,
+        ))
     }
 }

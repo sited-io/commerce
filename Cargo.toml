@@ -7,10 +7,12 @@ edition = "2021"
 base64 = "0.21.3"
 chrono = "0.4.26"
 deadpool-postgres = "0.10.5"
+fallible-iterator = "0.2.0"
 http = "0.2.9"
 infer = "0.15.0"
 jwtk = "0.2.4"
 openssl = { version = "0.10.56", features = ["vendored"] }
+postgres-protocol = "0.6.6"
 prost = "0.11.9"
 refinery = { version = "0.8.10", features = ["tokio-postgres"] }
 reqwest = "0.11.18"

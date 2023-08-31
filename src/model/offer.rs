@@ -4,14 +4,14 @@ use deadpool_postgres::Pool;
 use sea_query::extension::postgres::PgExpr;
 use sea_query::{
     Alias, Asterisk, Expr, Func, Iden, LogicalChainOper, Order, PgFunc,
-    PostgresQueryBuilder, Query, SimpleExpr,
+    PostgresQueryBuilder, Query, SelectStatement, SimpleExpr,
 };
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::db::{build_simple_plain_ts_query, DbError};
+use crate::db::{build_simple_plain_ts_query, ArrayAgg, DbError};
 
-use super::offer_image::OfferImageAsRel;
+use super::offer_image::{OfferImageAsRel, OfferImageAsRelVec};
 use super::OfferImageIden;
 
 #[derive(Iden)]
@@ -42,6 +42,52 @@ pub struct Offer {
 }
 
 impl Offer {
+    const OFFER_IMAGES_ALIAS: &str = "images";
+
+    fn get_offer_images_alias() -> Alias {
+        Alias::new(Self::OFFER_IMAGES_ALIAS)
+    }
+
+    fn get_offer_image_agg() -> SimpleExpr {
+        Func::cust(ArrayAgg)
+            .args([Expr::tuple([
+                Expr::col((
+                    OfferImageIden::Table,
+                    OfferImageIden::OfferImageId,
+                ))
+                .into(),
+                Expr::col((
+                    OfferImageIden::Table,
+                    OfferImageIden::ImageUrlPath,
+                ))
+                .into(),
+                Expr::col((OfferImageIden::Table, OfferImageIden::Ordering))
+                    .into(),
+            ])
+            .into()])
+            .into()
+    }
+
+    fn get_select_with_offer_images() -> SelectStatement {
+        let mut query = Query::select();
+
+        query
+            .column((OfferIden::Table, Asterisk))
+            .expr_as(
+                Self::get_offer_image_agg(),
+                Self::get_offer_images_alias(),
+            )
+            .from(OfferIden::Table)
+            .left_join(
+                OfferImageIden::Table,
+                Expr::col((OfferIden::Table, OfferIden::OfferId))
+                    .equals((OfferImageIden::Table, OfferImageIden::OfferId)),
+            )
+            .group_by_col((OfferIden::Table, OfferIden::OfferId));
+
+        query
+    }
+
     pub async fn create(
         pool: &Pool,
         market_booth_id: Uuid,
@@ -79,33 +125,15 @@ impl Offer {
     ) -> Result<Option<Self>, DbError> {
         let client = pool.get().await?;
 
-        let (sql, values) = Query::select()
-            .column((OfferIden::Table, Asterisk))
-            .column((OfferImageIden::Table, OfferImageIden::OfferImageId))
-            .column((OfferImageIden::Table, OfferImageIden::ImageUrlPath))
-            .column((OfferImageIden::Table, OfferImageIden::Ordering))
-            .from(OfferIden::Table)
-            .left_join(
-                OfferImageIden::Table,
-                Expr::col((OfferIden::Table, OfferIden::OfferId))
-                    .equals((OfferImageIden::Table, OfferImageIden::OfferId)),
-            )
+        let (sql, values) = Self::get_select_with_offer_images()
             .and_where(
                 Expr::col((OfferIden::Table, OfferIden::OfferId)).eq(*offer_id),
             )
-            .order_by(OfferImageIden::Ordering, Order::Asc)
             .build_postgres(PostgresQueryBuilder);
 
-        let rows = client.query(sql.as_str(), &values.as_params()).await?;
+        let row = client.query_opt(sql.as_str(), &values.as_params()).await?;
 
-        match rows.first() {
-            None => Ok(None),
-            Some(row) => {
-                let mut offer = Self::from(row);
-                offer.images = OfferImageAsRel::from_rows_or_empty(rows);
-                Ok(Some(offer))
-            }
-        }
+        Ok(row.map(Self::from))
     }
 
     pub async fn list(
@@ -118,9 +146,7 @@ impl Offer {
         let client = pool.get().await?;
 
         let (sql, values) = {
-            let mut query = Query::select();
-
-            query.column(Asterisk).from(OfferIden::Table);
+            let mut query = Self::get_select_with_offer_images();
 
             if let Some(market_booth_id) = market_booth_id {
                 query.and_where(
@@ -129,7 +155,10 @@ impl Offer {
             }
 
             if let Some(user_id) = user_id {
-                query.and_where(Expr::col(OfferIden::UserId).eq(user_id));
+                query.and_where(
+                    Expr::col((OfferIden::Table, OfferIden::UserId))
+                        .eq(user_id),
+                );
             }
 
             if market_booth_id.is_none() && user_id.is_none() {
@@ -160,8 +189,7 @@ impl Offer {
         let client = pool.get().await?;
 
         let (sql, values) = {
-            let mut query = Query::select();
-            query.column(Asterisk).from(OfferIden::Table);
+            let mut query = Self::get_select_with_offer_images();
 
             if let Some(name_query) = name_search {
                 let tsquery = build_simple_plain_ts_query(name_query);
@@ -267,6 +295,10 @@ impl Offer {
 
 impl From<&Row> for Offer {
     fn from(row: &Row) -> Self {
+        let images: Option<OfferImageAsRelVec> =
+            row.try_get(Self::OFFER_IMAGES_ALIAS).ok();
+        let images = images.map(|i| i.0).unwrap_or_default();
+
         Self {
             offer_id: row.get("offer_id"),
             market_booth_id: row.get("market_booth_id"),
@@ -275,7 +307,7 @@ impl From<&Row> for Offer {
             updated_at: row.get("updated_at"),
             name: row.get("name"),
             description: row.get("description"),
-            images: vec![],
+            images,
         }
     }
 }

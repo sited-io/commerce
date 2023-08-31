@@ -6,7 +6,7 @@ use deadpool_postgres::{
     SslMode,
 };
 use refinery::Target;
-use sea_query::{Expr, PgFunc, SimpleExpr};
+use sea_query::{Expr, Iden, PgFunc, SimpleExpr};
 use tonic::Status;
 
 mod embedded {
@@ -84,7 +84,7 @@ impl From<DbError> for Status {
                         }
                     }
                 } else {
-                    // tracing::log::error!("{:?}", tp_err);
+                    tracing::log::error!("{:?}", tp_err);
                     Status::internal("")
                 }
             }
@@ -138,4 +138,12 @@ pub fn build_simple_plain_ts_query(query: String) -> Expr {
         PgFunc::plainto_tsquery("", None)
             .args([SimpleExpr::Value("simple".into()), query.into()]),
     )
+}
+
+pub struct ArrayAgg;
+
+impl Iden for ArrayAgg {
+    fn unquoted(&self, s: &mut dyn std::fmt::Write) {
+        write!(s, "ARRAY_AGG").unwrap()
+    }
 }
