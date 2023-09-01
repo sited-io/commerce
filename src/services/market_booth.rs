@@ -122,11 +122,19 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         let (limit, offset, pagination) = paginate(pagination)?;
 
         let filter = match filter {
-            Some(f) => Some((
-                MarketBoothsFilterField::from_i32(f.field)
-                    .ok_or(Status::invalid_argument("filter.field"))?,
-                f.query,
-            )),
+            Some(f) => {
+                if f.field < 1 {
+                    return Err(Status::invalid_argument("filter.filed"));
+                } else if f.query.is_empty() {
+                    return Err(Status::invalid_argument("filter.query"));
+                } else {
+                    Some((
+                        MarketBoothsFilterField::from_i32(f.field)
+                            .ok_or(Status::invalid_argument("filter.field"))?,
+                        f.query,
+                    ))
+                }
+            }
             None => None,
         };
 
