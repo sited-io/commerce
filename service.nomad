@@ -79,19 +79,9 @@ BUCKET_ACCOUTN_ID='{{ .Data.data.BUCKET_ACCOUTN_ID }}'
 EOF
       }
 
-      template {
-        destination = "${NOMAD_SECRETS_DIR}/.image"
-        env         = true
-        change_mode = "noop"
-        data        = <<EOF
-{{ with nomadVar "nomad/jobs/commerce" }}
-IMAGE='{{ .IMAGE }}'
-{{ end }}
-EOF
-      }
-
       config {
-        image = "${IMAGE}"
+        image = "__IMAGE__"
+        force_pull = true
       }
     }
   }

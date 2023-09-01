@@ -58,8 +58,7 @@ jobs:
           password: ${{ secrets.PROD_SERVICE_DEPLOYER_PASSWORD }}
           secrets: nomad/creds/${{ secrets.PROD_SERVICE_DEPLOYER_USERNAME }} secret_id | NOMAD_TOKEN ;
 
-      - name: Update image tag nomad variable
-        run: nomad var get /nomad/jobs/commerce | nomad var put -in=json -out=table - IMAGE=$IMAGE_TAG
-
       - name: Deploy job
-        run: nomad job run -verbose service.nomad
+        run: |
+          sed -i -e "s|__IMAGE__|$IMAGE_TAG|g" service.nomad
+          nomad job run -verbose service.nomad
