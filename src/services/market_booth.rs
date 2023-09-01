@@ -121,11 +121,12 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
 
         let (limit, offset, pagination) = paginate(pagination)?;
 
+        tracing::log::info!("{:?}", filter);
         let filter = match filter {
             Some(f) => {
                 if f.field < 1 {
-                    return Err(Status::invalid_argument("filter.filed"));
-                } else if f.query.is_empty() {
+                    return Err(Status::invalid_argument("filter.field"));
+                } else if f.query.trim().is_empty() {
                     return Err(Status::invalid_argument("filter.query"));
                 } else {
                     Some((
