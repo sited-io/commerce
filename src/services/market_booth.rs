@@ -121,7 +121,10 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
 
         let (limit, offset, pagination) = paginate(pagination)?;
 
-        tracing::log::info!("{:?}", filter);
+        if filter.is_none() && order_by.is_none() {
+            return Err(Status::invalid_argument("filter,order_by"));
+        }
+
         let filter = match filter {
             Some(f) => {
                 if f.field < 1 {
@@ -139,18 +142,14 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             None => None,
         };
 
-        let order_by = if filter.is_none() {
-            let order_by =
-                order_by.ok_or(Status::invalid_argument("order_by"))?;
-
-            Some((
-                MarketBoothsOrderByField::from_i32(order_by.field)
+        let order_by = match order_by {
+            Some(o) => Some((
+                MarketBoothsOrderByField::from_i32(o.field)
                     .ok_or(Status::invalid_argument("order_by.field"))?,
-                Direction::from_i32(order_by.direction)
+                Direction::from_i32(o.direction)
                     .ok_or(Status::invalid_argument("order_by.direction"))?,
-            ))
-        } else {
-            None
+            )),
+            None => None,
         };
 
         let found_market_booths = MarketBooth::list(
