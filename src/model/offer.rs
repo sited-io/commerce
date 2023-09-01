@@ -192,7 +192,7 @@ impl Offer {
             let mut query = Self::get_select_with_offer_images();
 
             if let Some(name_query) = name_search {
-                let tsquery = build_simple_plain_ts_query(name_query);
+                let tsquery = build_simple_plain_ts_query(&name_query);
 
                 let rank_alias = Alias::new("name_rank");
 
@@ -211,7 +211,7 @@ impl Offer {
             }
 
             if let Some(description_query) = description_search {
-                let tsquery = build_simple_plain_ts_query(description_query);
+                let tsquery = build_simple_plain_ts_query(&description_query);
 
                 let rank_alias = Alias::new("description_rank");
 

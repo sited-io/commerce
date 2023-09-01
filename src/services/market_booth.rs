@@ -10,11 +10,12 @@ use crate::api::peoplesmarkets::commerce::v1::{
     CreateMarketBoothRequest, CreateMarketBoothResponse,
     DeleteMarketBoothRequest, DeleteMarketBoothResponse, GetMarketBoothRequest,
     GetMarketBoothResponse, ListMarketBoothsRequest, ListMarketBoothsResponse,
-    MarketBoothResponse, RemoveImageFromMarketBoothRequest,
-    RemoveImageFromMarketBoothResponse, UpdateImageOfMarketBoothRequest,
-    UpdateImageOfMarketBoothResponse, UpdateMarketBoothRequest,
-    UpdateMarketBoothResponse,
+    MarketBoothResponse, MarketBoothsFilterField, MarketBoothsOrderByField,
+    RemoveImageFromMarketBoothRequest, RemoveImageFromMarketBoothResponse,
+    UpdateImageOfMarketBoothRequest, UpdateImageOfMarketBoothResponse,
+    UpdateMarketBoothRequest, UpdateMarketBoothResponse,
 };
+use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
 use crate::images::ImageService;
 use crate::model::MarketBooth;
@@ -115,41 +116,43 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             user_id,
             pagination,
             filter,
-            ..
+            order_by,
         } = request.into_inner();
 
-        let (limit, offset, pagination) = paginate(pagination);
+        let (limit, offset, pagination) = paginate(pagination)?;
 
-        let (name_query, description_query) = match filter {
-            Some(filter) => {
-                if filter.field == 1 {
-                    (Some(filter.query), None)
-                } else if filter.field == 2 {
-                    (None, Some(filter.query))
-                } else if filter.field == 3 {
-                    (Some(filter.query.clone()), Some(filter.query))
-                } else {
-                    (None, None)
-                }
-            }
-            None => (None, None),
+        let filter = match filter {
+            Some(f) => Some((
+                MarketBoothsFilterField::from_i32(f.field)
+                    .ok_or(Status::invalid_argument("filter.field"))?,
+                f.query,
+            )),
+            None => None,
         };
 
-        let found_market_booths =
-            if name_query.is_none() && description_query.is_none() {
-                MarketBooth::list(&self.pool, user_id.as_ref(), limit, offset)
-                    .await?
-            } else {
-                MarketBooth::search(
-                    &self.pool,
-                    limit,
-                    offset,
-                    name_query,
-                    description_query,
-                )
-                .await
-                .map_or_else(|err| err.ignore_to_ts_query(Vec::new()), Ok)?
-            };
+        let order_by = if filter.is_none() {
+            let order_by =
+                order_by.ok_or(Status::invalid_argument("order_by"))?;
+
+            Some((
+                MarketBoothsOrderByField::from_i32(order_by.field)
+                    .ok_or(Status::invalid_argument("order_by.field"))?,
+                Direction::from_i32(order_by.direction)
+                    .ok_or(Status::invalid_argument("order_by.direction"))?,
+            ))
+        } else {
+            None
+        };
+
+        let found_market_booths = MarketBooth::list(
+            &self.pool,
+            user_id.as_ref(),
+            limit,
+            offset,
+            filter,
+            order_by,
+        )
+        .await?;
 
         Ok(Response::new(ListMarketBoothsResponse {
             market_booths: found_market_booths

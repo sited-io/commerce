@@ -76,15 +76,18 @@ BUCKET_ACCESS_KEY_ID='{{ .Data.data.BUCKET_ACCESS_KEY_ID }}'
 BUCKET_SECRET_ACCESS_KEY='{{ .Data.data.BUCKET_SECRET_ACCESS_KEY }}'
 BUCKET_ACCOUTN_ID='{{ .Data.data.BUCKET_ACCOUTN_ID }}'
 {{ end }}
+EOF
+      }
 
+      template {
+        destination = "${NOMAD_SECRETS_DIR}/.image"
+        env         = true
+        change_mode = "noop"
+        data        = <<EOF
 {{ with nomadVar "nomad/jobs/commerce" }}
 IMAGE='{{ .IMAGE }}'
 {{ end }}
 EOF
-      }
-
-      env {
-        NOMAD_JOB_REDEPLOY_INDEX = "__NOMAD_JOB_REDEPLOY_INDEX__"
       }
 
       config {

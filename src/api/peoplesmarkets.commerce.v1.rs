@@ -130,6 +130,7 @@ pub enum MarketBoothsOrderByField {
     CreatedAt = 1,
     UpdatedAt = 2,
     Name = 3,
+    Random = 4,
 }
 impl MarketBoothsOrderByField {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -148,6 +149,7 @@ impl MarketBoothsOrderByField {
                 "MARKET_BOOTHS_ORDER_BY_FIELD_UPDATED_AT"
             }
             MarketBoothsOrderByField::Name => "MARKET_BOOTHS_ORDER_BY_FIELD_NAME",
+            MarketBoothsOrderByField::Random => "MARKET_BOOTHS_ORDER_BY_FIELD_RANDOM",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -157,6 +159,7 @@ impl MarketBoothsOrderByField {
             "MARKET_BOOTHS_ORDER_BY_FIELD_CREATED_AT" => Some(Self::CreatedAt),
             "MARKET_BOOTHS_ORDER_BY_FIELD_UPDATED_AT" => Some(Self::UpdatedAt),
             "MARKET_BOOTHS_ORDER_BY_FIELD_NAME" => Some(Self::Name),
+            "MARKET_BOOTHS_ORDER_BY_FIELD_RANDOM" => Some(Self::Random),
             _ => None,
         }
     }
@@ -860,6 +863,7 @@ pub enum OffersOrderByField {
     CreatedAt = 1,
     UpdatedAt = 2,
     Name = 3,
+    Random = 4,
 }
 impl OffersOrderByField {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -872,6 +876,7 @@ impl OffersOrderByField {
             OffersOrderByField::CreatedAt => "OFFERS_ORDER_BY_FIELD_CREATED_AT",
             OffersOrderByField::UpdatedAt => "OFFERS_ORDER_BY_FIELD_UPDATED_AT",
             OffersOrderByField::Name => "OFFERS_ORDER_BY_FIELD_NAME",
+            OffersOrderByField::Random => "OFFERS_ORDER_BY_FIELD_RANDOM",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -881,6 +886,7 @@ impl OffersOrderByField {
             "OFFERS_ORDER_BY_FIELD_CREATED_AT" => Some(Self::CreatedAt),
             "OFFERS_ORDER_BY_FIELD_UPDATED_AT" => Some(Self::UpdatedAt),
             "OFFERS_ORDER_BY_FIELD_NAME" => Some(Self::Name),
+            "OFFERS_ORDER_BY_FIELD_RANDOM" => Some(Self::Random),
             _ => None,
         }
     }

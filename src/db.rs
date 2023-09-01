@@ -134,7 +134,7 @@ pub async fn migrate(pool: &Pool) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn build_simple_plain_ts_query(query: String) -> Expr {
+pub fn build_simple_plain_ts_query(query: &String) -> Expr {
     Expr::expr(
         PgFunc::plainto_tsquery("", None)
             .args([SimpleExpr::Value("simple".into()), query.into()]),

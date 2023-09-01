@@ -140,7 +140,7 @@ impl offer_service_server::OfferService for OfferService {
             ..
         } = request.into_inner();
 
-        let (limit, offset, pagination) = paginate(pagination);
+        let (limit, offset, pagination) = paginate(pagination)?;
 
         let (name_query, description_query) = match filter {
             Some(filter) => {

@@ -22,7 +22,9 @@ pub fn parse_uuid(uuid_string: &str, field: &str) -> Result<Uuid, Status> {
 /**
  * Returns limit and offset for requested Pagination or defaults.
  */
-fn paginate(request: Option<Pagination>) -> (u64, u64, Pagination) {
+fn paginate(
+    request: Option<Pagination>,
+) -> Result<(u64, u64, Pagination), Status> {
     let mut limit = 10;
     let mut offset = 0;
     let mut pagination = Pagination {
@@ -31,10 +33,13 @@ fn paginate(request: Option<Pagination>) -> (u64, u64, Pagination) {
     };
 
     if let Some(request) = request {
+        if request.page < 1 {
+            return Err(Status::invalid_argument("pagination.page"));
+        }
         limit = request.size;
         offset = (request.page - 1) * request.size;
         pagination = request;
     }
 
-    (limit, offset, pagination)
+    Ok((limit, offset, pagination))
 }
