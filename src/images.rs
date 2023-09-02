@@ -72,14 +72,14 @@ impl ImageService {
         image_path: &String,
         image_data: &[u8],
     ) -> Result<(), Status> {
-        let mime_type = infer::get(image_data)
-            .ok_or_else(|| Status::invalid_argument("image"))?;
+        let img = image::load_from_memory(image_data).unwrap();
+        let encoder = webp::Encoder::from_image(&img).unwrap();
+        let img_webp = encoder.encode(100.0).to_owned();
+
+        tracing::log::info!("{:?}", img);
+
         self.bucket
-            .put_object_with_content_type(
-                image_path,
-                image_data,
-                mime_type.mime_type(),
-            )
+            .put_object_with_content_type(image_path, &img_webp, "image/webp")
             .await
             .map_err(|err| {
                 tracing::log::error!("{err}");
