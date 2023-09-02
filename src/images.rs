@@ -56,7 +56,8 @@ impl ImageService {
         let image_size_ok = image_data.len() < self.max_size;
         let image_mime_ok = infer::image::is_jpeg(image_data)
             || infer::image::is_jpeg2000(image_data)
-            || infer::image::is_png(image_data);
+            || infer::image::is_png(image_data)
+            || infer::image::is_webp(image_data);
 
         if image_size_ok && image_mime_ok {
             Ok(())
@@ -72,18 +73,22 @@ impl ImageService {
         image_path: &String,
         image_data: &[u8],
     ) -> Result<(), Status> {
-        let img = image::load_from_memory(image_data).unwrap();
-        let encoder = webp::Encoder::from_image(&img).unwrap();
-        let img_webp = encoder.encode(100.0).to_owned();
-
-        tracing::log::info!("{:?}", img);
+        let img = image::load_from_memory(image_data).map_err(|err| {
+            tracing::log::error!("{err}");
+            Status::internal("")
+        })?;
+        let encoder = webp::Encoder::from_image(&img).map_err(|err| {
+            tracing::log::error!("{err}");
+            Status::internal("")
+        })?;
+        let img_webp = encoder.encode_lossless().to_owned();
 
         self.bucket
             .put_object_with_content_type(image_path, &img_webp, "image/webp")
             .await
             .map_err(|err| {
                 tracing::log::error!("{err}");
-                Status::internal(err.to_string())
+                Status::internal("")
             })?;
 
         Ok(())

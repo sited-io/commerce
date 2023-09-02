@@ -9,7 +9,11 @@ chrono = "0.4.26"
 deadpool-postgres = "0.10.5"
 fallible-iterator = "0.2.0"
 http = "0.2.9"
-image = { version = "0.24.7", default-features = false }
+image = { version = "0.24.7", default-features = false, features = [
+  "jpeg",
+  "png",
+  "webp",
+] }
 infer = { version = "0.15.0", default-features = false }
 jwtk = "0.2.4"
 openssl = { version = "0.10.56", features = ["vendored"] }
