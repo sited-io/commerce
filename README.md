@@ -5,7 +5,7 @@
 Ensure `service-apis` git submodule is initialized. If not yet done run:
 
 ```sh
-git submodule update --init
+git submodule init
 ```
 
 If `service-apis` git submodule was already initialized, ensure to pull the newest changes:
@@ -38,6 +38,9 @@ docker run --rm -d \
 Ensure environment variables are set.
 
 ```sh
+export RUST_LOG=info
+export RUST_BACKTRACE=0
+
 export HOST="[::1]:10000"
 
 export DB_HOST='127.0.0.1'
@@ -47,6 +50,14 @@ export DB_PASSWORD=''
 export DB_DBNAME='commerce'
 
 export JWKS_URL='https://auth.peoplesmarkets.com/oauth/v2/keys'
+export JWKS_HOST='auth-dev.peoplesmarkets.com'
+
+export BUCKET_ACCESS_KEY_ID='xxxx'
+export BUCKET_SECRET_ACCESS_KEY='xxxx'
+export BUCKET_ACCOUTN_ID='xxxx'
+export BUCKET_NAME='dev-commerce'
+export BUCKET_URL='https://objects-dev.peoplesmarkets.com'
+export IMAGE_MAX_SIZE='512000'
 ```
 
 Then run:

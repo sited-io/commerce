@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use commerce::api::peoplesmarkets::commerce::v1::offer_service_server::OfferServiceServer;
 use http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use http::{HeaderName, Method};
 use jwtk::jwk::RemoteJwksVerifier;
@@ -61,6 +62,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     health_reporter
         .set_serving::<MarketBoothServiceServer<MarketBoothService>>()
         .await;
+    health_reporter
+        .set_serving::<OfferServiceServer<OfferService>>()
+        .await;
 
     // configure gRPC reflection service
     let reflection_service = tonic_reflection::server::Builder::configure()
@@ -92,7 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         image_service,
     );
 
-    tracing::log::info!("gRPC-web server listening on {}", host);
+    tracing::log::info!("gRPC+web server listening on {}", host);
 
     Server::builder()
         .layer(
