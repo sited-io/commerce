@@ -4,11 +4,13 @@ use deadpool_postgres::tokio_postgres::Row;
 use deadpool_postgres::Pool;
 use fallible_iterator::FallibleIterator;
 use postgres_protocol::types;
-use sea_query::{Asterisk, Expr, Iden, PostgresQueryBuilder, Query};
+use sea_query::{
+    Asterisk, Expr, Func, Iden, PostgresQueryBuilder, Query, SimpleExpr,
+};
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::db::{get_type_from_oid, DbError};
+use crate::db::{get_type_from_oid, ArrayAgg, DbError};
 
 #[derive(Iden)]
 #[iden(rename = "offer_images")]
@@ -122,13 +124,15 @@ impl OfferImage {
 impl From<&Row> for OfferImage {
     fn from(row: &Row) -> Self {
         Self {
-            offer_image_id: row.get("offer_image_id"),
-            offer_id: row.get("offer_id"),
-            user_id: row.get("user_id"),
-            created_at: row.get("created_at"),
-            updated_at: row.get("updated_at"),
-            image_url_path: row.get("image_url_path"),
-            ordering: row.get("ordering"),
+            offer_image_id: row
+                .get(OfferImageIden::OfferImageId.to_string().as_str()),
+            offer_id: row.get(OfferImageIden::OfferId.to_string().as_str()),
+            user_id: row.get(OfferImageIden::UserId.to_string().as_str()),
+            created_at: row.get(OfferImageIden::CreatedAt.to_string().as_str()),
+            updated_at: row.get(OfferImageIden::UpdatedAt.to_string().as_str()),
+            image_url_path: row
+                .get(OfferImageIden::ImageUrlPath.to_string().as_str()),
+            ordering: row.get(OfferImageIden::Ordering.to_string().as_str()),
         }
     }
 }
@@ -144,6 +148,28 @@ pub struct OfferImageAsRel {
     pub offer_image_id: Uuid,
     pub image_url_path: String,
     pub ordering: i64,
+}
+
+impl OfferImageAsRel {
+    pub fn get_agg() -> SimpleExpr {
+        Func::cust(ArrayAgg)
+            .args([Expr::tuple([
+                Expr::col((
+                    OfferImageIden::Table,
+                    OfferImageIden::OfferImageId,
+                ))
+                .into(),
+                Expr::col((
+                    OfferImageIden::Table,
+                    OfferImageIden::ImageUrlPath,
+                ))
+                .into(),
+                Expr::col((OfferImageIden::Table, OfferImageIden::Ordering))
+                    .into(),
+            ])
+            .into()])
+            .into()
+    }
 }
 
 impl<'a> FromSql<'a> for OfferImageAsRel {

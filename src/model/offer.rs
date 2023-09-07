@@ -9,9 +9,10 @@ use sea_query::{
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::db::{build_simple_plain_ts_query, ArrayAgg, DbError};
+use crate::db::{build_simple_plain_ts_query, DbError};
 
 use super::offer_image::{OfferImageAsRel, OfferImageAsRelVec};
+use super::offer_price::{OfferPriceAsRel, OfferPriceAsRelVec, OfferPriceIden};
 use super::OfferImageIden;
 
 #[derive(Iden)]
@@ -39,49 +40,38 @@ pub struct Offer {
     pub name: String,
     pub description: String,
     pub images: Vec<OfferImageAsRel>,
+    pub price: Option<OfferPriceAsRel>,
 }
 
 impl Offer {
     const OFFER_IMAGES_ALIAS: &str = "images";
+    const OFFER_PRICES_ALIAS: &str = "prices";
 
     fn get_offer_images_alias() -> Alias {
         Alias::new(Self::OFFER_IMAGES_ALIAS)
     }
 
-    fn get_offer_image_agg() -> SimpleExpr {
-        Func::cust(ArrayAgg)
-            .args([Expr::tuple([
-                Expr::col((
-                    OfferImageIden::Table,
-                    OfferImageIden::OfferImageId,
-                ))
-                .into(),
-                Expr::col((
-                    OfferImageIden::Table,
-                    OfferImageIden::ImageUrlPath,
-                ))
-                .into(),
-                Expr::col((OfferImageIden::Table, OfferImageIden::Ordering))
-                    .into(),
-            ])
-            .into()])
-            .into()
+    fn get_offer_price_alias() -> Alias {
+        Alias::new(Self::OFFER_PRICES_ALIAS)
     }
 
-    fn get_select_with_offer_images() -> SelectStatement {
+    fn select_with_relations() -> SelectStatement {
         let mut query = Query::select();
 
         query
             .column((OfferIden::Table, Asterisk))
-            .expr_as(
-                Self::get_offer_image_agg(),
-                Self::get_offer_images_alias(),
-            )
+            .expr_as(OfferImageAsRel::get_agg(), Self::get_offer_images_alias())
+            .expr_as(OfferPriceAsRel::get_agg(), Self::get_offer_price_alias())
             .from(OfferIden::Table)
             .left_join(
                 OfferImageIden::Table,
                 Expr::col((OfferIden::Table, OfferIden::OfferId))
                     .equals((OfferImageIden::Table, OfferImageIden::OfferId)),
+            )
+            .left_join(
+                OfferPriceIden::Table,
+                Expr::col((OfferIden::Table, OfferIden::OfferId))
+                    .equals((OfferPriceIden::Table, OfferPriceIden::OfferId)),
             )
             .group_by_col((OfferIden::Table, OfferIden::OfferId));
 
@@ -125,7 +115,7 @@ impl Offer {
     ) -> Result<Option<Self>, DbError> {
         let client = pool.get().await?;
 
-        let (sql, values) = Self::get_select_with_offer_images()
+        let (sql, values) = Self::select_with_relations()
             .and_where(
                 Expr::col((OfferIden::Table, OfferIden::OfferId)).eq(*offer_id),
             )
@@ -146,7 +136,7 @@ impl Offer {
         let client = pool.get().await?;
 
         let (sql, values) = {
-            let mut query = Self::get_select_with_offer_images();
+            let mut query = Self::select_with_relations();
 
             if let Some(market_booth_id) = market_booth_id {
                 query.and_where(
@@ -189,7 +179,7 @@ impl Offer {
         let client = pool.get().await?;
 
         let (sql, values) = {
-            let mut query = Self::get_select_with_offer_images();
+            let mut query = Self::select_with_relations();
 
             if let Some(name_query) = name_search {
                 let tsquery = build_simple_plain_ts_query(&name_query);
@@ -300,15 +290,20 @@ impl From<&Row> for Offer {
         let mut images = images.map(|i| i.0).unwrap_or_default();
         images.sort_by(|a, b| a.ordering.cmp(&b.ordering));
 
+        let prices: Option<OfferPriceAsRelVec> =
+            row.try_get(Self::OFFER_PRICES_ALIAS).ok();
+
         Self {
-            offer_id: row.get("offer_id"),
-            market_booth_id: row.get("market_booth_id"),
-            user_id: row.get("user_id"),
-            created_at: row.get("created_at"),
-            updated_at: row.get("updated_at"),
-            name: row.get("name"),
-            description: row.get("description"),
+            offer_id: row.get(OfferIden::OfferId.to_string().as_str()),
+            market_booth_id: row
+                .get(OfferIden::MarketBoothId.to_string().as_str()),
+            user_id: row.get(OfferIden::UserId.to_string().as_str()),
+            created_at: row.get(OfferIden::CreatedAt.to_string().as_str()),
+            updated_at: row.get(OfferIden::UpdatedAt.to_string().as_str()),
+            name: row.get(OfferIden::Name.to_string().as_str()),
+            description: row.get(OfferIden::Description.to_string().as_str()),
             images,
+            price: prices.and_then(|p| p.0.first().cloned()),
         }
     }
 }

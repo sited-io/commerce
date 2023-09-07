@@ -297,13 +297,18 @@ impl MarketBooth {
 impl From<&Row> for MarketBooth {
     fn from(row: &Row) -> Self {
         Self {
-            market_booth_id: row.get("market_booth_id"),
-            user_id: row.get("user_id"),
-            created_at: row.get("created_at"),
-            updated_at: row.get("updated_at"),
-            name: row.get("name"),
-            description: row.get("description"),
-            image_url_path: row.get("image_url_path"),
+            market_booth_id: row
+                .get(MarketBoothIden::MarketBoothId.to_string().as_str()),
+            user_id: row.get(MarketBoothIden::UserId.to_string().as_str()),
+            created_at: row
+                .get(MarketBoothIden::CreatedAt.to_string().as_str()),
+            updated_at: row
+                .get(MarketBoothIden::UpdatedAt.to_string().as_str()),
+            name: row.get(MarketBoothIden::Name.to_string().as_str()),
+            description: row
+                .get(MarketBoothIden::Description.to_string().as_str()),
+            image_url_path: row
+                .get(MarketBoothIden::ImageUrlPath.to_string().as_str()),
         }
     }
 }

@@ -715,6 +715,98 @@ pub mod market_booth_service_server {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Price {
+    #[prost(string, tag = "1")]
+    pub price_id: ::prost::alloc::string::String,
+    #[prost(enumeration = "Currency", tag = "2")]
+    pub currency: i32,
+    #[prost(enumeration = "PriceType", tag = "3")]
+    pub price_type: i32,
+    #[prost(enumeration = "PriceBillingScheme", tag = "4")]
+    pub billing_scheme: i32,
+    #[prost(int64, tag = "5")]
+    pub unit_amont: i64,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum Currency {
+    Unspecified = 0,
+    Eur = 1,
+}
+impl Currency {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Currency::Unspecified => "CURRENCY_UNSPECIFIED",
+            Currency::Eur => "CURRENCY_EUR",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "CURRENCY_UNSPECIFIED" => Some(Self::Unspecified),
+            "CURRENCY_EUR" => Some(Self::Eur),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum PriceType {
+    Unspecified = 0,
+    OneTime = 1,
+}
+impl PriceType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            PriceType::Unspecified => "PRICE_TYPE_UNSPECIFIED",
+            PriceType::OneTime => "PRICE_TYPE_ONE_TIME",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PRICE_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "PRICE_TYPE_ONE_TIME" => Some(Self::OneTime),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum PriceBillingScheme {
+    Unspecified = 0,
+    PerUnit = 1,
+}
+impl PriceBillingScheme {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            PriceBillingScheme::Unspecified => "PRICE_BILLING_SCHEME_UNSPECIFIED",
+            PriceBillingScheme::PerUnit => "PRICE_BILLING_SCHEME_PER_UNIT",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PRICE_BILLING_SCHEME_UNSPECIFIED" => Some(Self::Unspecified),
+            "PRICE_BILLING_SCHEME_PER_UNIT" => Some(Self::PerUnit),
+            _ => None,
+        }
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OfferResponse {
     #[prost(string, tag = "1")]
     pub offer_id: ::prost::alloc::string::String,
@@ -732,6 +824,8 @@ pub struct OfferResponse {
     pub description: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "8")]
     pub images: ::prost::alloc::vec::Vec<OfferImageResponse>,
+    #[prost(message, optional, tag = "9")]
+    pub price: ::core::option::Option<Price>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -752,6 +846,8 @@ pub struct CreateOfferRequest {
     pub name: ::prost::alloc::string::String,
     #[prost(string, optional, tag = "3")]
     pub description: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(message, optional, tag = "4")]
+    pub price: ::core::option::Option<Price>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -818,6 +914,8 @@ pub struct UpdateOfferRequest {
     pub name: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "3")]
     pub description: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(message, optional, tag = "4")]
+    pub price: ::core::option::Option<Price>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

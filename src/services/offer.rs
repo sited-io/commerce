@@ -8,14 +8,15 @@ use crate::api::peoplesmarkets::commerce::v1::offer_service_server::{
 };
 use crate::api::peoplesmarkets::commerce::v1::{
     AddImageToOfferRequest, AddImageToOfferResponse, CreateOfferRequest,
-    CreateOfferResponse, DeleteOfferRequest, DeleteOfferResponse,
+    CreateOfferResponse, Currency, DeleteOfferRequest, DeleteOfferResponse,
     GetOfferRequest, GetOfferResponse, ListOffersRequest, ListOffersResponse,
-    OfferImageResponse, OfferResponse, RemoveImageFromOfferRequest,
-    RemoveImageFromOfferResponse, UpdateOfferRequest, UpdateOfferResponse,
+    OfferImageResponse, OfferResponse, Price, PriceBillingScheme, PriceType,
+    RemoveImageFromOfferRequest, RemoveImageFromOfferResponse,
+    UpdateOfferRequest, UpdateOfferResponse,
 };
 use crate::auth::get_user_id;
 use crate::images::ImageService;
-use crate::model::{Offer, OfferImage};
+use crate::model::{Offer, OfferImage, OfferPrice};
 use crate::parse_uuid;
 
 use super::paginate;
@@ -67,6 +68,13 @@ impl OfferService {
                     ordering: oi.ordering,
                 })
                 .collect(),
+            price: offer.price.map(|p| Price {
+                price_id: p.offer_price_id.to_string(),
+                currency: Self::currency_i32(p.currency),
+                price_type: Self::price_type_i32(p.price_type),
+                billing_scheme: Self::billing_scheme_i32(p.billing_scheme),
+                unit_amont: p.unit_amount,
+            }),
         }
     }
 
@@ -80,6 +88,64 @@ impl OfferService {
             "/{}/{}/{}/{}",
             user_id, market_booth_id, offer_id, offer_image_id
         )
+    }
+
+    fn currency_i32(currency: String) -> i32 {
+        let currency = Currency::from_str_name(&currency);
+        match currency {
+            Some(Currency::Unspecified) => 0,
+            Some(Currency::Eur) => 1,
+            None => 0,
+        }
+    }
+
+    fn currency_or_default<'a>(currency: i32) -> &'a str {
+        let currency = Currency::from_i32(currency);
+        match currency {
+            Some(Currency::Unspecified) => Currency::Eur.as_str_name(),
+            Some(Currency::Eur) => Currency::Eur.as_str_name(),
+            None => Currency::Eur.as_str_name(),
+        }
+    }
+
+    fn price_type_i32(price_type: String) -> i32 {
+        let price_type = PriceType::from_str_name(&price_type);
+        match price_type {
+            Some(PriceType::Unspecified) => 0,
+            Some(PriceType::OneTime) => 1,
+            None => 0,
+        }
+    }
+
+    fn price_type_or_default<'a>(price_type: i32) -> &'a str {
+        let price_type = PriceType::from_i32(price_type);
+        match price_type {
+            Some(PriceType::Unspecified) => PriceType::OneTime.as_str_name(),
+            Some(PriceType::OneTime) => PriceType::OneTime.as_str_name(),
+            None => PriceType::OneTime.as_str_name(),
+        }
+    }
+
+    fn billing_scheme_i32(billing_scheme: String) -> i32 {
+        let billing_scheme = PriceBillingScheme::from_str_name(&billing_scheme);
+        match billing_scheme {
+            Some(PriceBillingScheme::Unspecified) => 0,
+            Some(PriceBillingScheme::PerUnit) => 1,
+            None => 0,
+        }
+    }
+
+    fn billing_scheme_or_default<'a>(billing_scheme: i32) -> &'a str {
+        let billing_scheme = PriceBillingScheme::from_i32(billing_scheme);
+        match billing_scheme {
+            Some(PriceBillingScheme::Unspecified) => {
+                PriceBillingScheme::PerUnit.as_str_name()
+            }
+            Some(PriceBillingScheme::PerUnit) => {
+                PriceBillingScheme::PerUnit.as_str_name()
+            }
+            None => PriceBillingScheme::PerUnit.as_str_name(),
+        }
     }
 }
 
@@ -95,6 +161,7 @@ impl offer_service_server::OfferService for OfferService {
             market_booth_id,
             name,
             description,
+            price,
         } = request.into_inner();
 
         let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
@@ -107,6 +174,19 @@ impl offer_service_server::OfferService for OfferService {
             description,
         )
         .await?;
+
+        if let Some(price) = price {
+            OfferPrice::create(
+                &self.pool,
+                &created_offer.offer_id,
+                &user_id,
+                Self::currency_or_default(price.currency),
+                Self::price_type_or_default(price.price_type),
+                Self::billing_scheme_or_default(price.billing_scheme),
+                price.unit_amont,
+            )
+            .await?;
+        }
 
         Ok(Response::new(CreateOfferResponse {
             offer: Some(self.to_response(created_offer)),
@@ -203,16 +283,30 @@ impl offer_service_server::OfferService for OfferService {
             offer_id,
             name,
             description,
+            price,
         } = request.into_inner();
 
-        let updated_offer = Offer::update(
-            &self.pool,
-            &user_id,
-            &parse_uuid(&offer_id, "offer_id")?,
-            name,
-            description,
-        )
-        .await?;
+        let offer_id = parse_uuid(&offer_id, "offer_id")?;
+
+        if let Some(price) = price {
+            OfferPrice::upsert_for_offer(
+                &self.pool,
+                &user_id,
+                &offer_id,
+                Self::currency_or_default(price.currency),
+                Self::price_type_or_default(price.price_type),
+                Self::billing_scheme_or_default(price.billing_scheme),
+                price.unit_amont,
+            )
+            .await?;
+        } else {
+            OfferPrice::delete_for_offer(&self.pool, &user_id, &offer_id)
+                .await?;
+        }
+
+        let updated_offer =
+            Offer::update(&self.pool, &user_id, &offer_id, name, description)
+                .await?;
 
         Ok(Response::new(UpdateOfferResponse {
             offer: Some(self.to_response(updated_offer)),
