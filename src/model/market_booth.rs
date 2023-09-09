@@ -27,6 +27,8 @@ pub enum MarketBoothIden {
     Description,
     DescriptionTs,
     ImageUrlPath,
+    PlatformFeePercent,
+    MinimumPlatformFeeCent,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +40,8 @@ pub struct MarketBooth {
     pub name: String,
     pub description: Option<String>,
     pub image_url_path: Option<String>,
+    pub platform_fee_percent: u32,
+    pub minimum_platform_fee_cent: u32,
 }
 
 impl MarketBooth {
@@ -46,6 +50,8 @@ impl MarketBooth {
         user_id: &String,
         name: String,
         description: Option<String>,
+        platform_fee_percent: u32,
+        minimum_platform_fee_cent: u32,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -55,11 +61,15 @@ impl MarketBooth {
                 MarketBoothIden::UserId,
                 MarketBoothIden::Name,
                 MarketBoothIden::Description,
+                MarketBoothIden::PlatformFeePercent,
+                MarketBoothIden::MinimumPlatformFeeCent,
             ])
             .values([
                 user_id.into(),
                 name.into(),
                 description.unwrap_or_default().into(),
+                i64::from(platform_fee_percent).into(),
+                i64::from(minimum_platform_fee_cent).into(),
             ])?
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
@@ -137,6 +147,8 @@ impl MarketBooth {
         market_booth_id: &Uuid,
         name: Option<String>,
         description: Option<String>,
+        platform_fee_percent: Option<u32>,
+        minimum_platform_fee_cent: Option<u32>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -150,6 +162,18 @@ impl MarketBooth {
 
             if let Some(description) = description {
                 query.value(MarketBoothIden::Description, description);
+            }
+
+            if let Some(pfp) = platform_fee_percent {
+                query
+                    .value(MarketBoothIden::PlatformFeePercent, i64::from(pfp));
+            }
+
+            if let Some(mpfc) = minimum_platform_fee_cent {
+                query.value(
+                    MarketBoothIden::MinimumPlatformFeeCent,
+                    i64::from(mpfc),
+                );
             }
 
             query
@@ -309,6 +333,14 @@ impl From<&Row> for MarketBooth {
                 .get(MarketBoothIden::Description.to_string().as_str()),
             image_url_path: row
                 .get(MarketBoothIden::ImageUrlPath.to_string().as_str()),
+            platform_fee_percent: u32::try_from(row.get::<&str, i64>(
+                MarketBoothIden::PlatformFeePercent.to_string().as_str(),
+            ))
+            .expect("Should never be greater than 100"),
+            minimum_platform_fee_cent: u32::try_from(row.get::<&str, i64>(
+                MarketBoothIden::MinimumPlatformFeeCent.to_string().as_str(),
+            ))
+            .expect("Should not be greater than 4294967295"),
         }
     }
 }
