@@ -166,10 +166,6 @@ impl offer_service_server::OfferService for OfferService {
 
         let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
 
-        if matches!(&price, Some(p) if p.unit_amont > u32::MAX) {
-            return Err(Status::invalid_argument("price.unit_amount"));
-        }
-
         let created_offer = Offer::create(
             &self.pool,
             market_booth_id,
@@ -289,10 +285,6 @@ impl offer_service_server::OfferService for OfferService {
             description,
             price,
         } = request.into_inner();
-
-        if matches!(&price, Some(p) if p.unit_amont > u32::MAX) {
-            return Err(Status::invalid_argument("price.unit_amount"));
-        }
 
         let offer_id = parse_uuid(&offer_id, "offer_id")?;
 

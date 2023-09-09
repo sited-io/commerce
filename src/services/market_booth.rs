@@ -115,9 +115,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
 
         let minimum_platform_fee_cent = match minimum_platform_fee_cent {
             Some(mpfc) => {
-                if mpfc < self.allowed_min_minimum_platform_fee_cent
-                    || mpfc > u32::MAX
-                {
+                if mpfc < self.allowed_min_minimum_platform_fee_cent {
                     return Err(Status::invalid_argument(
                         "minimum_platform_fee_cent",
                     ));
@@ -248,8 +246,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
 
         if matches!(
             minimum_platform_fee_cent,
-            Some(mpfc) if mpfc < self.allowed_min_minimum_platform_fee_cent
-                || mpfc > u32::MAX,
+            Some(mpfc) if mpfc < self.allowed_min_minimum_platform_fee_cent,
         ) {
             return Err(Status::invalid_argument("minimum_platform_fee_cent"));
         }
