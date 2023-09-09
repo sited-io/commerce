@@ -69,6 +69,8 @@ RUST_LOG='{{ .LOG_LEVEL }}'
 BUCKET_NAME='{{ .BUCKET_NAME }}'
 BUCKET_URL='{{ .BUCKET_URL }}'
 IMAGE_MAX_SIZE='{{ .IMAGE_MAX_SIZE }}'
+ALLOWED_MIN_PLATFORM_FEE_PERCENT='{{ .ALLOWED_MIN_PLATFORM_FEE_PERCENT }}'
+ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT='{{ .ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT }}'
 {{ end }}
 
 {{ with secret "kv2/data/services/commerce" }}
@@ -80,7 +82,7 @@ EOF
       }
 
       config {
-        image = "__IMAGE__"
+        image      = "__IMAGE__"
         force_pull = true
       }
     }

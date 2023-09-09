@@ -22,19 +22,6 @@ cargo build
 
 ## Run locally
 
-### local database
-
-```sh
-docker run --rm -d \
-  --env COCKROACH_DATABASE=commerce \
-  --env COCKROACH_USER=commerce_user \
-  --name cockroachdb \
-  --hostname cockroachdb \
-  --network "host" \
-  -v "roach-single:/cockroach/cockroach-data" \
-  cockroachdb/cockroach start-single-node --sql-addr=localhost:5432 --http-addr localhost:8080 --insecure
-```
-
 Ensure environment variables are set.
 
 ```sh
@@ -58,6 +45,18 @@ export BUCKET_ACCOUTN_ID='xxxx'
 export BUCKET_NAME='dev-commerce'
 export BUCKET_URL='https://objects-dev.peoplesmarkets.com'
 export IMAGE_MAX_SIZE='512000'
+```
+
+### local database
+
+```sh
+  docker run --rm -d \
+    --name commerce_db \
+    -p $DB_HOST:$DB_PORT:$DB_PORT/tcp \
+    -v "commerce_db:/cockroach/cockroach-data" \
+    --env COCKROACH_DATABASE=$DB_DBNAME \
+    --env COCKROACH_USER=$DB_USER \
+    cockroachdb/cockroach start-single-node --sql-addr=0.0.0.0:$DB_PORT --insecure
 ```
 
 Then run:

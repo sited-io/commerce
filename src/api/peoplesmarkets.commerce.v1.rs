@@ -15,6 +15,10 @@ pub struct MarketBoothResponse {
     pub description: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "7")]
     pub image_url: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(uint32, tag = "8")]
+    pub platform_fee_percent: u32,
+    #[prost(uint32, tag = "9")]
+    pub minimum_platform_fee_cent: u32,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -23,6 +27,10 @@ pub struct CreateMarketBoothRequest {
     pub name: ::prost::alloc::string::String,
     #[prost(string, optional, tag = "2")]
     pub description: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(uint32, optional, tag = "3")]
+    pub platform_fee_percent: ::core::option::Option<u32>,
+    #[prost(uint32, optional, tag = "4")]
+    pub minimum_platform_fee_cent: ::core::option::Option<u32>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -87,6 +95,10 @@ pub struct UpdateMarketBoothRequest {
     pub name: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "3")]
     pub description: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(uint32, optional, tag = "4")]
+    pub platform_fee_percent: ::core::option::Option<u32>,
+    #[prost(uint32, optional, tag = "5")]
+    pub minimum_platform_fee_cent: ::core::option::Option<u32>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -724,8 +736,8 @@ pub struct Price {
     pub price_type: i32,
     #[prost(enumeration = "PriceBillingScheme", tag = "4")]
     pub billing_scheme: i32,
-    #[prost(int64, tag = "5")]
-    pub unit_amont: i64,
+    #[prost(uint32, tag = "5")]
+    pub unit_amont: u32,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]

@@ -27,6 +27,8 @@ pub struct MarketBoothService {
     pool: Pool,
     verifier: RemoteJwksVerifier,
     image_service: ImageService,
+    allowed_min_platform_fee_percent: u32,
+    allowed_min_minimum_platform_fee_cent: u32,
 }
 
 impl MarketBoothService {
@@ -34,11 +36,15 @@ impl MarketBoothService {
         pool: Pool,
         verifier: RemoteJwksVerifier,
         image_service: ImageService,
+        allowed_min_platform_fee_percent: u32,
+        allowed_min_minimum_platform_fee_cent: u32,
     ) -> Self {
         Self {
             pool,
             verifier,
             image_service,
+            allowed_min_platform_fee_percent,
+            allowed_min_minimum_platform_fee_cent,
         }
     }
 
@@ -46,8 +52,16 @@ impl MarketBoothService {
         pool: Pool,
         verifier: RemoteJwksVerifier,
         image_service: ImageService,
+        allowed_min_platform_fee_percent: u32,
+        allowed_min_minimum_platform_fee_cent: u32,
     ) -> MarketBoothServiceServer<Self> {
-        let service = Self::new(pool, verifier, image_service);
+        let service = Self::new(
+            pool,
+            verifier,
+            image_service,
+            allowed_min_platform_fee_percent,
+            allowed_min_minimum_platform_fee_cent,
+        );
         MarketBoothServiceServer::new(service)
     }
 
@@ -62,6 +76,8 @@ impl MarketBoothService {
             image_url: self
                 .image_service
                 .get_opt_image_url(market_booth.image_url_path),
+            platform_fee_percent: market_booth.platform_fee_percent,
+            minimum_platform_fee_cent: market_booth.minimum_platform_fee_cent,
         }
     }
 
@@ -78,12 +94,48 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
     ) -> Result<Response<CreateMarketBoothResponse>, Status> {
         let user_id = get_user_id(request.metadata(), &self.verifier).await?;
 
-        let CreateMarketBoothRequest { name, description } =
-            request.into_inner();
+        let CreateMarketBoothRequest {
+            name,
+            description,
+            platform_fee_percent,
+            minimum_platform_fee_cent,
+        } = request.into_inner();
 
-        let created_shop =
-            MarketBooth::create(&self.pool, &user_id, name, description)
-                .await?;
+        let platform_fee_percent = match platform_fee_percent {
+            Some(pfp) => {
+                if pfp < self.allowed_min_platform_fee_percent || pfp >= 100 {
+                    return Err(Status::invalid_argument(
+                        "platform_fee_percent",
+                    ));
+                }
+                pfp
+            }
+            None => self.allowed_min_platform_fee_percent,
+        };
+
+        let minimum_platform_fee_cent = match minimum_platform_fee_cent {
+            Some(mpfc) => {
+                if mpfc < self.allowed_min_minimum_platform_fee_cent
+                    || mpfc > u32::MAX
+                {
+                    return Err(Status::invalid_argument(
+                        "minimum_platform_fee_cent",
+                    ));
+                }
+                mpfc
+            }
+            None => self.allowed_min_minimum_platform_fee_cent,
+        };
+
+        let created_shop = MarketBooth::create(
+            &self.pool,
+            &user_id,
+            name,
+            description,
+            platform_fee_percent,
+            minimum_platform_fee_cent,
+        )
+        .await?;
 
         Ok(Response::new(CreateMarketBoothResponse {
             market_booth: Some(self.to_response(created_shop)),
@@ -181,9 +233,26 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             market_booth_id,
             name,
             description,
+            platform_fee_percent,
+            minimum_platform_fee_cent,
         } = request.into_inner();
 
         let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
+
+        if matches!(
+            platform_fee_percent,
+            Some(pfp) if pfp < self.allowed_min_platform_fee_percent || pfp >= 100,
+        ) {
+            return Err(Status::invalid_argument("platform_fee_percent"));
+        }
+
+        if matches!(
+            minimum_platform_fee_cent,
+            Some(mpfc) if mpfc < self.allowed_min_minimum_platform_fee_cent
+                || mpfc > u32::MAX,
+        ) {
+            return Err(Status::invalid_argument("minimum_platform_fee_cent"));
+        }
 
         let updated_market_booth = MarketBooth::update(
             &self.pool,
@@ -191,6 +260,8 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             &market_booth_id,
             name,
             description,
+            platform_fee_percent,
+            minimum_platform_fee_cent,
         )
         .await?;
 

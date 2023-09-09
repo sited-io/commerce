@@ -37,7 +37,7 @@ pub struct OfferPrice {
     pub currency: String,
     pub price_type: String,
     pub billing_scheme: String,
-    pub unit_amount: i64,
+    pub unit_amount: u32,
 }
 
 impl OfferPrice {
@@ -48,7 +48,7 @@ impl OfferPrice {
         currency: &str,
         price_type: &str,
         billing_scheme: &str,
-        unit_amount: i64,
+        unit_amount: u32,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -68,7 +68,7 @@ impl OfferPrice {
                 currency.into(),
                 price_type.into(),
                 billing_scheme.into(),
-                unit_amount.into(),
+                i64::from(unit_amount).into(),
             ])?
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
@@ -103,7 +103,7 @@ impl OfferPrice {
         currency: &str,
         price_type: &str,
         billing_scheme: &str,
-        unit_amount: i64,
+        unit_amount: u32,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -127,7 +127,7 @@ impl OfferPrice {
             .value(OfferPriceIden::Currency, currency)
             .value(OfferPriceIden::PriceType, price_type)
             .value(OfferPriceIden::BillingScheme, billing_scheme)
-            .value(OfferPriceIden::UnitAmount, unit_amount)
+            .value(OfferPriceIden::UnitAmount, i64::from(unit_amount))
             .and_where(Expr::col(OfferPriceIden::UserId).eq(user_id))
             .and_where(Expr::col(OfferPriceIden::OfferId).eq(*offer_id))
             .returning_all()
@@ -170,8 +170,10 @@ impl From<&Row> for OfferPrice {
             price_type: row.get(OfferPriceIden::PriceType.to_string().as_str()),
             billing_scheme: row
                 .get(OfferPriceIden::BillingScheme.to_string().as_str()),
-            unit_amount: row
-                .get(OfferPriceIden::UnitAmount.to_string().as_str()),
+            unit_amount: u32::try_from(row.get::<&str, i64>(
+                OfferPriceIden::UnitAmount.to_string().as_str(),
+            ))
+            .expect("Should not be greater than 4294967295"),
         }
     }
 }
@@ -188,7 +190,7 @@ pub struct OfferPriceAsRel {
     pub currency: String,
     pub price_type: String,
     pub billing_scheme: String,
-    pub unit_amount: i64,
+    pub unit_amount: u32,
 }
 
 impl OfferPriceAsRel {
@@ -262,7 +264,7 @@ impl<'a> FromSql<'a> for OfferPriceAsRel {
             currency,
             price_type,
             billing_scheme,
-            unit_amount,
+            unit_amount: u32::try_from(unit_amount)?,
         })
     }
 }

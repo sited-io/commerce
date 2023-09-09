@@ -25,6 +25,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let jwks_url = get_env_var("JWKS_URL");
     let jwks_host = get_env_var("JWKS_HOST");
 
+    let allowed_min_platform_fee_percent: u32 =
+        get_env_var("ALLOWED_MIN_PLATFORM_FEE_PERCENT")
+            .parse()
+            .unwrap();
+    let allowed_min_minimum_platform_fee_cent: u32 =
+        get_env_var("ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT")
+            .parse()
+            .unwrap();
+
     // initialize database connection and migrate
     let db_pool = init_db_pool(
         get_env_var("DB_HOST"),
@@ -85,7 +94,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Duration::from_secs(120),
         ),
         image_service.clone(),
+        allowed_min_platform_fee_percent,
+        allowed_min_minimum_platform_fee_cent,
     );
+
     let offer_service = OfferService::build(
         db_pool,
         RemoteJwksVerifier::new(
