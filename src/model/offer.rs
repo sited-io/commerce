@@ -354,7 +354,9 @@ impl From<&Row> for Offer {
             description: row.get(OfferIden::Description.to_string().as_str()),
             images,
             price: prices.and_then(|p| p.0.first().cloned()),
-            market_booth_name: row.get(Self::MARKET_BOOTH_NAME_ALIAS),
+            market_booth_name: row
+                .try_get(Self::MARKET_BOOTH_NAME_ALIAS)
+                .unwrap_or_default(),
         }
     }
 }
