@@ -9,13 +9,17 @@ use sea_query::{
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
+use crate::api::peoplesmarkets::commerce::v1::{
+    OffersFilterField, OffersOrderByField,
+};
+use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::db::{build_simple_plain_ts_query, DbError};
 
 use super::offer_image::{OfferImageAsRel, OfferImageAsRelVec};
 use super::offer_price::{OfferPriceAsRel, OfferPriceAsRelVec, OfferPriceIden};
 use super::{MarketBoothIden, OfferImageIden};
 
-#[derive(Iden)]
+#[derive(Debug, Clone, Iden)]
 #[iden(rename = "offers")]
 pub enum OfferIden {
     Table,
@@ -97,6 +101,86 @@ impl Offer {
         query
     }
 
+    fn add_order_by(
+        query: &mut SelectStatement,
+        order_by_field: OffersOrderByField,
+        order_by_direction: Direction,
+    ) {
+        use OffersOrderByField::*;
+
+        let order = match order_by_direction {
+            Direction::Unspecified | Direction::Asc => Order::Asc,
+            Direction::Desc => Order::Desc,
+        };
+
+        match order_by_field {
+            Unspecified | CreatedAt => {
+                query.order_by((OfferIden::Table, OfferIden::CreatedAt), order)
+            }
+            UpdatedAt => {
+                query.order_by((OfferIden::Table, OfferIden::UpdatedAt), order)
+            }
+            Name => query.order_by((OfferIden::Table, OfferIden::Name), order),
+            Random => query.order_by_expr(
+                SimpleExpr::FunctionCall(Func::random()),
+                Order::Asc,
+            ),
+        };
+    }
+
+    fn add_filter(
+        query: &mut SelectStatement,
+        filter_field: OffersFilterField,
+        filter_query: String,
+    ) {
+        use OffersFilterField::*;
+
+        match filter_field {
+            Unspecified => {}
+            Name => Self::add_ts_filter(
+                query,
+                (OfferIden::Table, OfferIden::NameTs),
+                &filter_query,
+            ),
+            Description => Self::add_ts_filter(
+                query,
+                (OfferIden::Table, OfferIden::DescriptionTs),
+                &filter_query,
+            ),
+            NameAndDescription => {
+                Self::add_ts_filter(
+                    query,
+                    (OfferIden::Table, OfferIden::NameTs),
+                    &filter_query,
+                );
+                Self::add_ts_filter(
+                    query,
+                    (OfferIden::Table, OfferIden::DescriptionTs),
+                    &filter_query,
+                );
+            }
+        }
+    }
+
+    fn add_ts_filter(
+        query: &mut SelectStatement,
+        col: (OfferIden, OfferIden),
+        filter_query: &String,
+    ) {
+        let tsquery = build_simple_plain_ts_query(filter_query);
+        let rank_alias = Alias::new(format!("{}_rank", col.1.to_string()));
+        query
+            .expr_as(
+                Expr::expr(PgFunc::ts_rank(
+                    Expr::col(col.clone()),
+                    tsquery.clone(),
+                )),
+                rank_alias.clone(),
+            )
+            .and_or_where(LogicalChainOper::Or(Expr::col(col).matches(tsquery)))
+            .order_by(rank_alias, Order::Desc);
+    }
+
     pub async fn create(
         pool: &Pool,
         market_booth_id: Uuid,
@@ -151,6 +235,8 @@ impl Offer {
         user_id: Option<&String>,
         limit: u64,
         offset: u64,
+        filter: Option<(OffersFilterField, String)>,
+        order_by: Option<(OffersOrderByField, Direction)>,
     ) -> Result<Vec<Self>, DbError> {
         let client = pool.get().await?;
 
@@ -171,72 +257,16 @@ impl Offer {
                 );
             }
 
-            if market_booth_id.is_none() && user_id.is_none() {
-                query.order_by_expr(
-                    SimpleExpr::FunctionCall(Func::random()),
-                    Order::Asc,
+            if let Some((filter_field, filter_query)) = filter {
+                Self::add_filter(&mut query, filter_field, filter_query);
+            }
+
+            if let Some((order_by_field, order_by_direction)) = order_by {
+                Self::add_order_by(
+                    &mut query,
+                    order_by_field,
+                    order_by_direction,
                 );
-            }
-
-            query
-                .limit(limit)
-                .offset(offset)
-                .build_postgres(PostgresQueryBuilder)
-        };
-
-        let rows = client.query(sql.as_str(), &values.as_params()).await?;
-
-        Ok(rows.iter().map(Self::from).collect())
-    }
-
-    pub async fn search(
-        pool: &Pool,
-        limit: u64,
-        offset: u64,
-        name_search: Option<String>,
-        description_search: Option<String>,
-    ) -> Result<Vec<Self>, DbError> {
-        let client = pool.get().await?;
-
-        let (sql, values) = {
-            let mut query = Self::select_with_relations();
-
-            if let Some(name_query) = name_search {
-                let tsquery = build_simple_plain_ts_query(&name_query);
-
-                let rank_alias = Alias::new("name_rank");
-
-                query
-                    .expr_as(
-                        Expr::expr(PgFunc::ts_rank(
-                            Expr::col(OfferIden::NameTs),
-                            tsquery.clone(),
-                        )),
-                        rank_alias.clone(),
-                    )
-                    .and_or_where(LogicalChainOper::Or(
-                        Expr::col(OfferIden::NameTs).matches(tsquery),
-                    ))
-                    .order_by(rank_alias, Order::Desc);
-            }
-
-            if let Some(description_query) = description_search {
-                let tsquery = build_simple_plain_ts_query(&description_query);
-
-                let rank_alias = Alias::new("description_rank");
-
-                query
-                    .expr_as(
-                        Expr::expr(PgFunc::ts_rank(
-                            Expr::col(OfferIden::DescriptionTs),
-                            tsquery.clone(),
-                        )),
-                        rank_alias.clone(),
-                    )
-                    .and_or_where(LogicalChainOper::Or(
-                        Expr::col(OfferIden::DescriptionTs).matches(tsquery),
-                    ))
-                    .order_by(rank_alias, Order::Desc);
             }
 
             query

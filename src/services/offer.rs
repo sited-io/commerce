@@ -10,10 +10,11 @@ use crate::api::peoplesmarkets::commerce::v1::{
     AddImageToOfferRequest, AddImageToOfferResponse, CreateOfferRequest,
     CreateOfferResponse, Currency, DeleteOfferRequest, DeleteOfferResponse,
     GetOfferRequest, GetOfferResponse, ListOffersRequest, ListOffersResponse,
-    OfferImageResponse, OfferResponse, Price, PriceBillingScheme, PriceType,
-    RemoveImageFromOfferRequest, RemoveImageFromOfferResponse,
-    UpdateOfferRequest, UpdateOfferResponse,
+    OfferImageResponse, OfferResponse, OffersFilterField, OffersOrderByField,
+    Price, PriceBillingScheme, PriceType, RemoveImageFromOfferRequest,
+    RemoveImageFromOfferResponse, UpdateOfferRequest, UpdateOfferResponse,
 };
+use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
 use crate::images::ImageService;
 use crate::model::{Offer, OfferImage, OfferPrice};
@@ -218,24 +219,40 @@ impl offer_service_server::OfferService for OfferService {
             user_id,
             pagination,
             filter,
-            ..
+            order_by,
         } = request.into_inner();
 
         let (limit, offset, pagination) = paginate(pagination)?;
 
-        let (name_query, description_query) = match filter {
-            Some(filter) => {
-                if filter.field == 1 {
-                    (Some(filter.query), None)
-                } else if filter.field == 2 {
-                    (None, Some(filter.query))
-                } else if filter.field == 3 {
-                    (Some(filter.query.clone()), Some(filter.query))
+        if filter.is_none() && order_by.is_none() && market_booth_id.is_none() {
+            return Err(Status::invalid_argument("filter,order_by"));
+        }
+
+        let filter = match filter {
+            None => None,
+            Some(f) => {
+                if f.field < 1 {
+                    return Err(Status::invalid_argument("filter.field"));
+                } else if f.query.trim().is_empty() {
+                    return Err(Status::invalid_argument("filter.query"));
                 } else {
-                    (None, None)
+                    Some((
+                        OffersFilterField::from_i32(f.field)
+                            .ok_or(Status::invalid_argument("filter.field"))?,
+                        f.query,
+                    ))
                 }
             }
-            None => (None, None),
+        };
+
+        let order_by = match order_by {
+            None => None,
+            Some(o) => Some((
+                OffersOrderByField::from_i32(o.field)
+                    .ok_or(Status::invalid_argument("order_by.field"))?,
+                Direction::from_i32(o.direction)
+                    .ok_or(Status::invalid_argument("order_by.direction"))?,
+            )),
         };
 
         let market_booth_id = match market_booth_id {
@@ -243,27 +260,16 @@ impl offer_service_server::OfferService for OfferService {
             None => None,
         };
 
-        let found_offers =
-            if name_query.is_none() && description_query.is_none() {
-                Offer::list(
-                    &self.pool,
-                    market_booth_id,
-                    user_id.as_ref(),
-                    limit,
-                    offset,
-                )
-                .await?
-            } else {
-                Offer::search(
-                    &self.pool,
-                    limit,
-                    offset,
-                    name_query,
-                    description_query,
-                )
-                .await
-                .map_or_else(|err| err.ignore_to_ts_query(Vec::new()), Ok)?
-            };
+        let found_offers = Offer::list(
+            &self.pool,
+            market_booth_id,
+            user_id.as_ref(),
+            limit,
+            offset,
+            filter,
+            order_by,
+        )
+        .await?;
 
         Ok(Response::new(ListOffersResponse {
             offers: found_offers
