@@ -838,6 +838,8 @@ pub struct OfferResponse {
     pub images: ::prost::alloc::vec::Vec<OfferImageResponse>,
     #[prost(message, optional, tag = "9")]
     pub price: ::core::option::Option<Price>,
+    #[prost(string, tag = "10")]
+    pub market_booth_name: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

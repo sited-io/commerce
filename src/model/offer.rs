@@ -3,8 +3,8 @@ use deadpool_postgres::tokio_postgres::Row;
 use deadpool_postgres::Pool;
 use sea_query::extension::postgres::PgExpr;
 use sea_query::{
-    Alias, Asterisk, Expr, Func, Iden, LogicalChainOper, Order, PgFunc,
-    PostgresQueryBuilder, Query, SelectStatement, SimpleExpr,
+    Alias, Asterisk, Expr, Func, Iden, IntoColumnRef, LogicalChainOper, Order,
+    PgFunc, PostgresQueryBuilder, Query, SelectStatement, SimpleExpr,
 };
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
@@ -13,7 +13,7 @@ use crate::db::{build_simple_plain_ts_query, DbError};
 
 use super::offer_image::{OfferImageAsRel, OfferImageAsRelVec};
 use super::offer_price::{OfferPriceAsRel, OfferPriceAsRelVec, OfferPriceIden};
-use super::OfferImageIden;
+use super::{MarketBoothIden, OfferImageIden};
 
 #[derive(Iden)]
 #[iden(rename = "offers")]
@@ -41,11 +41,13 @@ pub struct Offer {
     pub description: String,
     pub images: Vec<OfferImageAsRel>,
     pub price: Option<OfferPriceAsRel>,
+    pub market_booth_name: String,
 }
 
 impl Offer {
     const OFFER_IMAGES_ALIAS: &str = "images";
     const OFFER_PRICES_ALIAS: &str = "prices";
+    const MARKET_BOOTH_NAME_ALIAS: &str = "market_booth_name";
 
     fn get_offer_images_alias() -> Alias {
         Alias::new(Self::OFFER_IMAGES_ALIAS)
@@ -55,6 +57,10 @@ impl Offer {
         Alias::new(Self::OFFER_PRICES_ALIAS)
     }
 
+    fn get_market_booth_name_alias() -> Alias {
+        Alias::new(Self::MARKET_BOOTH_NAME_ALIAS)
+    }
+
     fn select_with_relations() -> SelectStatement {
         let mut query = Query::select();
 
@@ -62,6 +68,10 @@ impl Offer {
             .column((OfferIden::Table, Asterisk))
             .expr_as(OfferImageAsRel::get_agg(), Self::get_offer_images_alias())
             .expr_as(OfferPriceAsRel::get_agg(), Self::get_offer_price_alias())
+            .expr_as(
+                Expr::col((MarketBoothIden::Table, MarketBoothIden::Name)),
+                Self::get_market_booth_name_alias(),
+            )
             .from(OfferIden::Table)
             .left_join(
                 OfferImageIden::Table,
@@ -73,7 +83,16 @@ impl Offer {
                 Expr::col((OfferIden::Table, OfferIden::OfferId))
                     .equals((OfferPriceIden::Table, OfferPriceIden::OfferId)),
             )
-            .group_by_col((OfferIden::Table, OfferIden::OfferId));
+            .left_join(
+                MarketBoothIden::Table,
+                Expr::col((OfferIden::Table, OfferIden::MarketBoothId)).equals(
+                    (MarketBoothIden::Table, MarketBoothIden::MarketBoothId),
+                ),
+            )
+            .group_by_columns([
+                (OfferIden::Table, OfferIden::OfferId).into_column_ref(),
+                Self::get_market_booth_name_alias().into_column_ref(),
+            ]);
 
         query
     }
@@ -140,7 +159,8 @@ impl Offer {
 
             if let Some(market_booth_id) = market_booth_id {
                 query.and_where(
-                    Expr::col(OfferIden::MarketBoothId).eq(market_booth_id),
+                    Expr::col((OfferIden::Table, OfferIden::MarketBoothId))
+                        .eq(market_booth_id),
                 );
             }
 
@@ -304,6 +324,7 @@ impl From<&Row> for Offer {
             description: row.get(OfferIden::Description.to_string().as_str()),
             images,
             price: prices.and_then(|p| p.0.first().cloned()),
+            market_booth_name: row.get(Self::MARKET_BOOTH_NAME_ALIAS),
         }
     }
 }

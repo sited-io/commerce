@@ -75,6 +75,7 @@ impl OfferService {
                 billing_scheme: Self::billing_scheme_i32(p.billing_scheme),
                 unit_amont: p.unit_amount,
             }),
+            market_booth_name: offer.market_booth_name,
         }
     }
 
