@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use deadpool_postgres::Transaction;
 use deadpool_postgres::{tokio_postgres::Row, Pool};
 use sea_query::extension::postgres::PgExpr;
 use sea_query::{
@@ -192,13 +193,11 @@ impl MarketBooth {
         Ok(Self::from(row))
     }
 
-    pub async fn delete(
-        pool: &Pool,
+    pub async fn delete<'a>(
+        transaction: &Transaction<'a>,
         user_id: &String,
         market_booth_id: &Uuid,
     ) -> Result<Self, DbError> {
-        let client = pool.get().await?;
-
         let (sql, values) = Query::delete()
             .from_table(MarketBoothIden::Table)
             .and_where(Expr::col(MarketBoothIden::UserId).eq(user_id))
@@ -208,19 +207,19 @@ impl MarketBooth {
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
 
-        let row = client.query_one(sql.as_str(), &values.as_params()).await?;
+        let row = transaction
+            .query_one(sql.as_str(), &values.as_params())
+            .await?;
 
         Ok(Self::from(row))
     }
 
-    pub async fn update_image_url_path(
-        pool: &Pool,
+    pub async fn update_image_url_path<'a>(
+        transaction: &Transaction<'a>,
         user_id: &String,
         market_booth_id: &Uuid,
         image_url_path: Option<String>,
     ) -> Result<Self, DbError> {
-        let client = pool.get().await?;
-
         let (sql, values) = Query::update()
             .table(MarketBoothIden::Table)
             .value(MarketBoothIden::ImageUrlPath, image_url_path)
@@ -231,7 +230,9 @@ impl MarketBooth {
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
 
-        let row = client.query_one(sql.as_str(), &values.as_params()).await?;
+        let row = transaction
+            .query_one(sql.as_str(), &values.as_params())
+            .await?;
 
         Ok(Self::from(row))
     }

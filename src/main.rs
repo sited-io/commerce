@@ -47,12 +47,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // initialize s3 bucket
     let image_service = ImageService::new(
         get_env_var("BUCKET_NAME"),
-        get_env_var("BUCKET_ACCOUTN_ID"),
+        get_env_var("BUCKET_ENDPOINT"),
         get_env_var("BUCKET_ACCESS_KEY_ID"),
         get_env_var("BUCKET_SECRET_ACCESS_KEY"),
         get_env_var("BUCKET_URL"),
         get_env_var("IMAGE_MAX_SIZE").parse().unwrap(),
-    );
+    )
+    .await;
 
     // initialize client for JWT verification against public JWKS
     //   adding host header in order to work in private network
