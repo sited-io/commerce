@@ -2,7 +2,6 @@ use aws_credential_types::Credentials;
 use aws_sdk_s3::config::Region;
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::Client;
-use base64::Engine;
 use tonic::Status;
 
 #[derive(Debug, Clone)]
@@ -51,12 +50,6 @@ impl ImageService {
         image_path: Option<String>,
     ) -> Option<String> {
         image_path.map(|p| self.get_image_url(&p))
-    }
-
-    pub fn decode_base64(image_string: &String) -> Result<Vec<u8>, Status> {
-        base64::engine::general_purpose::STANDARD
-            .decode(image_string)
-            .map_err(|_| Status::invalid_argument("image"))
     }
 
     pub fn validate_image(&self, image_data: &[u8]) -> Result<(), Status> {
