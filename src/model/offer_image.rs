@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use deadpool_postgres::tokio_postgres::types::{private, FromSql, Type};
 use deadpool_postgres::tokio_postgres::Row;
-use deadpool_postgres::Pool;
+use deadpool_postgres::{Pool, Transaction};
 use fallible_iterator::FallibleIterator;
 use postgres_protocol::types;
 use sea_query::{
@@ -37,16 +37,14 @@ pub struct OfferImage {
 }
 
 impl OfferImage {
-    pub async fn create(
-        pool: &Pool,
+    pub async fn create<'a>(
+        transaction: &Transaction<'a>,
         offer_image_id: &Uuid,
         offer_id: &Uuid,
         user_id: &String,
         image_url_path: &String,
         ordering: i64,
     ) -> Result<Self, DbError> {
-        let client = pool.get().await?;
-
         let (sql, values) = Query::insert()
             .into_table(OfferImageIden::Table)
             .columns([
@@ -66,7 +64,9 @@ impl OfferImage {
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
 
-        let row = client.query_one(sql.as_str(), &values.as_params()).await?;
+        let row = transaction
+            .query_one(sql.as_str(), &values.as_params())
+            .await?;
 
         Ok(Self::from(row))
     }
@@ -100,13 +100,11 @@ impl OfferImage {
         Ok(row.map(Self::from))
     }
 
-    pub async fn delete(
-        pool: &Pool,
+    pub async fn delete<'a>(
+        transaction: &Transaction<'a>,
         user_id: &String,
         offer_image_id: &Uuid,
     ) -> Result<(), DbError> {
-        let client = pool.get().await?;
-
         let (sql, values) = Query::delete()
             .from_table(OfferImageIden::Table)
             .and_where(Expr::col(OfferImageIden::UserId).eq(user_id))
@@ -115,7 +113,9 @@ impl OfferImage {
             )
             .build_postgres(PostgresQueryBuilder);
 
-        client.execute(sql.as_str(), &values.as_params()).await?;
+        transaction
+            .execute(sql.as_str(), &values.as_params())
+            .await?;
 
         Ok(())
     }

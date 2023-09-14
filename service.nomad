@@ -49,6 +49,10 @@ job "commerce" {
         env         = true
         change_mode = "restart"
         data        = <<EOF
+{{ with nomadVar "nomad/jobs/commerce" }}
+RUST_LOG='{{ .LOG_LEVEL }}'
+{{ end }}
+
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
 DB_HOST='{{ env "NOMAD_UPSTREAM_IP_cockroach-sql" }}'
@@ -65,9 +69,9 @@ JWKS_HOST='{{ .JWKS_HOST }}'
 JWKS_URL='http://{{ env "NOMAD_UPSTREAM_ADDR_zitadel" }}/oauth/v2/keys'
 
 {{ with nomadVar "nomad/jobs/commerce" }}
-RUST_LOG='{{ .LOG_LEVEL }}'
 BUCKET_NAME='{{ .BUCKET_NAME }}'
 BUCKET_URL='{{ .BUCKET_URL }}'
+BUCKET_ENDPOINT='{{ .BUCKET_ENDPOINT }}'
 IMAGE_MAX_SIZE='{{ .IMAGE_MAX_SIZE }}'
 ALLOWED_MIN_PLATFORM_FEE_PERCENT='{{ .ALLOWED_MIN_PLATFORM_FEE_PERCENT }}'
 ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT='{{ .ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT }}'
@@ -76,7 +80,6 @@ ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT='{{ .ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT
 {{ with secret "kv2/data/services/commerce" }}
 BUCKET_ACCESS_KEY_ID='{{ .Data.data.BUCKET_ACCESS_KEY_ID }}'
 BUCKET_SECRET_ACCESS_KEY='{{ .Data.data.BUCKET_SECRET_ACCESS_KEY }}'
-BUCKET_ACCOUTN_ID='{{ .Data.data.BUCKET_ACCOUTN_ID }}'
 {{ end }}
 EOF
       }

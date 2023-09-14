@@ -17,6 +17,7 @@ use crate::api::peoplesmarkets::commerce::v1::{
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
+use crate::db::DbError;
 use crate::images::ImageService;
 use crate::model::MarketBooth;
 use crate::parse_uuid;
@@ -82,7 +83,7 @@ impl MarketBoothService {
     }
 
     fn gen_image_path(user_id: &String, market_booth_id: &Uuid) -> String {
-        format!("/{}/{}/{}", user_id, market_booth_id, Uuid::new_v4())
+        format!("{}/{}/{}", user_id, market_booth_id, Uuid::new_v4())
     }
 }
 
@@ -278,14 +279,18 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             "market_booth_id",
         )?;
 
-        // TODO: ensure consitency of separate storages
+        let mut conn = self.pool.get().await.map_err(DbError::from)?;
+        let transaction = conn.transaction().await.map_err(DbError::from)?;
+
         let deleted_market_booth =
-            MarketBooth::delete(&self.pool, &user_id, &market_booth_id).await?;
+            MarketBooth::delete(&transaction, &user_id, &market_booth_id)
+                .await?;
 
         if let Some(image_path) = deleted_market_booth.image_url_path {
             self.image_service.remove_image(&image_path).await?;
         }
-        // TODO: ensure consitency of separate storages
+
+        transaction.commit().await.map_err(DbError::from)?;
 
         Ok(Response::new(DeleteMarketBoothResponse {}))
     }
@@ -312,8 +317,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             .await?
             .ok_or_else(|| Status::not_found(""))?;
 
-        let image_data = ImageService::decode_base64(&image.data)?;
-        self.image_service.validate_image(&image_data)?;
+        self.image_service.validate_image(&image.data)?;
 
         if let Some(existing) = market_booth.image_url_path {
             self.image_service.remove_image(&existing).await?;
@@ -321,19 +325,22 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
 
         let image_path = Self::gen_image_path(&user_id, &market_booth_id);
 
-        // TODO: ensure consitency of separate storages
-        self.image_service
-            .put_image(&image_path, &image_data)
-            .await?;
+        let mut conn = self.pool.get().await.map_err(DbError::from)?;
+        let transaction = conn.transaction().await.map_err(DbError::from)?;
 
         MarketBooth::update_image_url_path(
-            &self.pool,
+            &transaction,
             &user_id,
             &market_booth_id,
-            Some(image_path),
+            Some(image_path.clone()),
         )
         .await?;
-        // TODO: ensure consitency of separate storages
+
+        self.image_service
+            .put_image(&image_path, &image.data)
+            .await?;
+
+        transaction.commit().await.map_err(DbError::from)?;
 
         Ok(Response::new(UpdateImageOfMarketBoothResponse {}))
     }
@@ -349,21 +356,26 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             "market_booth_id",
         )?;
 
-        // TODO: ensure consitency of separate storages
         let market_booth = MarketBooth::get(&self.pool, &market_booth_id)
             .await?
             .ok_or_else(|| Status::not_found(""))?;
+
+        let mut conn = self.pool.get().await.map_err(DbError::from)?;
+        let transaction = conn.transaction().await.map_err(DbError::from)?;
+
         if let Some(image_path) = market_booth.image_url_path {
             self.image_service.remove_image(&image_path).await?;
         }
+
         MarketBooth::update_image_url_path(
-            &self.pool,
+            &transaction,
             &user_id,
             &market_booth_id,
             None,
         )
         .await?;
-        // TODO: ensure consitency of separate storages
+
+        transaction.commit().await.map_err(DbError::from)?;
 
         Ok(Response::new(RemoveImageFromMarketBoothResponse {}))
     }

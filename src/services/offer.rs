@@ -16,6 +16,7 @@ use crate::api::peoplesmarkets::commerce::v1::{
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
+use crate::db::DbError;
 use crate::images::ImageService;
 use crate::model::{Offer, OfferImage, OfferPrice};
 use crate::parse_uuid;
@@ -87,7 +88,7 @@ impl OfferService {
         offer_image_id: &Uuid,
     ) -> String {
         format!(
-            "/{}/{}/{}/{}",
+            "{}/{}/{}/{}",
             user_id, market_booth_id, offer_id, offer_image_id
         )
     }
@@ -346,8 +347,7 @@ impl offer_service_server::OfferService for OfferService {
 
         let image = image.ok_or_else(|| Status::invalid_argument("image"))?;
 
-        let image_data = ImageService::decode_base64(&image.data)?;
-        self.image_service.validate_image(&image_data)?;
+        self.image_service.validate_image(&image.data)?;
 
         let offer_id = parse_uuid(&offer_id, "offer_id")?;
 
@@ -363,13 +363,11 @@ impl offer_service_server::OfferService for OfferService {
             &offer_image_id,
         );
 
-        // TODO: ensure consitency of separate storages
-        self.image_service
-            .put_image(image_path, &image_data)
-            .await?;
+        let mut conn = self.pool.get().await.map_err(DbError::from)?;
+        let transaction = conn.transaction().await.map_err(DbError::from)?;
 
         OfferImage::create(
-            &self.pool,
+            &transaction,
             &offer_image_id,
             &offer_id,
             &user_id,
@@ -377,7 +375,12 @@ impl offer_service_server::OfferService for OfferService {
             ordering,
         )
         .await?;
-        // TODO: ensure consitency of separate storages
+
+        self.image_service
+            .put_image(image_path, &image.data)
+            .await?;
+
+        transaction.commit().await.map_err(DbError::from)?;
 
         Ok(Response::new(AddImageToOfferResponse {}))
     }
@@ -391,16 +394,21 @@ impl offer_service_server::OfferService for OfferService {
         let offer_image_id =
             parse_uuid(&request.into_inner().offer_image_id, "offer_image_id")?;
 
-        // TODO: ensure consitency of separate storages
         let offer_image =
             OfferImage::get(&self.pool, &offer_image_id, Some(&user_id))
                 .await?
                 .ok_or_else(|| Status::not_found("offer_image"))?;
 
+        let mut conn = self.pool.get().await.map_err(DbError::from)?;
+        let transaction = conn.transaction().await.map_err(DbError::from)?;
+
+        OfferImage::delete(&transaction, &user_id, &offer_image_id).await?;
+
         self.image_service
             .remove_image(&offer_image.image_url_path)
             .await?;
-        OfferImage::delete(&self.pool, &user_id, &offer_image_id).await?;
+
+        transaction.commit().await.map_err(DbError::from)?;
 
         Ok(Response::new(RemoveImageFromOfferResponse {}))
     }

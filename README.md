@@ -39,11 +39,12 @@ export DB_DBNAME='commerce'
 export JWKS_URL='https://auth.peoplesmarkets.com/oauth/v2/keys'
 export JWKS_HOST='auth-dev.peoplesmarkets.com'
 
+export BUCKET_NAME='dev-commerce'
+export BUCKET_ENDPOINT='https://0d78eb8c22ee83b01fa99dd3efb348ae.r2.cloudflarestorage.com'
+export BUCKET_URL='https://objects-dev.peoplesmarkets.com'
 export BUCKET_ACCESS_KEY_ID='xxxx'
 export BUCKET_SECRET_ACCESS_KEY='xxxx'
 export BUCKET_ACCOUTN_ID='xxxx'
-export BUCKET_NAME='dev-commerce'
-export BUCKET_URL='https://objects-dev.peoplesmarkets.com'
 export IMAGE_MAX_SIZE='512000'
 ```
 
