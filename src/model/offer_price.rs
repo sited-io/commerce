@@ -25,6 +25,8 @@ pub enum OfferPriceIden {
     PriceType,
     BillingScheme,
     UnitAmount,
+    RecurringInterval,
+    RecurringIntervalCount,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +40,8 @@ pub struct OfferPrice {
     pub price_type: String,
     pub billing_scheme: String,
     pub unit_amount: u32,
+    pub recurring_interval: Option<String>,
+    pub recurring_interval_count: Option<u32>,
 }
 
 impl OfferPrice {
@@ -49,6 +53,8 @@ impl OfferPrice {
         price_type: &str,
         billing_scheme: &str,
         unit_amount: u32,
+        recurring_interval: Option<&str>,
+        recurring_interval_count: Option<u32>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -61,6 +67,8 @@ impl OfferPrice {
                 OfferPriceIden::PriceType,
                 OfferPriceIden::BillingScheme,
                 OfferPriceIden::UnitAmount,
+                OfferPriceIden::RecurringInterval,
+                OfferPriceIden::RecurringIntervalCount,
             ])
             .values([
                 (*offer_id).into(),
@@ -69,6 +77,8 @@ impl OfferPrice {
                 price_type.into(),
                 billing_scheme.into(),
                 i64::from(unit_amount).into(),
+                recurring_interval.into(),
+                recurring_interval_count.map(i64::from).into(),
             ])?
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
@@ -96,7 +106,7 @@ impl OfferPrice {
             .map(Self::from))
     }
 
-    pub async fn upsert_for_offer(
+    pub async fn put(
         pool: &Pool,
         user_id: &String,
         offer_id: &Uuid,
@@ -104,23 +114,10 @@ impl OfferPrice {
         price_type: &str,
         billing_scheme: &str,
         unit_amount: u32,
+        recurring_interval: Option<&str>,
+        recurring_interval_count: Option<u32>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
-
-        let existing = Self::get_by_offer_id(pool, offer_id).await?;
-
-        if existing.is_none() {
-            return Self::create(
-                pool,
-                offer_id,
-                user_id,
-                currency,
-                price_type,
-                billing_scheme,
-                unit_amount,
-            )
-            .await;
-        }
 
         let (sql, values) = Query::update()
             .table(OfferPriceIden::Table)
@@ -128,6 +125,11 @@ impl OfferPrice {
             .value(OfferPriceIden::PriceType, price_type)
             .value(OfferPriceIden::BillingScheme, billing_scheme)
             .value(OfferPriceIden::UnitAmount, i64::from(unit_amount))
+            .value(OfferPriceIden::RecurringInterval, recurring_interval)
+            .value(
+                OfferPriceIden::RecurringIntervalCount,
+                recurring_interval_count.map(i64::from),
+            )
             .and_where(Expr::col(OfferPriceIden::UserId).eq(user_id))
             .and_where(Expr::col(OfferPriceIden::OfferId).eq(*offer_id))
             .returning_all()
@@ -138,7 +140,7 @@ impl OfferPrice {
         Ok(Self::from(row))
     }
 
-    pub async fn delete_for_offer(
+    pub async fn delete(
         pool: &Pool,
         user_id: &String,
         offer_id: &Uuid,
@@ -174,6 +176,16 @@ impl From<&Row> for OfferPrice {
                 OfferPriceIden::UnitAmount.to_string().as_str(),
             ))
             .expect("Should not be greater than 4294967295"),
+            recurring_interval: row
+                .get(OfferPriceIden::RecurringInterval.to_string().as_str()),
+            recurring_interval_count: row
+                .get::<&str, Option<i64>>(
+                    OfferPriceIden::RecurringIntervalCount.to_string().as_str(),
+                )
+                .map(|c| {
+                    u32::try_from(c)
+                        .expect("Should not be greater than 4294967295")
+                }),
         }
     }
 }
@@ -191,6 +203,8 @@ pub struct OfferPriceAsRel {
     pub price_type: String,
     pub billing_scheme: String,
     pub unit_amount: u32,
+    pub recurring_interval: Option<String>,
+    pub recurring_interval_count: Option<u32>,
 }
 
 impl OfferPriceAsRel {
@@ -213,6 +227,16 @@ impl OfferPriceAsRel {
                 .into(),
                 Expr::col((OfferPriceIden::Table, OfferPriceIden::UnitAmount))
                     .into(),
+                Expr::col((
+                    OfferPriceIden::Table,
+                    OfferPriceIden::RecurringInterval,
+                ))
+                .into(),
+                Expr::col((
+                    OfferPriceIden::Table,
+                    OfferPriceIden::RecurringIntervalCount,
+                ))
+                .into(),
             ])
             .into()])
             .into()
@@ -259,16 +283,34 @@ impl<'a> FromSql<'a> for OfferPriceAsRel {
         let ty = get_type_from_oid::<i64>(oid)?;
         let unit_amount: i64 = private::read_value(&ty, &mut raw)?;
 
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<Option<String>>(oid)?;
+        let recurring_interval: Option<String> =
+            private::read_value(&ty, &mut raw)?;
+
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<Option<i64>>(oid)?;
+        let recurring_interval_count: Option<i64> =
+            private::read_value(&ty, &mut raw)?;
+
+        let recurring_interval_count = match recurring_interval_count {
+            Some(c) => Some(u32::try_from(c)?),
+            None => None,
+        };
+
         Ok(Self {
             offer_price_id,
             currency,
             price_type,
             billing_scheme,
             unit_amount: u32::try_from(unit_amount)?,
+            recurring_interval,
+            recurring_interval_count,
         })
     }
 }
 
+#[derive(Debug)]
 pub struct OfferPriceAsRelVec(pub Vec<OfferPriceAsRel>);
 
 impl<'a> FromSql<'a> for OfferPriceAsRelVec {

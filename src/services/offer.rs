@@ -11,14 +11,19 @@ use crate::api::peoplesmarkets::commerce::v1::{
     CreateOfferResponse, Currency, DeleteOfferRequest, DeleteOfferResponse,
     GetOfferRequest, GetOfferResponse, ListOffersRequest, ListOffersResponse,
     OfferImageResponse, OfferResponse, OffersFilterField, OffersOrderByField,
-    Price, PriceBillingScheme, PriceType, RemoveImageFromOfferRequest,
-    RemoveImageFromOfferResponse, UpdateOfferRequest, UpdateOfferResponse,
+    Price, PriceBillingScheme, PriceType, PutPriceToOfferRequest,
+    PutPriceToOfferResponse, Recurring, RecurringInterval,
+    RemoveImageFromOfferRequest, RemoveImageFromOfferResponse,
+    RemovePriceFromOfferRequest, RemovePriceFromOfferResponse,
+    UpdateOfferRequest, UpdateOfferResponse,
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
 use crate::db::DbError;
 use crate::images::ImageService;
-use crate::model::{Offer, OfferImage, OfferPrice};
+use crate::model::{
+    Offer, OfferImage, OfferImageAsRel, OfferPrice, OfferPriceAsRel,
+};
 use crate::parse_uuid;
 
 use super::paginate;
@@ -50,8 +55,13 @@ impl OfferService {
         OfferServiceServer::new(Self::new(pool, verifier, image_service))
     }
 
-    fn to_response(&self, offer: Offer) -> OfferResponse {
-        OfferResponse {
+    fn offer_to_response(&self, offer: Offer) -> Result<OfferResponse, Status> {
+        let price = match offer.price {
+            Some(p) => Some(self.offer_price_to_response(p)?),
+            None => None,
+        };
+
+        Ok(OfferResponse {
             offer_id: offer.offer_id.to_string(),
             market_booth_id: offer.market_booth_id.to_string(),
             user_id: offer.user_id,
@@ -59,25 +69,74 @@ impl OfferService {
             updated_at: offer.updated_at.timestamp(),
             name: offer.name,
             description: offer.description,
-            images: offer
-                .images
-                .into_iter()
-                .map(|oi| OfferImageResponse {
-                    offer_image_id: oi.offer_image_id.to_string(),
-                    image_url: self
-                        .image_service
-                        .get_image_url(&oi.image_url_path),
-                    ordering: oi.ordering,
-                })
-                .collect(),
-            price: offer.price.map(|p| Price {
-                price_id: p.offer_price_id.to_string(),
-                currency: Self::currency_i32(p.currency),
-                price_type: Self::price_type_i32(p.price_type),
-                billing_scheme: Self::billing_scheme_i32(p.billing_scheme),
-                unit_amont: p.unit_amount,
-            }),
+            is_active: offer.is_active,
+            images: self.offer_images_to_response(offer.images),
+            price,
             market_booth_name: offer.market_booth_name,
+        })
+    }
+
+    fn offer_images_to_response(
+        &self,
+        offer_images: Vec<OfferImageAsRel>,
+    ) -> Vec<OfferImageResponse> {
+        offer_images
+            .into_iter()
+            .map(|oi| OfferImageResponse {
+                offer_image_id: oi.offer_image_id.to_string(),
+                image_url: self.image_service.get_image_url(&oi.image_url_path),
+                ordering: oi.ordering,
+            })
+            .collect()
+    }
+
+    fn offer_price_to_response(
+        &self,
+        offer_price: OfferPriceAsRel,
+    ) -> Result<Price, Status> {
+        let recurring = match (
+            offer_price.recurring_interval,
+            offer_price.recurring_interval_count,
+        ) {
+            (Some(interval), Some(interval_count)) => Some(Recurring {
+                interval: RecurringInterval::from_str_name(&interval)
+                    .ok_or(Status::internal(""))?
+                    .into(),
+                interval_count,
+            }),
+            _ => None,
+        };
+
+        Ok(Price {
+            currency: Currency::from_str_name(&offer_price.currency)
+                .ok_or(Status::internal(""))?
+                .into(),
+            price_type: PriceType::from_str_name(&offer_price.price_type)
+                .ok_or(Status::internal(""))?
+                .into(),
+            billing_scheme: PriceBillingScheme::from_str_name(
+                &offer_price.billing_scheme,
+            )
+            .ok_or(Status::internal(""))?
+            .into(),
+            unit_amount: offer_price.unit_amount,
+            recurring,
+        })
+    }
+
+    fn validate_price(price: &Price) -> Result<(), Status> {
+        if price.price_type == i32::from(PriceType::Recurring) {
+            if let Some(recurring) = price.recurring.as_ref() {
+                if recurring.interval < 1 {
+                    Err(Status::invalid_argument("price.recurring.interval"))
+                } else {
+                    Ok(())
+                }
+            } else {
+                Err(Status::invalid_argument("price.recurring"))
+            }
+        } else {
+            Ok(())
         }
     }
 
@@ -91,64 +150,6 @@ impl OfferService {
             "{}/{}/{}/{}",
             user_id, market_booth_id, offer_id, offer_image_id
         )
-    }
-
-    fn currency_i32(currency: String) -> i32 {
-        let currency = Currency::from_str_name(&currency);
-        match currency {
-            Some(Currency::Unspecified) => 0,
-            Some(Currency::Eur) => 1,
-            None => 0,
-        }
-    }
-
-    fn currency_or_default<'a>(currency: i32) -> &'a str {
-        let currency = Currency::from_i32(currency);
-        match currency {
-            Some(Currency::Unspecified) => Currency::Eur.as_str_name(),
-            Some(Currency::Eur) => Currency::Eur.as_str_name(),
-            None => Currency::Eur.as_str_name(),
-        }
-    }
-
-    fn price_type_i32(price_type: String) -> i32 {
-        let price_type = PriceType::from_str_name(&price_type);
-        match price_type {
-            Some(PriceType::Unspecified) => 0,
-            Some(PriceType::OneTime) => 1,
-            None => 0,
-        }
-    }
-
-    fn price_type_or_default<'a>(price_type: i32) -> &'a str {
-        let price_type = PriceType::from_i32(price_type);
-        match price_type {
-            Some(PriceType::Unspecified) => PriceType::OneTime.as_str_name(),
-            Some(PriceType::OneTime) => PriceType::OneTime.as_str_name(),
-            None => PriceType::OneTime.as_str_name(),
-        }
-    }
-
-    fn billing_scheme_i32(billing_scheme: String) -> i32 {
-        let billing_scheme = PriceBillingScheme::from_str_name(&billing_scheme);
-        match billing_scheme {
-            Some(PriceBillingScheme::Unspecified) => 0,
-            Some(PriceBillingScheme::PerUnit) => 1,
-            None => 0,
-        }
-    }
-
-    fn billing_scheme_or_default<'a>(billing_scheme: i32) -> &'a str {
-        let billing_scheme = PriceBillingScheme::from_i32(billing_scheme);
-        match billing_scheme {
-            Some(PriceBillingScheme::Unspecified) => {
-                PriceBillingScheme::PerUnit.as_str_name()
-            }
-            Some(PriceBillingScheme::PerUnit) => {
-                PriceBillingScheme::PerUnit.as_str_name()
-            }
-            None => PriceBillingScheme::PerUnit.as_str_name(),
-        }
     }
 }
 
@@ -164,7 +165,6 @@ impl offer_service_server::OfferService for OfferService {
             market_booth_id,
             name,
             description,
-            price,
         } = request.into_inner();
 
         let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
@@ -178,21 +178,8 @@ impl offer_service_server::OfferService for OfferService {
         )
         .await?;
 
-        if let Some(price) = price {
-            OfferPrice::create(
-                &self.pool,
-                &created_offer.offer_id,
-                &user_id,
-                Self::currency_or_default(price.currency),
-                Self::price_type_or_default(price.price_type),
-                Self::billing_scheme_or_default(price.billing_scheme),
-                price.unit_amont,
-            )
-            .await?;
-        }
-
         Ok(Response::new(CreateOfferResponse {
-            offer: Some(self.to_response(created_offer)),
+            offer: Some(self.offer_to_response(created_offer)?),
         }))
     }
 
@@ -207,7 +194,7 @@ impl offer_service_server::OfferService for OfferService {
             .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetOfferResponse {
-            offer: Some(self.to_response(found_offer)),
+            offer: Some(self.offer_to_response(found_offer)?),
         }))
     }
 
@@ -272,11 +259,14 @@ impl offer_service_server::OfferService for OfferService {
         )
         .await?;
 
+        let mut offers = Vec::with_capacity(found_offers.len());
+
+        for offer in found_offers {
+            offers.push(self.offer_to_response(offer)?);
+        }
+
         Ok(Response::new(ListOffersResponse {
-            offers: found_offers
-                .into_iter()
-                .map(|o| self.to_response(o))
-                .collect(),
+            offers,
             pagination: Some(pagination),
         }))
     }
@@ -291,33 +281,23 @@ impl offer_service_server::OfferService for OfferService {
             offer_id,
             name,
             description,
-            price,
+            is_active,
         } = request.into_inner();
 
         let offer_id = parse_uuid(&offer_id, "offer_id")?;
 
-        if let Some(price) = price {
-            OfferPrice::upsert_for_offer(
-                &self.pool,
-                &user_id,
-                &offer_id,
-                Self::currency_or_default(price.currency),
-                Self::price_type_or_default(price.price_type),
-                Self::billing_scheme_or_default(price.billing_scheme),
-                price.unit_amont,
-            )
-            .await?;
-        } else {
-            OfferPrice::delete_for_offer(&self.pool, &user_id, &offer_id)
-                .await?;
-        }
-
-        let updated_offer =
-            Offer::update(&self.pool, &user_id, &offer_id, name, description)
-                .await?;
+        let updated_offer = Offer::update(
+            &self.pool,
+            &user_id,
+            &offer_id,
+            name,
+            description,
+            is_active,
+        )
+        .await?;
 
         Ok(Response::new(UpdateOfferResponse {
-            offer: Some(self.to_response(updated_offer)),
+            offer: Some(self.offer_to_response(updated_offer)?),
         }))
     }
 
@@ -411,5 +391,76 @@ impl offer_service_server::OfferService for OfferService {
         transaction.commit().await.map_err(DbError::from)?;
 
         Ok(Response::new(RemoveImageFromOfferResponse {}))
+    }
+
+    async fn put_price_to_offer(
+        &self,
+        request: Request<PutPriceToOfferRequest>,
+    ) -> Result<Response<PutPriceToOfferResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
+        let PutPriceToOfferRequest { offer_id, price } = request.into_inner();
+
+        let offer_id = parse_uuid(&offer_id, "offer_id")?;
+        let price = price.ok_or(Status::invalid_argument("price"))?;
+
+        Self::validate_price(&price)?;
+
+        let currency = price.currency().as_str_name();
+        let price_type = price.price_type().as_str_name();
+        let billing_scheme = price.billing_scheme().as_str_name();
+        let unit_amount = price.unit_amount;
+        let recurring_interval =
+            price.recurring.as_ref().map(|r| r.interval().as_str_name());
+        let recurring_interval_count =
+            price.recurring.map(|r| r.interval_count);
+
+        let found_price =
+            OfferPrice::get_by_offer_id(&self.pool, &offer_id).await?;
+
+        if found_price.is_some() {
+            OfferPrice::put(
+                &self.pool,
+                &user_id,
+                &offer_id,
+                currency,
+                price_type,
+                billing_scheme,
+                unit_amount,
+                recurring_interval,
+                recurring_interval_count,
+            )
+            .await?;
+        } else {
+            OfferPrice::create(
+                &self.pool,
+                &offer_id,
+                &user_id,
+                currency,
+                price_type,
+                billing_scheme,
+                unit_amount,
+                recurring_interval,
+                recurring_interval_count,
+            )
+            .await?;
+        }
+
+        Ok(Response::new(PutPriceToOfferResponse {}))
+    }
+
+    async fn remove_price_from_offer(
+        &self,
+        request: Request<RemovePriceFromOfferRequest>,
+    ) -> Result<Response<RemovePriceFromOfferResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
+        let RemovePriceFromOfferRequest { offer_id } = request.into_inner();
+
+        let offer_id = parse_uuid(&offer_id, "offer_id")?;
+
+        OfferPrice::delete(&self.pool, &user_id, &offer_id).await?;
+
+        Ok(Response::new(RemovePriceFromOfferResponse {}))
     }
 }

@@ -32,6 +32,7 @@ pub enum OfferIden {
     NameTs,
     Description,
     DescriptionTs,
+    IsActive,
 }
 
 #[derive(Debug, Clone)]
@@ -43,6 +44,7 @@ pub struct Offer {
     pub updated_at: DateTime<Utc>,
     pub name: String,
     pub description: String,
+    pub is_active: bool,
     pub images: Vec<OfferImageAsRel>,
     pub price: Option<OfferPriceAsRel>,
     pub market_booth_name: String,
@@ -286,6 +288,7 @@ impl Offer {
         offer_id: &Uuid,
         name: Option<String>,
         description: Option<String>,
+        is_active: Option<bool>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -299,6 +302,10 @@ impl Offer {
 
             if let Some(description) = description {
                 query.value(OfferIden::Description, description);
+            }
+
+            if let Some(is_active) = is_active {
+                query.value(OfferIden::IsActive, is_active);
             }
 
             query
@@ -352,6 +359,7 @@ impl From<&Row> for Offer {
             updated_at: row.get(OfferIden::UpdatedAt.to_string().as_str()),
             name: row.get(OfferIden::Name.to_string().as_str()),
             description: row.get(OfferIden::Description.to_string().as_str()),
+            is_active: row.get(OfferIden::IsActive.to_string().as_str()),
             images,
             price: prices.and_then(|p| p.0.first().cloned()),
             market_booth_name: row
