@@ -33,6 +33,8 @@ pub enum OfferIden {
     Description,
     DescriptionTs,
     IsActive,
+    #[iden(rename = "type_")]
+    Type,
 }
 
 #[derive(Debug, Clone)]
@@ -48,6 +50,7 @@ pub struct Offer {
     pub images: Vec<OfferImageAsRel>,
     pub price: Option<OfferPriceAsRel>,
     pub market_booth_name: String,
+    pub type_: Option<String>,
 }
 
 impl Offer {
@@ -161,6 +164,12 @@ impl Offer {
                     &filter_query,
                 );
             }
+            Type => {
+                query.and_where(
+                    Expr::col((OfferIden::Table, OfferIden::Type))
+                        .eq(filter_query),
+                );
+            }
         }
     }
 
@@ -189,6 +198,7 @@ impl Offer {
         user_id: &String,
         name: String,
         description: Option<String>,
+        type_: &str,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -199,12 +209,14 @@ impl Offer {
                 OfferIden::UserId,
                 OfferIden::Name,
                 OfferIden::Description,
+                OfferIden::Type,
             ])
             .values([
                 market_booth_id.into(),
                 user_id.into(),
                 name.into(),
                 description.unwrap_or_default().into(),
+                type_.into(),
             ])?
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
@@ -289,6 +301,7 @@ impl Offer {
         name: Option<String>,
         description: Option<String>,
         is_active: Option<bool>,
+        type_: Option<&str>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -306,6 +319,10 @@ impl Offer {
 
             if let Some(is_active) = is_active {
                 query.value(OfferIden::IsActive, is_active);
+            }
+
+            if let Some(type_) = type_ {
+                query.value(OfferIden::Type, type_);
             }
 
             query
@@ -365,6 +382,7 @@ impl From<&Row> for Offer {
             market_booth_name: row
                 .try_get(Self::MARKET_BOOTH_NAME_ALIAS)
                 .unwrap_or_default(),
+            type_: row.get(OfferIden::Type.to_string().as_str()),
         }
     }
 }
