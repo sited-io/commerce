@@ -1,0 +1,4 @@
+ALTER TABLE
+  offers
+ADD
+  COLUMN type_ VARCHAR;

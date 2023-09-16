@@ -888,6 +888,8 @@ pub struct OfferResponse {
     pub images: ::prost::alloc::vec::Vec<OfferImageResponse>,
     #[prost(message, optional, tag = "11")]
     pub price: ::core::option::Option<Price>,
+    #[prost(enumeration = "OfferType", tag = "12")]
+    pub r#type: i32,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -908,6 +910,8 @@ pub struct CreateOfferRequest {
     pub name: ::prost::alloc::string::String,
     #[prost(string, optional, tag = "3")]
     pub description: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(enumeration = "OfferType", tag = "4")]
+    pub r#type: i32,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -976,6 +980,8 @@ pub struct UpdateOfferRequest {
     pub description: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(bool, optional, tag = "4")]
     pub is_active: ::core::option::Option<bool>,
+    #[prost(enumeration = "OfferType", optional, tag = "5")]
+    pub r#type: ::core::option::Option<i32>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1036,6 +1042,38 @@ pub struct RemovePriceFromOfferRequest {
 pub struct RemovePriceFromOfferResponse {}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
+pub enum OfferType {
+    Unspecified = 0,
+    Physical = 1,
+    Digital = 2,
+    Service = 3,
+}
+impl OfferType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            OfferType::Unspecified => "OFFER_TYPE_UNSPECIFIED",
+            OfferType::Physical => "OFFER_TYPE_PHYSICAL",
+            OfferType::Digital => "OFFER_TYPE_DIGITAL",
+            OfferType::Service => "OFFER_TYPE_SERVICE",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "OFFER_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "OFFER_TYPE_PHYSICAL" => Some(Self::Physical),
+            "OFFER_TYPE_DIGITAL" => Some(Self::Digital),
+            "OFFER_TYPE_SERVICE" => Some(Self::Service),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
 pub enum OffersOrderByField {
     Unspecified = 0,
     CreatedAt = 1,
@@ -1076,6 +1114,7 @@ pub enum OffersFilterField {
     Name = 1,
     Description = 2,
     NameAndDescription = 3,
+    Type = 4,
 }
 impl OffersFilterField {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -1090,6 +1129,7 @@ impl OffersFilterField {
             OffersFilterField::NameAndDescription => {
                 "OFFERS_FILTER_FIELD_NAME_AND_DESCRIPTION"
             }
+            OffersFilterField::Type => "OFFERS_FILTER_FIELD_TYPE",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -1099,6 +1139,7 @@ impl OffersFilterField {
             "OFFERS_FILTER_FIELD_NAME" => Some(Self::Name),
             "OFFERS_FILTER_FIELD_DESCRIPTION" => Some(Self::Description),
             "OFFERS_FILTER_FIELD_NAME_AND_DESCRIPTION" => Some(Self::NameAndDescription),
+            "OFFERS_FILTER_FIELD_TYPE" => Some(Self::Type),
             _ => None,
         }
     }

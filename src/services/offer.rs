@@ -10,12 +10,12 @@ use crate::api::peoplesmarkets::commerce::v1::{
     AddImageToOfferRequest, AddImageToOfferResponse, CreateOfferRequest,
     CreateOfferResponse, Currency, DeleteOfferRequest, DeleteOfferResponse,
     GetOfferRequest, GetOfferResponse, ListOffersRequest, ListOffersResponse,
-    OfferImageResponse, OfferResponse, OffersFilterField, OffersOrderByField,
-    Price, PriceBillingScheme, PriceType, PutPriceToOfferRequest,
-    PutPriceToOfferResponse, Recurring, RecurringInterval,
-    RemoveImageFromOfferRequest, RemoveImageFromOfferResponse,
-    RemovePriceFromOfferRequest, RemovePriceFromOfferResponse,
-    UpdateOfferRequest, UpdateOfferResponse,
+    OfferImageResponse, OfferResponse, OfferType, OffersFilterField,
+    OffersOrderByField, Price, PriceBillingScheme, PriceType,
+    PutPriceToOfferRequest, PutPriceToOfferResponse, Recurring,
+    RecurringInterval, RemoveImageFromOfferRequest,
+    RemoveImageFromOfferResponse, RemovePriceFromOfferRequest,
+    RemovePriceFromOfferResponse, UpdateOfferRequest, UpdateOfferResponse,
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
@@ -61,6 +61,11 @@ impl OfferService {
             None => None,
         };
 
+        let r#type = offer
+            .type_
+            .and_then(|t| OfferType::from_str_name(&t).map(i32::from))
+            .unwrap_or(0);
+
         Ok(OfferResponse {
             offer_id: offer.offer_id.to_string(),
             market_booth_id: offer.market_booth_id.to_string(),
@@ -73,6 +78,7 @@ impl OfferService {
             images: self.offer_images_to_response(offer.images),
             price,
             market_booth_name: offer.market_booth_name,
+            r#type,
         })
     }
 
@@ -124,7 +130,27 @@ impl OfferService {
         })
     }
 
+    fn get_offer_type(type_: i32) -> Result<OfferType, Status> {
+        if type_ < 1 {
+            Err(Status::invalid_argument("type"))
+        } else {
+            OfferType::from_i32(type_).ok_or(Status::invalid_argument("type"))
+        }
+    }
+
     fn validate_price(price: &Price) -> Result<(), Status> {
+        if price.currency() == Currency::Unspecified {
+            return Err(Status::invalid_argument("price.currency"));
+        }
+
+        if price.price_type() == PriceType::Unspecified {
+            return Err(Status::invalid_argument("price.price_type"));
+        }
+
+        if price.billing_scheme() == PriceBillingScheme::Unspecified {
+            return Err(Status::invalid_argument("price.billing_scheme"));
+        }
+
         if price.price_type == i32::from(PriceType::Recurring) {
             if let Some(recurring) = price.recurring.as_ref() {
                 if recurring.interval < 1 {
@@ -165,9 +191,12 @@ impl offer_service_server::OfferService for OfferService {
             market_booth_id,
             name,
             description,
+            r#type,
         } = request.into_inner();
 
         let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
+
+        let type_ = Self::get_offer_type(r#type)?;
 
         let created_offer = Offer::create(
             &self.pool,
@@ -175,6 +204,7 @@ impl offer_service_server::OfferService for OfferService {
             &user_id,
             name,
             description,
+            type_.as_str_name(),
         )
         .await?;
 
@@ -282,9 +312,15 @@ impl offer_service_server::OfferService for OfferService {
             name,
             description,
             is_active,
+            r#type,
         } = request.into_inner();
 
         let offer_id = parse_uuid(&offer_id, "offer_id")?;
+
+        let type_ = match r#type {
+            Some(t) => Some(Self::get_offer_type(t)?.as_str_name()),
+            None => None,
+        };
 
         let updated_offer = Offer::update(
             &self.pool,
@@ -293,6 +329,7 @@ impl offer_service_server::OfferService for OfferService {
             name,
             description,
             is_active,
+            type_,
         )
         .await?;
 
