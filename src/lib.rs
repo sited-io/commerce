@@ -6,6 +6,7 @@ pub mod logging;
 mod model;
 mod services;
 
+pub use auth::init_jwks_verifier;
 pub use services::*;
 
 pub fn get_env_var(var: &str) -> String {

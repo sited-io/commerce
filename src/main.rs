@@ -1,9 +1,6 @@
-use std::time::Duration;
-
 use commerce::api::peoplesmarkets::commerce::v1::offer_service_server::OfferServiceServer;
 use http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use http::{HeaderName, Method};
-use jwtk::jwk::RemoteJwksVerifier;
 use tonic::transport::Server;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -12,7 +9,9 @@ use commerce::api::peoplesmarkets::commerce::v1::market_booth_service_server::Ma
 use commerce::db::{init_db_pool, migrate};
 use commerce::images::ImageService;
 use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
-use commerce::{get_env_var, MarketBoothService, OfferService};
+use commerce::{
+    get_env_var, init_jwks_verifier, MarketBoothService, OfferService,
+};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -55,17 +54,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await;
 
-    // initialize client for JWT verification against public JWKS
-    //   adding host header in order to work in private network
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert(
-        reqwest::header::HOST,
-        reqwest::header::HeaderValue::from_str(&jwks_host)?,
-    );
-    let client = reqwest::Client::builder()
-        .default_headers(headers)
-        .build()?;
-
     // configure gRPC health reporter
     let (mut health_reporter, health_service) =
         tonic_health::server::health_reporter();
@@ -89,11 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let market_booth_service = MarketBoothService::build(
         db_pool.clone(),
-        RemoteJwksVerifier::new(
-            jwks_url.clone(),
-            Some(client.clone()),
-            Duration::from_secs(120),
-        ),
+        init_jwks_verifier(&jwks_host, &jwks_url)?,
         image_service.clone(),
         allowed_min_platform_fee_percent,
         allowed_min_minimum_platform_fee_cent,
@@ -101,11 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let offer_service = OfferService::build(
         db_pool,
-        RemoteJwksVerifier::new(
-            jwks_url,
-            Some(client),
-            Duration::from_secs(120),
-        ),
+        init_jwks_verifier(&jwks_host, &jwks_url)?,
         image_service,
     );
 
