@@ -86,7 +86,7 @@ impl From<DbError> for Status {
                         }
                     }
                 } else {
-                    tracing::log::error!("{:?}", tp_err);
+                    tracing::log::error!("{tp_err:?}");
                     Status::internal("")
                 }
             }
