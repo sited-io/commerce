@@ -34,6 +34,14 @@ pub struct MarketBoothService {
 }
 
 impl MarketBoothService {
+    const SLUG_CHARS: [char; 57] = [
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+        'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B',
+        'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+        'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '-', '+', '_', '.',
+        '!',
+    ];
+
     fn new(
         pool: Pool,
         verifier: RemoteJwksVerifier,
@@ -87,6 +95,16 @@ impl MarketBoothService {
     fn gen_image_path(user_id: &String, market_booth_id: &Uuid) -> String {
         format!("{}/{}/{}", user_id, market_booth_id, Uuid::new_v4())
     }
+
+    fn validate_slug(slug: &String) -> Result<(), Status> {
+        for char in slug.chars() {
+            if !Self::SLUG_CHARS.contains(&char) {
+                return Err(Status::invalid_argument("slug"));
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -104,6 +122,8 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             platform_fee_percent,
             minimum_platform_fee_cent,
         } = request.into_inner();
+
+        Self::validate_slug(&slug)?;
 
         let platform_fee_percent = match platform_fee_percent {
             Some(pfp) => {
@@ -270,6 +290,10 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             Some(mpfc) if mpfc < self.allowed_min_minimum_platform_fee_cent,
         ) {
             return Err(Status::invalid_argument("minimum_platform_fee_cent"));
+        }
+
+        if let Some(slug) = slug.as_ref() {
+            Self::validate_slug(slug)?;
         }
 
         let updated_market_booth = MarketBooth::update(
