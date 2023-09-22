@@ -241,8 +241,6 @@ impl offer_service_server::OfferService for OfferService {
         let request_user_id =
             get_user_id(request.metadata(), &self.verifier).await.ok();
 
-        tracing::log::info!("{:?}\n{:?}", request_user_id, request.metadata());
-
         let ListOffersRequest {
             market_booth_id,
             user_id,

@@ -3,9 +3,8 @@ use deadpool_postgres::tokio_postgres::Row;
 use deadpool_postgres::Pool;
 use sea_query::extension::postgres::PgExpr;
 use sea_query::{
-    all, any, Alias, Asterisk, Expr, Func, Iden, IntoColumnRef,
-    LogicalChainOper, Order, PgFunc, PostgresQueryBuilder, Query,
-    SelectStatement, SimpleExpr,
+    all, any, Alias, Asterisk, Expr, Func, Iden, IntoColumnRef, Order, PgFunc,
+    PostgresQueryBuilder, Query, SelectStatement, SimpleExpr,
 };
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
@@ -378,8 +377,6 @@ impl Offer {
                 .offset(offset)
                 .build_postgres(PostgresQueryBuilder)
         };
-
-        tracing::log::info!("{}\n{:?}", sql.as_str(), values.as_params());
 
         let rows = client.query(sql.as_str(), &values.as_params()).await?;
 
