@@ -963,6 +963,8 @@ pub struct OfferResponse {
     pub r#type: i32,
     #[prost(bool, tag = "13")]
     pub is_featured: bool,
+    #[prost(string, tag = "14")]
+    pub shop_slug: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
