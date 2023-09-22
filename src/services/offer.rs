@@ -221,9 +221,11 @@ impl offer_service_server::OfferService for OfferService {
         &self,
         request: Request<GetOfferRequest>,
     ) -> Result<Response<GetOfferResponse>, Status> {
+        let user_id =
+            get_user_id(request.metadata(), &self.verifier).await.ok();
         let offer_id = parse_uuid(&request.into_inner().offer_id, "offer_id")?;
 
-        let found_offer = Offer::get(&self.pool, &offer_id)
+        let found_offer = Offer::get(&self.pool, &offer_id, user_id.as_ref())
             .await?
             .ok_or(Status::not_found(""))?;
 
@@ -236,6 +238,11 @@ impl offer_service_server::OfferService for OfferService {
         &self,
         request: Request<ListOffersRequest>,
     ) -> Result<Response<ListOffersResponse>, Status> {
+        let request_user_id =
+            get_user_id(request.metadata(), &self.verifier).await.ok();
+
+        tracing::log::info!("{:?}\n{:?}", request_user_id, request.metadata());
+
         let ListOffersRequest {
             market_booth_id,
             user_id,
@@ -290,6 +297,7 @@ impl offer_service_server::OfferService for OfferService {
             offset,
             filter,
             order_by,
+            request_user_id.as_ref(),
         )
         .await?;
 
@@ -374,7 +382,7 @@ impl offer_service_server::OfferService for OfferService {
 
         let offer_id = parse_uuid(&offer_id, "offer_id")?;
 
-        let offer = Offer::get(&self.pool, &offer_id)
+        let offer = Offer::get_for_user(&self.pool, &user_id, &offer_id)
             .await?
             .ok_or_else(|| Status::not_found("offer"))?;
 

@@ -3,8 +3,9 @@ use deadpool_postgres::tokio_postgres::Row;
 use deadpool_postgres::Pool;
 use sea_query::extension::postgres::PgExpr;
 use sea_query::{
-    Alias, Asterisk, Expr, Func, Iden, IntoColumnRef, LogicalChainOper, Order,
-    PgFunc, PostgresQueryBuilder, Query, SelectStatement, SimpleExpr,
+    all, any, Alias, Asterisk, Expr, Func, Iden, IntoColumnRef,
+    LogicalChainOper, Order, PgFunc, PostgresQueryBuilder, Query,
+    SelectStatement, SimpleExpr,
 };
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
@@ -19,7 +20,7 @@ use super::offer_image::{OfferImageAsRel, OfferImageAsRelVec};
 use super::offer_price::{OfferPriceAsRel, OfferPriceAsRelVec, OfferPriceIden};
 use super::{MarketBoothIden, OfferImageIden};
 
-#[derive(Debug, Clone, Iden)]
+#[derive(Debug, Clone, Copy, Iden)]
 #[iden(rename = "offers")]
 pub enum OfferIden {
     Table,
@@ -61,6 +62,8 @@ impl Offer {
     const OFFER_PRICES_ALIAS: &str = "prices";
     const MARKET_BOOTH_NAME_ALIAS: &str = "market_booth_name";
     const SHOP_SLUG_ALIAS: &str = "shop_slug";
+    const NAME_TS_RANK_ALIAS: &str = "name_ts_rank";
+    const DESCRIPTION_TS_RANK_ALIAS: &str = "description_ts_rank";
 
     fn get_offer_images_alias() -> Alias {
         Alias::new(Self::OFFER_IMAGES_ALIAS)
@@ -76,6 +79,14 @@ impl Offer {
 
     fn get_shop_slug_alias() -> Alias {
         Alias::new(Self::SHOP_SLUG_ALIAS)
+    }
+
+    fn get_name_ts_rank_alias() -> Alias {
+        Alias::new(Self::NAME_TS_RANK_ALIAS)
+    }
+
+    fn get_description_ts_rank_alias() -> Alias {
+        Alias::new(Self::DESCRIPTION_TS_RANK_ALIAS)
     }
 
     fn select_with_relations() -> SelectStatement {
@@ -155,36 +166,59 @@ impl Offer {
 
         match filter_field {
             Unspecified => {}
-            Name => Self::add_ts_filter(
-                query,
-                (OfferIden::Table, OfferIden::NameTs),
-                &filter_query,
-            ),
+            Name => {
+                let column = (OfferIden::Table, OfferIden::NameTs);
+                let tsquery = build_simple_plain_ts_query(&filter_query);
+                query
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(column),
+                            tsquery.clone(),
+                        )),
+                        Self::get_name_ts_rank_alias(),
+                    )
+                    .cond_where(Expr::col(column).matches(tsquery));
+            }
             Description => Self::add_ts_filter(
                 query,
                 (OfferIden::Table, OfferIden::DescriptionTs),
                 &filter_query,
             ),
             NameAndDescription => {
-                Self::add_ts_filter(
-                    query,
-                    (OfferIden::Table, OfferIden::NameTs),
-                    &filter_query,
-                );
-                Self::add_ts_filter(
-                    query,
-                    (OfferIden::Table, OfferIden::DescriptionTs),
-                    &filter_query,
-                );
+                let name_col = (OfferIden::Table, OfferIden::NameTs);
+                let description_col =
+                    (OfferIden::Table, OfferIden::DescriptionTs);
+
+                let tsquery = build_simple_plain_ts_query(&filter_query);
+
+                query
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(name_col),
+                            tsquery.clone(),
+                        )),
+                        Self::get_name_ts_rank_alias(),
+                    )
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(description_col),
+                            tsquery.clone(),
+                        )),
+                        Self::get_description_ts_rank_alias(),
+                    )
+                    .cond_where(any![
+                        Expr::col(name_col).matches(tsquery.clone()),
+                        Expr::col(description_col).matches(tsquery),
+                    ]);
             }
             Type => {
-                query.and_where(
+                query.cond_where(
                     Expr::col((OfferIden::Table, OfferIden::Type))
                         .eq(filter_query),
                 );
             }
             IsFeatured => {
-                query.and_where(
+                query.cond_where(
                     Expr::col((OfferIden::Table, OfferIden::IsFeatured))
                         .eq(filter_query),
                 );
@@ -207,7 +241,7 @@ impl Offer {
                 )),
                 rank_alias.clone(),
             )
-            .and_or_where(LogicalChainOper::Or(Expr::col(col).matches(tsquery)))
+            .cond_where(Expr::col(col).matches(tsquery))
             .order_by(rank_alias, Order::Desc);
     }
 
@@ -251,16 +285,43 @@ impl Offer {
     pub async fn get(
         pool: &Pool,
         offer_id: &Uuid,
+        user_id: Option<&String>,
     ) -> Result<Option<Self>, DbError> {
         let client = pool.get().await?;
+
+        let (sql, values) = Self::select_with_relations()
+            .cond_where(all![
+                Expr::col((OfferIden::Table, OfferIden::OfferId)).eq(*offer_id),
+                any![
+                    Expr::col((OfferIden::Table, OfferIden::IsActive)).eq(true),
+                    Expr::col((OfferIden::Table, OfferIden::UserId))
+                        .eq(user_id.cloned())
+                ]
+            ])
+            .build_postgres(PostgresQueryBuilder);
+
+        let row = client.query_opt(sql.as_str(), &values.as_params()).await?;
+
+        Ok(row.map(Self::from))
+    }
+
+    pub async fn get_for_user(
+        pool: &Pool,
+        user_id: &String,
+        offer_id: &Uuid,
+    ) -> Result<Option<Self>, DbError> {
+        let conn = pool.get().await?;
 
         let (sql, values) = Self::select_with_relations()
             .and_where(
                 Expr::col((OfferIden::Table, OfferIden::OfferId)).eq(*offer_id),
             )
+            .and_where(
+                Expr::col((OfferIden::Table, OfferIden::UserId)).eq(user_id),
+            )
             .build_postgres(PostgresQueryBuilder);
 
-        let row = client.query_opt(sql.as_str(), &values.as_params()).await?;
+        let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
 
         Ok(row.map(Self::from))
     }
@@ -273,6 +334,7 @@ impl Offer {
         offset: u64,
         filter: Option<(OffersFilterField, String)>,
         order_by: Option<(OffersOrderByField, Direction)>,
+        request_user_id: Option<&String>,
     ) -> Result<Vec<Self>, DbError> {
         let client = pool.get().await?;
 
@@ -280,14 +342,14 @@ impl Offer {
             let mut query = Self::select_with_relations();
 
             if let Some(market_booth_id) = market_booth_id {
-                query.and_where(
+                query.cond_where(
                     Expr::col((OfferIden::Table, OfferIden::MarketBoothId))
                         .eq(market_booth_id),
                 );
             }
 
             if let Some(user_id) = user_id {
-                query.and_where(
+                query.cond_where(
                     Expr::col((OfferIden::Table, OfferIden::UserId))
                         .eq(user_id),
                 );
@@ -305,11 +367,19 @@ impl Offer {
                 );
             }
 
+            query.cond_where(any![
+                Expr::col((OfferIden::Table, OfferIden::IsActive)).eq(true),
+                Expr::col((OfferIden::Table, OfferIden::UserId))
+                    .eq(request_user_id.cloned())
+            ]);
+
             query
                 .limit(limit)
                 .offset(offset)
                 .build_postgres(PostgresQueryBuilder)
         };
+
+        tracing::log::info!("{}\n{:?}", sql.as_str(), values.as_params());
 
         let rows = client.query(sql.as_str(), &values.as_params()).await?;
 
