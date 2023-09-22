@@ -15,8 +15,6 @@ pub struct MediaResponse {
     pub updated_at: i64,
     #[prost(string, tag = "7")]
     pub name: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", optional, tag = "8")]
-    pub data: ::core::option::Option<::prost::alloc::vec::Vec<u8>>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -56,6 +54,18 @@ pub struct GetMediaResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DownloadMediaRequest {
+    #[prost(string, tag = "1")]
+    pub media_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DownloadMediaResponse {
+    #[prost(string, tag = "1")]
+    pub download_url: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MediaOrderBy {
     #[prost(enumeration = "MediaOrderByField", tag = "1")]
     pub field: i32,
@@ -85,6 +95,24 @@ pub struct ListMediaRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListMediaResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub medias: ::prost::alloc::vec::Vec<MediaResponse>,
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::pagination::v1::Pagination>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ListAccessibleMediaRequest {
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::pagination::v1::Pagination>,
+    #[prost(message, optional, tag = "3")]
+    pub order_by: ::core::option::Option<MediaOrderBy>,
+    #[prost(message, optional, tag = "4")]
+    pub filter: ::core::option::Option<MediaFilter>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ListAccessibleMediaResponse {
     #[prost(message, repeated, tag = "1")]
     pub medias: ::prost::alloc::vec::Vec<MediaResponse>,
     #[prost(message, optional, tag = "2")]
@@ -271,11 +299,25 @@ pub mod media_service_server {
             tonic::Response<super::GetMediaResponse>,
             tonic::Status,
         >;
+        async fn download_media(
+            &self,
+            request: tonic::Request<super::DownloadMediaRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::DownloadMediaResponse>,
+            tonic::Status,
+        >;
         async fn list_media(
             &self,
             request: tonic::Request<super::ListMediaRequest>,
         ) -> std::result::Result<
             tonic::Response<super::ListMediaResponse>,
+            tonic::Status,
+        >;
+        async fn list_accessible_media(
+            &self,
+            request: tonic::Request<super::ListAccessibleMediaRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ListAccessibleMediaResponse>,
             tonic::Status,
         >;
         async fn update_media(
@@ -497,6 +539,52 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
+                "/peoplesmarkets.media.v1.MediaService/DownloadMedia" => {
+                    #[allow(non_camel_case_types)]
+                    struct DownloadMediaSvc<T: MediaService>(pub Arc<T>);
+                    impl<
+                        T: MediaService,
+                    > tonic::server::UnaryService<super::DownloadMediaRequest>
+                    for DownloadMediaSvc<T> {
+                        type Response = super::DownloadMediaResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::DownloadMediaRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).download_media(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = DownloadMediaSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/peoplesmarkets.media.v1.MediaService/ListMedia" => {
                     #[allow(non_camel_case_types)]
                     struct ListMediaSvc<T: MediaService>(pub Arc<T>);
@@ -526,6 +614,52 @@ pub mod media_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = ListMediaSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.media.v1.MediaService/ListAccessibleMedia" => {
+                    #[allow(non_camel_case_types)]
+                    struct ListAccessibleMediaSvc<T: MediaService>(pub Arc<T>);
+                    impl<
+                        T: MediaService,
+                    > tonic::server::UnaryService<super::ListAccessibleMediaRequest>
+                    for ListAccessibleMediaSvc<T> {
+                        type Response = super::ListAccessibleMediaResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ListAccessibleMediaRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).list_accessible_media(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ListAccessibleMediaSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

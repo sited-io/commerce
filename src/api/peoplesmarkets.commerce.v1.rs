@@ -19,6 +19,8 @@ pub struct MarketBoothResponse {
     pub platform_fee_percent: u32,
     #[prost(uint32, tag = "9")]
     pub minimum_platform_fee_cent: u32,
+    #[prost(string, tag = "10")]
+    pub slug: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -31,6 +33,8 @@ pub struct CreateMarketBoothRequest {
     pub platform_fee_percent: ::core::option::Option<u32>,
     #[prost(uint32, optional, tag = "4")]
     pub minimum_platform_fee_cent: ::core::option::Option<u32>,
+    #[prost(string, tag = "5")]
+    pub slug: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -47,6 +51,18 @@ pub struct GetMarketBoothRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetMarketBoothResponse {
+    #[prost(message, optional, tag = "1")]
+    pub market_booth: ::core::option::Option<MarketBoothResponse>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetShopBySlugRequest {
+    #[prost(string, tag = "1")]
+    pub slug: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetShopBySlugResponse {
     #[prost(message, optional, tag = "1")]
     pub market_booth: ::core::option::Option<MarketBoothResponse>,
 }
@@ -99,6 +115,8 @@ pub struct UpdateMarketBoothRequest {
     pub platform_fee_percent: ::core::option::Option<u32>,
     #[prost(uint32, optional, tag = "5")]
     pub minimum_platform_fee_cent: ::core::option::Option<u32>,
+    #[prost(string, optional, tag = "6")]
+    pub slug: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -235,6 +253,13 @@ pub mod market_booth_service_server {
             request: tonic::Request<super::GetMarketBoothRequest>,
         ) -> std::result::Result<
             tonic::Response<super::GetMarketBoothResponse>,
+            tonic::Status,
+        >;
+        async fn get_shop_by_slug(
+            &self,
+            request: tonic::Request<super::GetShopBySlugRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetShopBySlugResponse>,
             tonic::Status,
         >;
         async fn list_market_booths(
@@ -429,6 +454,52 @@ pub mod market_booth_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetMarketBoothSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.MarketBoothService/GetShopBySlug" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetShopBySlugSvc<T: MarketBoothService>(pub Arc<T>);
+                    impl<
+                        T: MarketBoothService,
+                    > tonic::server::UnaryService<super::GetShopBySlugRequest>
+                    for GetShopBySlugSvc<T> {
+                        type Response = super::GetShopBySlugResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetShopBySlugRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).get_shop_by_slug(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetShopBySlugSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -890,6 +961,8 @@ pub struct OfferResponse {
     pub price: ::core::option::Option<Price>,
     #[prost(enumeration = "OfferType", tag = "12")]
     pub r#type: i32,
+    #[prost(bool, tag = "13")]
+    pub is_featured: bool,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -912,6 +985,8 @@ pub struct CreateOfferRequest {
     pub description: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(enumeration = "OfferType", tag = "4")]
     pub r#type: i32,
+    #[prost(bool, tag = "5")]
+    pub is_featured: bool,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -982,6 +1057,8 @@ pub struct UpdateOfferRequest {
     pub is_active: ::core::option::Option<bool>,
     #[prost(enumeration = "OfferType", optional, tag = "5")]
     pub r#type: ::core::option::Option<i32>,
+    #[prost(bool, optional, tag = "6")]
+    pub is_featured: ::core::option::Option<bool>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1115,6 +1192,7 @@ pub enum OffersFilterField {
     Description = 2,
     NameAndDescription = 3,
     Type = 4,
+    IsFeatured = 5,
 }
 impl OffersFilterField {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -1130,6 +1208,7 @@ impl OffersFilterField {
                 "OFFERS_FILTER_FIELD_NAME_AND_DESCRIPTION"
             }
             OffersFilterField::Type => "OFFERS_FILTER_FIELD_TYPE",
+            OffersFilterField::IsFeatured => "OFFERS_FILTER_FIELD_IS_FEATURED",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -1140,6 +1219,7 @@ impl OffersFilterField {
             "OFFERS_FILTER_FIELD_DESCRIPTION" => Some(Self::Description),
             "OFFERS_FILTER_FIELD_NAME_AND_DESCRIPTION" => Some(Self::NameAndDescription),
             "OFFERS_FILTER_FIELD_TYPE" => Some(Self::Type),
+            "OFFERS_FILTER_FIELD_IS_FEATURED" => Some(Self::IsFeatured),
             _ => None,
         }
     }

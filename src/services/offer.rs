@@ -79,6 +79,7 @@ impl OfferService {
             price,
             market_booth_name: offer.market_booth_name,
             r#type,
+            is_featured: offer.is_featured,
         })
     }
 
@@ -192,6 +193,7 @@ impl offer_service_server::OfferService for OfferService {
             name,
             description,
             r#type,
+            is_featured,
         } = request.into_inner();
 
         let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
@@ -205,6 +207,7 @@ impl offer_service_server::OfferService for OfferService {
             name,
             description,
             type_.as_str_name(),
+            is_featured,
         )
         .await?;
 
@@ -313,6 +316,7 @@ impl offer_service_server::OfferService for OfferService {
             description,
             is_active,
             r#type,
+            is_featured,
         } = request.into_inner();
 
         let offer_id = parse_uuid(&offer_id, "offer_id")?;
@@ -330,6 +334,7 @@ impl offer_service_server::OfferService for OfferService {
             description,
             is_active,
             type_,
+            is_featured,
         )
         .await?;
 
