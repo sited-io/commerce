@@ -96,7 +96,7 @@ impl MarketBoothService {
         format!("{}/{}/{}", user_id, market_booth_id, Uuid::new_v4())
     }
 
-    fn validate_slug(slug: &String) -> Result<(), Status> {
+    fn validate_slug(slug: &str) -> Result<(), Status> {
         for char in slug.chars() {
             if !Self::SLUG_CHARS.contains(&char) {
                 return Err(Status::invalid_argument("slug"));

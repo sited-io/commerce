@@ -80,6 +80,7 @@ impl OfferService {
             market_booth_name: offer.market_booth_name,
             r#type,
             is_featured: offer.is_featured,
+            shop_slug: offer.shop_slug,
         })
     }
 
