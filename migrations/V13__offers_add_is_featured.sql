@@ -1,0 +1,4 @@
+ALTER TABLE
+  offers
+ADD
+  COLUMN is_featured BOOLEAN NOT NULL DEFAULT 'f';

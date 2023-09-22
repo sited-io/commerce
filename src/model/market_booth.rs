@@ -25,6 +25,7 @@ pub enum MarketBoothIden {
     UpdatedAt,
     Name,
     NameTs,
+    Slug,
     Description,
     DescriptionTs,
     ImageUrlPath,
@@ -39,6 +40,7 @@ pub struct MarketBooth {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub name: String,
+    pub slug: String,
     pub description: Option<String>,
     pub image_url_path: Option<String>,
     pub platform_fee_percent: u32,
@@ -49,7 +51,8 @@ impl MarketBooth {
     pub async fn create(
         pool: &Pool,
         user_id: &String,
-        name: String,
+        name: &String,
+        slug: &String,
         description: Option<String>,
         platform_fee_percent: u32,
         minimum_platform_fee_cent: u32,
@@ -61,6 +64,7 @@ impl MarketBooth {
             .columns([
                 MarketBoothIden::UserId,
                 MarketBoothIden::Name,
+                MarketBoothIden::Slug,
                 MarketBoothIden::Description,
                 MarketBoothIden::PlatformFeePercent,
                 MarketBoothIden::MinimumPlatformFeeCent,
@@ -68,6 +72,7 @@ impl MarketBooth {
             .values([
                 user_id.into(),
                 name.into(),
+                slug.into(),
                 description.unwrap_or_default().into(),
                 i64::from(platform_fee_percent).into(),
                 i64::from(minimum_platform_fee_cent).into(),
@@ -98,6 +103,23 @@ impl MarketBooth {
             .query_opt(sql.as_str(), &values.as_params())
             .await?
             .map(Self::from))
+    }
+
+    pub async fn get_by_slug(
+        pool: &Pool,
+        slug: &String,
+    ) -> Result<Option<Self>, DbError> {
+        let conn = pool.get().await?;
+
+        let (sql, values) = Query::select()
+            .column(Asterisk)
+            .from(MarketBoothIden::Table)
+            .and_where(Expr::col(MarketBoothIden::Slug).eq(slug))
+            .build_postgres(PostgresQueryBuilder);
+
+        let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
+
+        Ok(row.map(Self::from))
     }
 
     pub async fn list(
@@ -147,6 +169,7 @@ impl MarketBooth {
         user_id: &String,
         market_booth_id: &Uuid,
         name: Option<String>,
+        slug: Option<String>,
         description: Option<String>,
         platform_fee_percent: Option<u32>,
         minimum_platform_fee_cent: Option<u32>,
@@ -159,6 +182,10 @@ impl MarketBooth {
 
             if let Some(name) = name {
                 query.value(MarketBoothIden::Name, name);
+            }
+
+            if let Some(slug) = slug {
+                query.value(MarketBoothIden::Slug, slug);
             }
 
             if let Some(description) = description {
@@ -330,6 +357,7 @@ impl From<&Row> for MarketBooth {
             updated_at: row
                 .get(MarketBoothIden::UpdatedAt.to_string().as_str()),
             name: row.get(MarketBoothIden::Name.to_string().as_str()),
+            slug: row.get(MarketBoothIden::Slug.to_string().as_str()),
             description: row
                 .get(MarketBoothIden::Description.to_string().as_str()),
             image_url_path: row

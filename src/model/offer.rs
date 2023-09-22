@@ -35,6 +35,7 @@ pub enum OfferIden {
     IsActive,
     #[iden(rename = "type_")]
     Type,
+    IsFeatured,
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +52,7 @@ pub struct Offer {
     pub price: Option<OfferPriceAsRel>,
     pub market_booth_name: String,
     pub type_: Option<String>,
+    pub is_featured: bool,
 }
 
 impl Offer {
@@ -170,6 +172,12 @@ impl Offer {
                         .eq(filter_query),
                 );
             }
+            IsFeatured => {
+                query.and_where(
+                    Expr::col((OfferIden::Table, OfferIden::IsFeatured))
+                        .eq(filter_query),
+                );
+            }
         }
     }
 
@@ -199,6 +207,7 @@ impl Offer {
         name: String,
         description: Option<String>,
         type_: &str,
+        is_featured: bool,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -210,6 +219,7 @@ impl Offer {
                 OfferIden::Name,
                 OfferIden::Description,
                 OfferIden::Type,
+                OfferIden::IsFeatured,
             ])
             .values([
                 market_booth_id.into(),
@@ -217,6 +227,7 @@ impl Offer {
                 name.into(),
                 description.unwrap_or_default().into(),
                 type_.into(),
+                is_featured.into(),
             ])?
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
@@ -302,6 +313,7 @@ impl Offer {
         description: Option<String>,
         is_active: Option<bool>,
         type_: Option<&str>,
+        is_featured: Option<bool>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -323,6 +335,10 @@ impl Offer {
 
             if let Some(type_) = type_ {
                 query.value(OfferIden::Type, type_);
+            }
+
+            if let Some(is_featured) = is_featured {
+                query.value(OfferIden::IsFeatured, is_featured);
             }
 
             query
@@ -383,6 +399,7 @@ impl From<&Row> for Offer {
                 .try_get(Self::MARKET_BOOTH_NAME_ALIAS)
                 .unwrap_or_default(),
             type_: row.get(OfferIden::Type.to_string().as_str()),
+            is_featured: row.get(OfferIden::IsFeatured.to_string().as_str()),
         }
     }
 }

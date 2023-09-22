@@ -9,8 +9,9 @@ use crate::api::peoplesmarkets::commerce::v1::market_booth_service_server::{
 use crate::api::peoplesmarkets::commerce::v1::{
     CreateMarketBoothRequest, CreateMarketBoothResponse,
     DeleteMarketBoothRequest, DeleteMarketBoothResponse, GetMarketBoothRequest,
-    GetMarketBoothResponse, ListMarketBoothsRequest, ListMarketBoothsResponse,
-    MarketBoothResponse, MarketBoothsFilterField, MarketBoothsOrderByField,
+    GetMarketBoothResponse, GetShopBySlugRequest, GetShopBySlugResponse,
+    ListMarketBoothsRequest, ListMarketBoothsResponse, MarketBoothResponse,
+    MarketBoothsFilterField, MarketBoothsOrderByField,
     RemoveImageFromMarketBoothRequest, RemoveImageFromMarketBoothResponse,
     UpdateImageOfMarketBoothRequest, UpdateImageOfMarketBoothResponse,
     UpdateMarketBoothRequest, UpdateMarketBoothResponse,
@@ -73,6 +74,7 @@ impl MarketBoothService {
             created_at: market_booth.created_at.timestamp(),
             updated_at: market_booth.updated_at.timestamp(),
             name: market_booth.name,
+            slug: market_booth.slug,
             description: market_booth.description,
             image_url: self
                 .image_service
@@ -97,6 +99,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
 
         let CreateMarketBoothRequest {
             name,
+            slug,
             description,
             platform_fee_percent,
             minimum_platform_fee_cent,
@@ -129,7 +132,8 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         let created_shop = MarketBooth::create(
             &self.pool,
             &user_id,
-            name,
+            &name,
+            &slug,
             description,
             platform_fee_percent,
             minimum_platform_fee_cent,
@@ -156,6 +160,21 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
 
         Ok(Response::new(GetMarketBoothResponse {
             market_booth: Some(self.to_response(found_market_booth)),
+        }))
+    }
+
+    async fn get_shop_by_slug(
+        &self,
+        request: Request<GetShopBySlugRequest>,
+    ) -> Result<Response<GetShopBySlugResponse>, Status> {
+        let GetShopBySlugRequest { slug } = request.into_inner();
+
+        let found_shop = MarketBooth::get_by_slug(&self.pool, &slug)
+            .await?
+            .ok_or(Status::not_found(""))?;
+
+        Ok(Response::new(GetShopBySlugResponse {
+            market_booth: Some(self.to_response(found_shop)),
         }))
     }
 
@@ -234,6 +253,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             description,
             platform_fee_percent,
             minimum_platform_fee_cent,
+            slug,
         } = request.into_inner();
 
         let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
@@ -257,6 +277,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             &user_id,
             &market_booth_id,
             name,
+            slug,
             description,
             platform_fee_percent,
             minimum_platform_fee_cent,
