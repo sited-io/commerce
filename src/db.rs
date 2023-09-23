@@ -21,6 +21,7 @@ pub enum DbError {
     Pool(PoolError),
     CreatePool(CreatePoolError),
     SeaQuery(sea_query::error::Error),
+    Argument(&'static str),
 }
 
 impl DbError {
@@ -102,6 +103,7 @@ impl From<DbError> for Status {
                 tracing::log::error!("{sea_query_err:?}");
                 Status::internal("")
             }
+            DbError::Argument(field) => Status::invalid_argument(field),
         }
     }
 }

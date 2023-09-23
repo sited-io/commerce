@@ -160,7 +160,7 @@ impl Offer {
         query: &mut SelectStatement,
         filter_field: OffersFilterField,
         filter_query: String,
-    ) {
+    ) -> Result<(), DbError> {
         use OffersFilterField::*;
 
         match filter_field {
@@ -217,12 +217,18 @@ impl Offer {
                 );
             }
             IsFeatured => {
+                let filter_query: bool = filter_query
+                    .trim()
+                    .parse()
+                    .map_err(|_| DbError::Argument("filter.query"))?;
                 query.cond_where(
                     Expr::col((OfferIden::Table, OfferIden::IsFeatured))
                         .eq(filter_query),
                 );
             }
         }
+
+        Ok(())
     }
 
     fn add_ts_filter(
@@ -355,7 +361,7 @@ impl Offer {
             }
 
             if let Some((filter_field, filter_query)) = filter {
-                Self::add_filter(&mut query, filter_field, filter_query);
+                Self::add_filter(&mut query, filter_field, filter_query)?;
             }
 
             if let Some((order_by_field, order_by_direction)) = order_by {

@@ -10,14 +10,12 @@ use crate::api::peoplesmarkets::commerce::v1::{
     AddImageToOfferRequest, AddImageToOfferResponse, CreateOfferRequest,
     CreateOfferResponse, Currency, DeleteOfferRequest, DeleteOfferResponse,
     GetOfferRequest, GetOfferResponse, ListOffersRequest, ListOffersResponse,
-    OfferImageResponse, OfferResponse, OfferType, OffersFilterField,
-    OffersOrderByField, Price, PriceBillingScheme, PriceType,
-    PutPriceToOfferRequest, PutPriceToOfferResponse, Recurring,
+    OfferImageResponse, OfferResponse, OfferType, Price, PriceBillingScheme,
+    PriceType, PutPriceToOfferRequest, PutPriceToOfferResponse, Recurring,
     RecurringInterval, RemoveImageFromOfferRequest,
     RemoveImageFromOfferResponse, RemovePriceFromOfferRequest,
     RemovePriceFromOfferResponse, UpdateOfferRequest, UpdateOfferResponse,
 };
-use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
 use crate::db::DbError;
 use crate::images::ImageService;
@@ -255,32 +253,9 @@ impl offer_service_server::OfferService for OfferService {
             return Err(Status::invalid_argument("filter,order_by"));
         }
 
-        let filter = match filter {
-            None => None,
-            Some(f) => {
-                if f.field < 1 {
-                    return Err(Status::invalid_argument("filter.field"));
-                } else if f.query.trim().is_empty() {
-                    return Err(Status::invalid_argument("filter.query"));
-                } else {
-                    Some((
-                        OffersFilterField::from_i32(f.field)
-                            .ok_or(Status::invalid_argument("filter.field"))?,
-                        f.query,
-                    ))
-                }
-            }
-        };
+        let filter = filter.map(|f| (f.field(), f.query));
 
-        let order_by = match order_by {
-            None => None,
-            Some(o) => Some((
-                OffersOrderByField::from_i32(o.field)
-                    .ok_or(Status::invalid_argument("order_by.field"))?,
-                Direction::from_i32(o.direction)
-                    .ok_or(Status::invalid_argument("order_by.direction"))?,
-            )),
-        };
+        let order_by = order_by.map(|o| (o.field(), o.direction()));
 
         let market_booth_id = match market_booth_id {
             Some(id) => Some(parse_uuid(&id, "market_booth_id")?),
