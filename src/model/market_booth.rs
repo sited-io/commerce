@@ -15,6 +15,10 @@ use crate::api::peoplesmarkets::commerce::v1::{
 use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::db::{build_simple_plain_ts_query, DbError};
 
+use super::shop_customization::{
+    ShopCustomizationAsRel, ShopCustomizationAsRelVec, ShopCustomizationIden,
+};
+
 #[derive(Debug, Clone, Iden)]
 #[iden(rename = "market_booths")]
 pub enum MarketBoothIden {
@@ -45,9 +49,130 @@ pub struct MarketBooth {
     pub image_url_path: Option<String>,
     pub platform_fee_percent: u32,
     pub minimum_platform_fee_cent: u32,
+    pub customization: Option<ShopCustomizationAsRel>,
 }
 
 impl MarketBooth {
+    const SHOP_CUSTOMIZATION_ALIAS: &str = "shop_customization";
+
+    fn get_shop_customization_alias() -> Alias {
+        Alias::new(Self::SHOP_CUSTOMIZATION_ALIAS)
+    }
+
+    fn select_with_relations() -> SelectStatement {
+        let mut query = Query::select();
+
+        query
+            .column((MarketBoothIden::Table, Asterisk))
+            .expr_as(
+                ShopCustomizationAsRel::get_agg(),
+                Self::get_shop_customization_alias(),
+            )
+            .from(MarketBoothIden::Table)
+            .left_join(
+                ShopCustomizationIden::Table,
+                Expr::col((
+                    ShopCustomizationIden::Table,
+                    ShopCustomizationIden::ShopId,
+                ))
+                .equals((
+                    MarketBoothIden::Table,
+                    MarketBoothIden::MarketBoothId,
+                )),
+            )
+            .group_by_col((
+                MarketBoothIden::Table,
+                MarketBoothIden::MarketBoothId,
+            ));
+
+        query
+    }
+
+    fn add_order_by(
+        query: &mut SelectStatement,
+        order_by_field: MarketBoothsOrderByField,
+        order_by_direction: Direction,
+    ) {
+        use MarketBoothsOrderByField::*;
+
+        let order = match order_by_direction {
+            Direction::Unspecified | Direction::Asc => Order::Asc,
+            Direction::Desc => Order::Desc,
+        };
+
+        match order_by_field {
+            Unspecified | CreatedAt => query.order_by(
+                (MarketBoothIden::Table, MarketBoothIden::CreatedAt),
+                order,
+            ),
+            UpdatedAt => query.order_by(
+                (MarketBoothIden::Table, MarketBoothIden::UpdatedAt),
+                order,
+            ),
+            Name => query.order_by(
+                (MarketBoothIden::Table, MarketBoothIden::Name),
+                order,
+            ),
+            Random => query.order_by_expr(
+                SimpleExpr::FunctionCall(Func::random()),
+                Order::Asc,
+            ),
+        };
+    }
+
+    fn add_filter(
+        query: &mut SelectStatement,
+        filter_field: MarketBoothsFilterField,
+        filter_query: String,
+    ) {
+        use MarketBoothsFilterField::*;
+
+        match filter_field {
+            Unspecified => {}
+            Name => Self::add_ts_filter(
+                query,
+                MarketBoothIden::NameTs,
+                &filter_query,
+            ),
+            Description => Self::add_ts_filter(
+                query,
+                MarketBoothIden::DescriptionTs,
+                &filter_query,
+            ),
+            NameAndDescription => {
+                Self::add_ts_filter(
+                    query,
+                    MarketBoothIden::NameTs,
+                    &filter_query,
+                );
+                Self::add_ts_filter(
+                    query,
+                    MarketBoothIden::DescriptionTs,
+                    &filter_query,
+                );
+            }
+        }
+    }
+
+    fn add_ts_filter(
+        query: &mut SelectStatement,
+        col: MarketBoothIden,
+        filter_query: &String,
+    ) {
+        let tsquery = build_simple_plain_ts_query(filter_query);
+        let rank_alias = Alias::new(format!("{}_rank", col.to_string()));
+        query
+            .expr_as(
+                Expr::expr(PgFunc::ts_rank(
+                    Expr::col((MarketBoothIden::Table, col.clone())),
+                    tsquery.clone(),
+                )),
+                rank_alias.clone(),
+            )
+            .and_or_where(LogicalChainOper::Or(Expr::col(col).matches(tsquery)))
+            .order_by(rank_alias, Order::Desc);
+    }
+
     pub async fn create(
         pool: &Pool,
         user_id: &String,
@@ -88,16 +213,23 @@ impl MarketBooth {
     pub async fn get(
         pool: &Pool,
         market_booth_id: &Uuid,
+        extended: bool,
     ) -> Result<Option<Self>, DbError> {
         let client = pool.get().await?;
 
-        let (sql, values) = Query::select()
-            .column(Asterisk)
-            .from(MarketBoothIden::Table)
-            .and_where(
-                Expr::col(MarketBoothIden::MarketBoothId).eq(*market_booth_id),
-            )
-            .build_postgres(PostgresQueryBuilder);
+        let (sql, values) = if extended {
+            Self::select_with_relations()
+        } else {
+            Query::select()
+                .column((MarketBoothIden::Table, Asterisk))
+                .from(MarketBoothIden::Table)
+                .to_owned()
+        }
+        .and_where(
+            Expr::col((MarketBoothIden::Table, MarketBoothIden::MarketBoothId))
+                .eq(*market_booth_id),
+        )
+        .build_postgres(PostgresQueryBuilder);
 
         Ok(client
             .query_opt(sql.as_str(), &values.as_params())
@@ -129,16 +261,28 @@ impl MarketBooth {
         offset: u64,
         filter: Option<(MarketBoothsFilterField, String)>,
         order_by: Option<(MarketBoothsOrderByField, Direction)>,
+        extended: bool,
     ) -> Result<Vec<Self>, DbError> {
         let client = pool.get().await?;
 
         let (sql, values) = {
-            let mut query = Query::select();
-
-            query.column(Asterisk).from(MarketBoothIden::Table);
+            let mut query = if extended {
+                Self::select_with_relations()
+            } else {
+                Query::select()
+                    .column((MarketBoothIden::Table, Asterisk))
+                    .from(MarketBoothIden::Table)
+                    .to_owned()
+            };
 
             if let Some(user_id) = user_id {
-                query.and_where(Expr::col(MarketBoothIden::UserId).eq(user_id));
+                query.and_where(
+                    Expr::col((
+                        MarketBoothIden::Table,
+                        MarketBoothIden::UserId,
+                    ))
+                    .eq(user_id),
+                );
             }
 
             if let Some((filter_field, filter_query)) = filter {
@@ -240,114 +384,13 @@ impl MarketBooth {
 
         Ok(Self::from(row))
     }
-
-    pub async fn update_image_url_path<'a>(
-        transaction: &Transaction<'a>,
-        user_id: &String,
-        market_booth_id: &Uuid,
-        image_url_path: Option<String>,
-    ) -> Result<Self, DbError> {
-        let (sql, values) = Query::update()
-            .table(MarketBoothIden::Table)
-            .value(MarketBoothIden::ImageUrlPath, image_url_path)
-            .and_where(Expr::col(MarketBoothIden::UserId).eq(user_id))
-            .and_where(
-                Expr::col(MarketBoothIden::MarketBoothId).eq(*market_booth_id),
-            )
-            .returning_all()
-            .build_postgres(PostgresQueryBuilder);
-
-        let row = transaction
-            .query_one(sql.as_str(), &values.as_params())
-            .await?;
-
-        Ok(Self::from(row))
-    }
-
-    //
-    // private methods
-    //
-    fn add_order_by(
-        query: &mut SelectStatement,
-        order_by_field: MarketBoothsOrderByField,
-        order_by_direction: Direction,
-    ) {
-        use MarketBoothsOrderByField::*;
-
-        let order = match order_by_direction {
-            Direction::Unspecified | Direction::Asc => Order::Asc,
-            Direction::Desc => Order::Desc,
-        };
-
-        match order_by_field {
-            Unspecified | CreatedAt => {
-                query.order_by(MarketBoothIden::CreatedAt, order)
-            }
-            UpdatedAt => query.order_by(MarketBoothIden::UpdatedAt, order),
-            Name => query.order_by(MarketBoothIden::Name, order),
-            Random => query.order_by_expr(
-                SimpleExpr::FunctionCall(Func::random()),
-                Order::Asc,
-            ),
-        };
-    }
-
-    fn add_filter(
-        query: &mut SelectStatement,
-        filter_field: MarketBoothsFilterField,
-        filter_query: String,
-    ) {
-        use MarketBoothsFilterField::*;
-
-        match filter_field {
-            Unspecified => {}
-            Name => Self::add_ts_filter(
-                query,
-                MarketBoothIden::NameTs,
-                &filter_query,
-            ),
-            Description => Self::add_ts_filter(
-                query,
-                MarketBoothIden::DescriptionTs,
-                &filter_query,
-            ),
-            NameAndDescription => {
-                Self::add_ts_filter(
-                    query,
-                    MarketBoothIden::NameTs,
-                    &filter_query,
-                );
-                Self::add_ts_filter(
-                    query,
-                    MarketBoothIden::DescriptionTs,
-                    &filter_query,
-                );
-            }
-        }
-    }
-
-    fn add_ts_filter(
-        query: &mut SelectStatement,
-        col: MarketBoothIden,
-        filter_query: &String,
-    ) {
-        let tsquery = build_simple_plain_ts_query(filter_query);
-        let rank_alias = Alias::new(format!("{}_rank", col.to_string()));
-        query
-            .expr_as(
-                Expr::expr(PgFunc::ts_rank(
-                    Expr::col(col.clone()),
-                    tsquery.clone(),
-                )),
-                rank_alias.clone(),
-            )
-            .and_or_where(LogicalChainOper::Or(Expr::col(col).matches(tsquery)))
-            .order_by(rank_alias, Order::Desc);
-    }
 }
 
 impl From<&Row> for MarketBooth {
     fn from(row: &Row) -> Self {
+        let customization: Option<ShopCustomizationAsRelVec> =
+            row.try_get(Self::SHOP_CUSTOMIZATION_ALIAS).ok();
+
         Self {
             market_booth_id: row
                 .get(MarketBoothIden::MarketBoothId.to_string().as_str()),
@@ -370,6 +413,7 @@ impl From<&Row> for MarketBooth {
                 MarketBoothIden::MinimumPlatformFeeCent.to_string().as_str(),
             ))
             .expect("Should not be greater than 4294967295"),
+            customization: customization.and_then(|c| c.0.first().cloned()),
         }
     }
 }

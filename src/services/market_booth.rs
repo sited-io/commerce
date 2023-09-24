@@ -1,7 +1,6 @@
 use deadpool_postgres::Pool;
 use jwtk::jwk::RemoteJwksVerifier;
 use tonic::{async_trait, Request, Response, Status};
-use uuid::Uuid;
 
 use crate::api::peoplesmarkets::commerce::v1::market_booth_service_server::{
     self, MarketBoothServiceServer,
@@ -10,11 +9,10 @@ use crate::api::peoplesmarkets::commerce::v1::{
     CreateMarketBoothRequest, CreateMarketBoothResponse,
     DeleteMarketBoothRequest, DeleteMarketBoothResponse, GetMarketBoothRequest,
     GetMarketBoothResponse, GetShopBySlugRequest, GetShopBySlugResponse,
-    ListMarketBoothsRequest, ListMarketBoothsResponse, MarketBoothResponse,
+    ListShopsRequest, ListShopsResponse, MarketBoothResponse,
     MarketBoothsFilterField, MarketBoothsOrderByField,
-    RemoveImageFromMarketBoothRequest, RemoveImageFromMarketBoothResponse,
-    UpdateImageOfMarketBoothRequest, UpdateImageOfMarketBoothResponse,
-    UpdateMarketBoothRequest, UpdateMarketBoothResponse,
+    ShopCustomizationResponse, UpdateMarketBoothRequest,
+    UpdateMarketBoothResponse,
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
@@ -34,12 +32,12 @@ pub struct MarketBoothService {
 }
 
 impl MarketBoothService {
-    const SLUG_CHARS: [char; 66] = [
+    const SLUG_CHARS: [char; 65] = [
         '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e',
         'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
         't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
         'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
-        'V', 'W', 'X', 'Y', 'Z', '-', '+', '_', '.', '!',
+        'V', 'W', 'X', 'Y', 'Z', '-', '+', '_', '!',
     ];
 
     fn new(
@@ -75,7 +73,12 @@ impl MarketBoothService {
         MarketBoothServiceServer::new(service)
     }
 
-    fn to_response(&self, market_booth: MarketBooth) -> MarketBoothResponse {
+    fn shop_to_response(
+        &self,
+        market_booth: MarketBooth,
+    ) -> MarketBoothResponse {
+        let customization = self.customization_to_response(&market_booth);
+
         MarketBoothResponse {
             market_booth_id: market_booth.market_booth_id.to_string(),
             user_id: market_booth.user_id,
@@ -84,22 +87,55 @@ impl MarketBoothService {
             name: market_booth.name,
             slug: market_booth.slug,
             description: market_booth.description,
-            image_url: self
-                .image_service
-                .get_opt_image_url(market_booth.image_url_path),
             platform_fee_percent: market_booth.platform_fee_percent,
             minimum_platform_fee_cent: market_booth.minimum_platform_fee_cent,
+            customization,
         }
     }
 
-    fn gen_image_path(user_id: &String, market_booth_id: &Uuid) -> String {
-        format!("{}/{}/{}", user_id, market_booth_id, Uuid::new_v4())
+    fn customization_to_response(
+        &self,
+        shop: &MarketBooth,
+    ) -> Option<ShopCustomizationResponse> {
+        shop.customization.clone().map(|customization| {
+            ShopCustomizationResponse {
+                shop_id: shop.market_booth_id.to_string(),
+                user_id: shop.user_id.to_string(),
+                created_at: 0,
+                updated_at: 0,
+                banner_image_url: self
+                    .image_service
+                    .get_opt_image_url(customization.banner_image_url_path),
+                logo_image_url: self
+                    .image_service
+                    .get_opt_image_url(customization.logo_image_url_path),
+                header_background_color_light: customization
+                    .header_background_color_light,
+                header_background_color_dark: customization
+                    .header_background_color_dark,
+                header_content_color_light: customization
+                    .header_content_color_light,
+                header_content_color_dark: customization
+                    .header_content_color_dark,
+                secondary_background_color_light: customization
+                    .secondary_background_color_light,
+                secondary_background_color_dark: customization
+                    .secondary_background_color_dark,
+                secondary_content_color_light: customization
+                    .secondary_content_color_light,
+                secondary_content_color_dark: customization
+                    .secondary_content_color_dark,
+            }
+        })
     }
 
     fn validate_slug(slug: &str) -> Result<(), Status> {
         for char in slug.chars() {
             if !Self::SLUG_CHARS.contains(&char) {
-                return Err(Status::invalid_argument("slug"));
+                return Err(Status::invalid_argument(format!(
+                    "invalid character '{}'",
+                    char
+                )));
             }
         }
 
@@ -161,7 +197,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         .await?;
 
         Ok(Response::new(CreateMarketBoothResponse {
-            market_booth: Some(self.to_response(created_shop)),
+            market_booth: Some(self.shop_to_response(created_shop)),
         }))
     }
 
@@ -169,17 +205,22 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         &self,
         request: Request<GetMarketBoothRequest>,
     ) -> Result<Response<GetMarketBoothResponse>, Status> {
-        let market_booth_id = parse_uuid(
-            &request.into_inner().market_booth_id,
-            "market_booth_id",
-        )?;
+        let GetMarketBoothRequest {
+            market_booth_id,
+            extended,
+        } = request.into_inner();
 
-        let found_market_booth = MarketBooth::get(&self.pool, &market_booth_id)
-            .await?
-            .ok_or(Status::not_found(""))?;
+        let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
+
+        let extended = extended.unwrap_or(false);
+
+        let found_market_booth =
+            MarketBooth::get(&self.pool, &market_booth_id, extended)
+                .await?
+                .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetMarketBoothResponse {
-            market_booth: Some(self.to_response(found_market_booth)),
+            market_booth: Some(self.shop_to_response(found_market_booth)),
         }))
     }
 
@@ -194,19 +235,20 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetShopBySlugResponse {
-            market_booth: Some(self.to_response(found_shop)),
+            market_booth: Some(self.shop_to_response(found_shop)),
         }))
     }
 
-    async fn list_market_booths(
+    async fn list_shops(
         &self,
-        request: Request<ListMarketBoothsRequest>,
-    ) -> Result<Response<ListMarketBoothsResponse>, Status> {
-        let ListMarketBoothsRequest {
+        request: Request<ListShopsRequest>,
+    ) -> Result<Response<ListShopsResponse>, Status> {
+        let ListShopsRequest {
             user_id,
             pagination,
             filter,
             order_by,
+            extended,
         } = request.into_inner();
 
         let (limit, offset, pagination) = paginate(pagination)?;
@@ -242,6 +284,8 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             None => None,
         };
 
+        let extended = extended.unwrap_or(false);
+
         let found_market_booths = MarketBooth::list(
             &self.pool,
             user_id.as_ref(),
@@ -249,13 +293,14 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             offset,
             filter,
             order_by,
+            extended,
         )
         .await?;
 
-        Ok(Response::new(ListMarketBoothsResponse {
+        Ok(Response::new(ListShopsResponse {
             market_booths: found_market_booths
                 .into_iter()
-                .map(|mb| self.to_response(mb))
+                .map(|mb| self.shop_to_response(mb))
                 .collect(),
             pagination: Some(pagination),
         }))
@@ -309,7 +354,7 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         .await?;
 
         Ok(Response::new(UpdateMarketBoothResponse {
-            market_booth: Some(self.to_response(updated_market_booth)),
+            market_booth: Some(self.shop_to_response(updated_market_booth)),
         }))
     }
 
@@ -338,90 +383,5 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
         transaction.commit().await.map_err(DbError::from)?;
 
         Ok(Response::new(DeleteMarketBoothResponse {}))
-    }
-
-    async fn update_image_of_market_booth(
-        &self,
-        request: Request<UpdateImageOfMarketBoothRequest>,
-    ) -> Result<Response<UpdateImageOfMarketBoothResponse>, Status> {
-        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
-
-        let UpdateImageOfMarketBoothRequest {
-            market_booth_id,
-            image,
-        } = request.into_inner();
-
-        let image = match image {
-            None => return Err(Status::invalid_argument("image")),
-            Some(i) => i,
-        };
-
-        let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
-
-        let market_booth = MarketBooth::get(&self.pool, &market_booth_id)
-            .await?
-            .ok_or_else(|| Status::not_found(""))?;
-
-        self.image_service.validate_image(&image.data)?;
-
-        if let Some(existing) = market_booth.image_url_path {
-            self.image_service.remove_image(&existing).await?;
-        }
-
-        let image_path = Self::gen_image_path(&user_id, &market_booth_id);
-
-        let mut conn = self.pool.get().await.map_err(DbError::from)?;
-        let transaction = conn.transaction().await.map_err(DbError::from)?;
-
-        MarketBooth::update_image_url_path(
-            &transaction,
-            &user_id,
-            &market_booth_id,
-            Some(image_path.clone()),
-        )
-        .await?;
-
-        self.image_service
-            .put_image(&image_path, &image.data)
-            .await?;
-
-        transaction.commit().await.map_err(DbError::from)?;
-
-        Ok(Response::new(UpdateImageOfMarketBoothResponse {}))
-    }
-
-    async fn remove_image_from_market_booth(
-        &self,
-        request: Request<RemoveImageFromMarketBoothRequest>,
-    ) -> Result<Response<RemoveImageFromMarketBoothResponse>, Status> {
-        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
-
-        let market_booth_id = parse_uuid(
-            &request.into_inner().market_booth_id,
-            "market_booth_id",
-        )?;
-
-        let market_booth = MarketBooth::get(&self.pool, &market_booth_id)
-            .await?
-            .ok_or_else(|| Status::not_found(""))?;
-
-        let mut conn = self.pool.get().await.map_err(DbError::from)?;
-        let transaction = conn.transaction().await.map_err(DbError::from)?;
-
-        if let Some(image_path) = market_booth.image_url_path {
-            self.image_service.remove_image(&image_path).await?;
-        }
-
-        MarketBooth::update_image_url_path(
-            &transaction,
-            &user_id,
-            &market_booth_id,
-            None,
-        )
-        .await?;
-
-        transaction.commit().await.map_err(DbError::from)?;
-
-        Ok(Response::new(RemoveImageFromMarketBoothResponse {}))
     }
 }

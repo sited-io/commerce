@@ -240,10 +240,7 @@ impl Offer {
         let rank_alias = Alias::new(format!("{}_rank", col.1.to_string()));
         query
             .expr_as(
-                Expr::expr(PgFunc::ts_rank(
-                    Expr::col(col.clone()),
-                    tsquery.clone(),
-                )),
+                Expr::expr(PgFunc::ts_rank(Expr::col(col), tsquery.clone())),
                 rank_alias.clone(),
             )
             .cond_where(Expr::col(col).matches(tsquery))
