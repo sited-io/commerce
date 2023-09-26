@@ -1,0 +1,8 @@
+CREATE TABLE shop_domains (
+  shop_id UUID PRIMARY KEY REFERENCES market_booths(market_booth_id),
+  user_id VARCHAR NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() ON UPDATE NOW(),
+  domain VARCHAR NOT NULL,
+  status VARCHAR NOT NULL
+)

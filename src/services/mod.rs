@@ -1,10 +1,12 @@
 mod market_booth;
 mod offer;
 mod shop_customization;
+mod shop_domain;
 
 pub use market_booth::MarketBoothService;
 pub use offer::OfferService;
 pub use shop_customization::ShopCustomizationService;
+pub use shop_domain::ShopDomainService;
 
 use tonic::Status;
 use uuid::Uuid;

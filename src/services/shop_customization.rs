@@ -43,7 +43,7 @@ impl ShopCustomizationService {
         pool: Pool,
         verifier: RemoteJwksVerifier,
         image_service: ImageService,
-    ) -> ShopCustomizationServiceServer<ShopCustomizationService> {
+    ) -> ShopCustomizationServiceServer<Self> {
         let service = Self::new(pool, verifier, image_service);
 
         ShopCustomizationServiceServer::new(service)

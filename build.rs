@@ -5,6 +5,7 @@ fn main() -> Result<()> {
         "service-apis/proto/peoplesmarkets/commerce/v1/market_booth.proto",
         "service-apis/proto/peoplesmarkets/commerce/v1/offer.proto",
         "service-apis/proto/peoplesmarkets/commerce/v1/shop_customization.proto",
+        "service-apis/proto/peoplesmarkets/commerce/v1/shop_domain.proto",
     ];
     const INCLUDES: &[&str] = &["service-apis/proto"];
 

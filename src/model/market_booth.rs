@@ -383,6 +383,27 @@ impl MarketBooth {
         Ok(Self::from(row))
     }
 
+    pub async fn update_domain<'a>(
+        transaction: &Transaction<'a>,
+        market_booth_id: &Uuid,
+        domain: Option<String>,
+    ) -> Result<Self, DbError> {
+        let (sql, values) = Query::update()
+            .table(MarketBoothIden::Table)
+            .value(MarketBoothIden::Domain, domain)
+            .and_where(
+                Expr::col(MarketBoothIden::MarketBoothId).eq(*market_booth_id),
+            )
+            .returning_all()
+            .build_postgres(PostgresQueryBuilder);
+
+        let row = transaction
+            .query_one(sql.as_str(), &values.as_params())
+            .await?;
+
+        Ok(Self::from(row))
+    }
+
     pub async fn delete<'a>(
         transaction: &Transaction<'a>,
         user_id: &String,

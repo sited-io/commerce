@@ -11,7 +11,7 @@ use commerce::images::ImageService;
 use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
 use commerce::{
     get_env_var, init_jwks_verifier, MarketBoothService, OfferService,
-    ShopCustomizationService,
+    ShopCustomizationService, ShopDomainService,
 };
 
 #[tokio::main(flavor = "current_thread")]
@@ -90,6 +90,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         image_service.clone(),
     );
 
+    let shop_domain_service = ShopDomainService::build(
+        db_pool.clone(),
+        init_jwks_verifier(&jwks_host, &jwks_url)?,
+    );
+
     let offer_service = OfferService::build(
         db_pool,
         init_jwks_verifier(&jwks_host, &jwks_url)?,
@@ -124,6 +129,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(tonic_web::enable(health_service))
         .add_service(tonic_web::enable(market_booth_service))
         .add_service(tonic_web::enable(shop_customization_service))
+        .add_service(tonic_web::enable(shop_domain_service))
         .add_service(tonic_web::enable(offer_service))
         .serve(host.parse().unwrap())
         .await?;

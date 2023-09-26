@@ -2438,3 +2438,434 @@ pub mod offer_service_server {
         const NAME: &'static str = "peoplesmarkets.commerce.v1.OfferService";
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DomainStatusResponse {
+    #[prost(string, tag = "1")]
+    pub shop_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub domain: ::prost::alloc::string::String,
+    #[prost(enumeration = "DomainStatus", tag = "3")]
+    pub status: i32,
+    #[prost(string, optional, tag = "4")]
+    pub client_id: ::core::option::Option<::prost::alloc::string::String>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddDomainToShopRequest {
+    #[prost(string, tag = "1")]
+    pub shop_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub domain: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddDomainToShopResponse {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetDomainStatusRequest {
+    #[prost(string, tag = "1")]
+    pub shop_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetDomainStatusResponse {
+    #[prost(message, optional, tag = "1")]
+    pub domain_status: ::core::option::Option<DomainStatusResponse>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UpdateDomainStatusRequest {
+    #[prost(string, tag = "1")]
+    pub shop_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub domain: ::prost::alloc::string::String,
+    #[prost(enumeration = "DomainStatus", tag = "3")]
+    pub status: i32,
+    #[prost(string, tag = "4")]
+    pub client_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UpdateDomainStatusResponse {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RemoveDomainFromShopRequest {
+    #[prost(string, tag = "1")]
+    pub shop_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub domain: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RemoveDomainFromShopResponse {}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum DomainStatus {
+    Unspecified = 0,
+    Pending = 1,
+    Active = 2,
+}
+impl DomainStatus {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            DomainStatus::Unspecified => "DOMAIN_STATUS_UNSPECIFIED",
+            DomainStatus::Pending => "DOMAIN_STATUS_PENDING",
+            DomainStatus::Active => "DOMAIN_STATUS_ACTIVE",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "DOMAIN_STATUS_UNSPECIFIED" => Some(Self::Unspecified),
+            "DOMAIN_STATUS_PENDING" => Some(Self::Pending),
+            "DOMAIN_STATUS_ACTIVE" => Some(Self::Active),
+            _ => None,
+        }
+    }
+}
+/// Generated server implementations.
+pub mod shop_domain_service_server {
+    #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
+    use tonic::codegen::*;
+    /// Generated trait containing gRPC methods that should be implemented for use with ShopDomainServiceServer.
+    #[async_trait]
+    pub trait ShopDomainService: Send + Sync + 'static {
+        async fn add_domain_to_shop(
+            &self,
+            request: tonic::Request<super::AddDomainToShopRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::AddDomainToShopResponse>,
+            tonic::Status,
+        >;
+        async fn get_domain_status(
+            &self,
+            request: tonic::Request<super::GetDomainStatusRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetDomainStatusResponse>,
+            tonic::Status,
+        >;
+        async fn update_domain_status(
+            &self,
+            request: tonic::Request<super::UpdateDomainStatusRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::UpdateDomainStatusResponse>,
+            tonic::Status,
+        >;
+        async fn remove_domain_from_shop(
+            &self,
+            request: tonic::Request<super::RemoveDomainFromShopRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::RemoveDomainFromShopResponse>,
+            tonic::Status,
+        >;
+    }
+    #[derive(Debug)]
+    pub struct ShopDomainServiceServer<T: ShopDomainService> {
+        inner: _Inner<T>,
+        accept_compression_encodings: EnabledCompressionEncodings,
+        send_compression_encodings: EnabledCompressionEncodings,
+        max_decoding_message_size: Option<usize>,
+        max_encoding_message_size: Option<usize>,
+    }
+    struct _Inner<T>(Arc<T>);
+    impl<T: ShopDomainService> ShopDomainServiceServer<T> {
+        pub fn new(inner: T) -> Self {
+            Self::from_arc(Arc::new(inner))
+        }
+        pub fn from_arc(inner: Arc<T>) -> Self {
+            let inner = _Inner(inner);
+            Self {
+                inner,
+                accept_compression_encodings: Default::default(),
+                send_compression_encodings: Default::default(),
+                max_decoding_message_size: None,
+                max_encoding_message_size: None,
+            }
+        }
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
+        where
+            F: tonic::service::Interceptor,
+        {
+            InterceptedService::new(Self::new(inner), interceptor)
+        }
+        /// Enable decompressing requests with the given encoding.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.accept_compression_encodings.enable(encoding);
+            self
+        }
+        /// Compress responses with the given encoding, if the client supports it.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.send_compression_encodings.enable(encoding);
+            self
+        }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.max_decoding_message_size = Some(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.max_encoding_message_size = Some(limit);
+            self
+        }
+    }
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for ShopDomainServiceServer<T>
+    where
+        T: ShopDomainService,
+        B: Body + Send + 'static,
+        B::Error: Into<StdError> + Send + 'static,
+    {
+        type Response = http::Response<tonic::body::BoxBody>;
+        type Error = std::convert::Infallible;
+        type Future = BoxFuture<Self::Response, Self::Error>;
+        fn poll_ready(
+            &mut self,
+            _cx: &mut Context<'_>,
+        ) -> Poll<std::result::Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+        fn call(&mut self, req: http::Request<B>) -> Self::Future {
+            let inner = self.inner.clone();
+            match req.uri().path() {
+                "/peoplesmarkets.commerce.v1.ShopDomainService/AddDomainToShop" => {
+                    #[allow(non_camel_case_types)]
+                    struct AddDomainToShopSvc<T: ShopDomainService>(pub Arc<T>);
+                    impl<
+                        T: ShopDomainService,
+                    > tonic::server::UnaryService<super::AddDomainToShopRequest>
+                    for AddDomainToShopSvc<T> {
+                        type Response = super::AddDomainToShopResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AddDomainToShopRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).add_domain_to_shop(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AddDomainToShopSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.ShopDomainService/GetDomainStatus" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetDomainStatusSvc<T: ShopDomainService>(pub Arc<T>);
+                    impl<
+                        T: ShopDomainService,
+                    > tonic::server::UnaryService<super::GetDomainStatusRequest>
+                    for GetDomainStatusSvc<T> {
+                        type Response = super::GetDomainStatusResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetDomainStatusRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).get_domain_status(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetDomainStatusSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.ShopDomainService/UpdateDomainStatus" => {
+                    #[allow(non_camel_case_types)]
+                    struct UpdateDomainStatusSvc<T: ShopDomainService>(pub Arc<T>);
+                    impl<
+                        T: ShopDomainService,
+                    > tonic::server::UnaryService<super::UpdateDomainStatusRequest>
+                    for UpdateDomainStatusSvc<T> {
+                        type Response = super::UpdateDomainStatusResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::UpdateDomainStatusRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).update_domain_status(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = UpdateDomainStatusSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.ShopDomainService/RemoveDomainFromShop" => {
+                    #[allow(non_camel_case_types)]
+                    struct RemoveDomainFromShopSvc<T: ShopDomainService>(pub Arc<T>);
+                    impl<
+                        T: ShopDomainService,
+                    > tonic::server::UnaryService<super::RemoveDomainFromShopRequest>
+                    for RemoveDomainFromShopSvc<T> {
+                        type Response = super::RemoveDomainFromShopResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::RemoveDomainFromShopRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).remove_domain_from_shop(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = RemoveDomainFromShopSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                _ => {
+                    Box::pin(async move {
+                        Ok(
+                            http::Response::builder()
+                                .status(200)
+                                .header("grpc-status", "12")
+                                .header("content-type", "application/grpc")
+                                .body(empty_body())
+                                .unwrap(),
+                        )
+                    })
+                }
+            }
+        }
+    }
+    impl<T: ShopDomainService> Clone for ShopDomainServiceServer<T> {
+        fn clone(&self) -> Self {
+            let inner = self.inner.clone();
+            Self {
+                inner,
+                accept_compression_encodings: self.accept_compression_encodings,
+                send_compression_encodings: self.send_compression_encodings,
+                max_decoding_message_size: self.max_decoding_message_size,
+                max_encoding_message_size: self.max_encoding_message_size,
+            }
+        }
+    }
+    impl<T: ShopDomainService> Clone for _Inner<T> {
+        fn clone(&self) -> Self {
+            Self(Arc::clone(&self.0))
+        }
+    }
+    impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:?}", self.0)
+        }
+    }
+    impl<T: ShopDomainService> tonic::server::NamedService
+    for ShopDomainServiceServer<T> {
+        const NAME: &'static str = "peoplesmarkets.commerce.v1.ShopDomainService";
+    }
+}

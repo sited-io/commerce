@@ -1,10 +1,17 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use http::header::AUTHORIZATION;
 use jwtk::jwk::RemoteJwksVerifier;
-use jwtk::Claims;
+use serde::Deserialize;
 use tonic::metadata::MetadataMap;
 use tonic::Status;
+
+#[derive(Debug, Clone, Deserialize)]
+struct ExtraClaims {
+    #[serde(rename = "urn:zitadel:iam:user:metadata")]
+    metadata: HashMap<String, String>,
+}
 
 pub fn init_jwks_verifier(
     jwks_host: &str,
@@ -27,23 +34,50 @@ pub fn init_jwks_verifier(
     ))
 }
 
-pub async fn get_user_id(
-    metadata: &MetadataMap,
-    verifier: &RemoteJwksVerifier,
-) -> Result<String, Status> {
-    let token = metadata
+fn get_token(metadata: &MetadataMap) -> Result<String, Status> {
+    metadata
         .get(AUTHORIZATION.as_str())
         .and_then(|v| v.to_str().ok())
         .and_then(|header_value| header_value.split_once(' '))
         .map(|(_, token)| token.to_string())
-        .ok_or_else(|| Status::unauthenticated(""))?;
+        .ok_or_else(|| Status::unauthenticated(""))
+}
+
+pub async fn get_user_id(
+    metadata: &MetadataMap,
+    verifier: &RemoteJwksVerifier,
+) -> Result<String, Status> {
+    let token = get_token(metadata)?;
 
     verifier
-        .verify::<Claims<()>>(&token)
+        .verify::<()>(&token)
         .await
         .map_err(|err| Status::unauthenticated(err.to_string()))?
         .claims()
         .sub
         .clone()
         .ok_or_else(|| Status::unauthenticated(""))
+}
+
+pub async fn verify_service_user(
+    metadata: &MetadataMap,
+    verifier: &RemoteJwksVerifier,
+) -> Result<(), Status> {
+    let token = get_token(metadata)?;
+
+    if matches!(
+        verifier
+            .verify::<ExtraClaims>(&token)
+            .await
+            .map_err(|err| Status::unauthenticated(err.to_string()))?
+            .claims()
+            .extra
+            .metadata
+            .get("role"),
+        Some(role) if role == "c2VydmljZQ" // 'service' in base64
+    ) {
+        Ok(())
+    } else {
+        Err(Status::unauthenticated(""))
+    }
 }
