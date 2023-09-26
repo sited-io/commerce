@@ -35,6 +35,7 @@ pub enum MarketBoothIden {
     ImageUrlPath,
     PlatformFeePercent,
     MinimumPlatformFeeCent,
+    Domain,
 }
 
 #[derive(Debug, Clone)]
@@ -50,6 +51,7 @@ pub struct MarketBooth {
     pub platform_fee_percent: u32,
     pub minimum_platform_fee_cent: u32,
     pub customization: Option<ShopCustomizationAsRel>,
+    pub domain: Option<String>,
 }
 
 impl MarketBooth {
@@ -254,6 +256,23 @@ impl MarketBooth {
         Ok(row.map(Self::from))
     }
 
+    pub async fn get_by_domain(
+        pool: &Pool,
+        domain: &String,
+    ) -> Result<Option<Self>, DbError> {
+        let conn = pool.get().await?;
+
+        let (sql, values) = Query::select()
+            .column(Asterisk)
+            .from(MarketBoothIden::Table)
+            .and_where(Expr::col(MarketBoothIden::Domain).eq(domain))
+            .build_postgres(PostgresQueryBuilder);
+
+        let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
+
+        Ok(row.map(Self::from))
+    }
+
     pub async fn list(
         pool: &Pool,
         user_id: Option<&String>,
@@ -414,6 +433,7 @@ impl From<&Row> for MarketBooth {
             ))
             .expect("Should not be greater than 4294967295"),
             customization: customization.and_then(|c| c.0.first().cloned()),
+            domain: row.get(MarketBoothIden::Domain.to_string().as_str()),
         }
     }
 }

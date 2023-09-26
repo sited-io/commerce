@@ -1,0 +1,4 @@
+ALTER TABLE
+  market_booths
+ADD
+  COLUMN domain VARCHAR UNIQUE;

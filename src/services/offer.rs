@@ -79,6 +79,7 @@ impl OfferService {
             r#type,
             is_featured: offer.is_featured,
             shop_slug: offer.shop_slug,
+            shop_domain: offer.shop_domain,
         })
     }
 

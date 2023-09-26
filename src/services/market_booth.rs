@@ -8,11 +8,11 @@ use crate::api::peoplesmarkets::commerce::v1::market_booth_service_server::{
 use crate::api::peoplesmarkets::commerce::v1::{
     CreateMarketBoothRequest, CreateMarketBoothResponse,
     DeleteMarketBoothRequest, DeleteMarketBoothResponse, GetMarketBoothRequest,
-    GetMarketBoothResponse, GetShopBySlugRequest, GetShopBySlugResponse,
-    ListShopsRequest, ListShopsResponse, MarketBoothResponse,
-    MarketBoothsFilterField, MarketBoothsOrderByField,
-    ShopCustomizationResponse, UpdateMarketBoothRequest,
-    UpdateMarketBoothResponse,
+    GetMarketBoothResponse, GetShopByDomainRequest, GetShopByDomainResponse,
+    GetShopBySlugRequest, GetShopBySlugResponse, ListShopsRequest,
+    ListShopsResponse, MarketBoothResponse, MarketBoothsFilterField,
+    MarketBoothsOrderByField, ShopCustomizationResponse,
+    UpdateMarketBoothRequest, UpdateMarketBoothResponse,
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
@@ -90,6 +90,7 @@ impl MarketBoothService {
             platform_fee_percent: market_booth.platform_fee_percent,
             minimum_platform_fee_cent: market_booth.minimum_platform_fee_cent,
             customization,
+            domain: market_booth.domain,
         }
     }
 
@@ -235,6 +236,21 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetShopBySlugResponse {
+            market_booth: Some(self.shop_to_response(found_shop)),
+        }))
+    }
+
+    async fn get_shop_by_domain(
+        &self,
+        request: Request<GetShopByDomainRequest>,
+    ) -> Result<Response<GetShopByDomainResponse>, Status> {
+        let GetShopByDomainRequest { domain } = request.into_inner();
+
+        let found_shop = MarketBooth::get_by_domain(&self.pool, &domain)
+            .await?
+            .ok_or(Status::not_found(""))?;
+
+        Ok(Response::new(GetShopByDomainResponse {
             market_booth: Some(self.shop_to_response(found_shop)),
         }))
     }

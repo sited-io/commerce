@@ -54,6 +54,7 @@ pub struct Offer {
     pub type_: Option<String>,
     pub is_featured: bool,
     pub shop_slug: String,
+    pub shop_domain: Option<String>,
 }
 
 impl Offer {
@@ -61,6 +62,7 @@ impl Offer {
     const OFFER_PRICES_ALIAS: &str = "prices";
     const MARKET_BOOTH_NAME_ALIAS: &str = "market_booth_name";
     const SHOP_SLUG_ALIAS: &str = "shop_slug";
+    const SHOP_DOMAIN_ALIAS: &str = "shop_domain";
     const NAME_TS_RANK_ALIAS: &str = "name_ts_rank";
     const DESCRIPTION_TS_RANK_ALIAS: &str = "description_ts_rank";
 
@@ -78,6 +80,10 @@ impl Offer {
 
     fn get_shop_slug_alias() -> Alias {
         Alias::new(Self::SHOP_SLUG_ALIAS)
+    }
+
+    fn get_shop_domain_alias() -> Alias {
+        Alias::new(Self::SHOP_DOMAIN_ALIAS)
     }
 
     fn get_name_ts_rank_alias() -> Alias {
@@ -103,6 +109,10 @@ impl Offer {
                 Expr::col((MarketBoothIden::Table, MarketBoothIden::Slug)),
                 Self::get_shop_slug_alias(),
             )
+            .expr_as(
+                Expr::col((MarketBoothIden::Table, MarketBoothIden::Domain)),
+                Self::get_shop_domain_alias(),
+            )
             .from(OfferIden::Table)
             .left_join(
                 OfferImageIden::Table,
@@ -124,6 +134,7 @@ impl Offer {
                 (OfferIden::Table, OfferIden::OfferId).into_column_ref(),
                 Self::get_market_booth_name_alias().into_column_ref(),
                 Self::get_shop_slug_alias().into_column_ref(),
+                Self::get_shop_domain_alias().into_column_ref(),
             ]);
 
         query
@@ -482,6 +493,9 @@ impl From<&Row> for Offer {
             type_: row.get(OfferIden::Type.to_string().as_str()),
             is_featured: row.get(OfferIden::IsFeatured.to_string().as_str()),
             shop_slug: row.try_get(Self::SHOP_SLUG_ALIAS).unwrap_or_default(),
+            shop_domain: row
+                .try_get(Self::SHOP_DOMAIN_ALIAS)
+                .unwrap_or_default(),
         }
     }
 }

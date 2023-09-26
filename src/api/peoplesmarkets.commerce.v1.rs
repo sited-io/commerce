@@ -696,6 +696,8 @@ pub struct MarketBoothResponse {
     pub minimum_platform_fee_cent: u32,
     #[prost(message, optional, tag = "10")]
     pub customization: ::core::option::Option<ShopCustomizationResponse>,
+    #[prost(string, optional, tag = "11")]
+    pub domain: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -740,6 +742,18 @@ pub struct GetShopBySlugRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetShopBySlugResponse {
+    #[prost(message, optional, tag = "1")]
+    pub market_booth: ::core::option::Option<MarketBoothResponse>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetShopByDomainRequest {
+    #[prost(string, tag = "1")]
+    pub domain: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetShopByDomainResponse {
     #[prost(message, optional, tag = "1")]
     pub market_booth: ::core::option::Option<MarketBoothResponse>,
 }
@@ -919,6 +933,13 @@ pub mod market_booth_service_server {
             request: tonic::Request<super::GetShopBySlugRequest>,
         ) -> std::result::Result<
             tonic::Response<super::GetShopBySlugResponse>,
+            tonic::Status,
+        >;
+        async fn get_shop_by_domain(
+            &self,
+            request: tonic::Request<super::GetShopByDomainRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetShopByDomainResponse>,
             tonic::Status,
         >;
         async fn list_shops(
@@ -1145,6 +1166,52 @@ pub mod market_booth_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetShopBySlugSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.MarketBoothService/GetShopByDomain" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetShopByDomainSvc<T: MarketBoothService>(pub Arc<T>);
+                    impl<
+                        T: MarketBoothService,
+                    > tonic::server::UnaryService<super::GetShopByDomainRequest>
+                    for GetShopByDomainSvc<T> {
+                        type Response = super::GetShopByDomainResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetShopByDomainRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).get_shop_by_domain(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetShopByDomainSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1507,6 +1574,8 @@ pub struct OfferResponse {
     pub is_featured: bool,
     #[prost(string, tag = "14")]
     pub shop_slug: ::prost::alloc::string::String,
+    #[prost(string, optional, tag = "15")]
+    pub shop_domain: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
