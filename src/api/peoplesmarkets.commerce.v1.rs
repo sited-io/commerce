@@ -10,38 +10,46 @@ pub struct ShopCustomizationResponse {
     #[prost(uint64, tag = "4")]
     pub updated_at: u64,
     #[prost(string, optional, tag = "5")]
-    pub logo_image_url: ::core::option::Option<::prost::alloc::string::String>,
+    pub logo_image_light_url: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "6")]
-    pub banner_image_url: ::core::option::Option<::prost::alloc::string::String>,
+    pub logo_image_dark_url: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "7")]
+    pub banner_image_light_url: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, optional, tag = "8")]
+    pub banner_image_dark_url: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(bool, optional, tag = "9")]
+    pub show_banner_in_listing: ::core::option::Option<bool>,
+    #[prost(bool, optional, tag = "10")]
+    pub show_banner_on_home: ::core::option::Option<bool>,
+    #[prost(string, optional, tag = "11")]
     pub header_background_color_light: ::core::option::Option<
         ::prost::alloc::string::String,
     >,
-    #[prost(string, optional, tag = "8")]
+    #[prost(string, optional, tag = "12")]
     pub header_background_color_dark: ::core::option::Option<
         ::prost::alloc::string::String,
     >,
-    #[prost(string, optional, tag = "9")]
+    #[prost(string, optional, tag = "13")]
     pub header_content_color_light: ::core::option::Option<
         ::prost::alloc::string::String,
     >,
-    #[prost(string, optional, tag = "10")]
+    #[prost(string, optional, tag = "14")]
     pub header_content_color_dark: ::core::option::Option<
         ::prost::alloc::string::String,
     >,
-    #[prost(string, optional, tag = "11")]
+    #[prost(string, optional, tag = "15")]
     pub secondary_background_color_light: ::core::option::Option<
         ::prost::alloc::string::String,
     >,
-    #[prost(string, optional, tag = "12")]
+    #[prost(string, optional, tag = "16")]
     pub secondary_background_color_dark: ::core::option::Option<
         ::prost::alloc::string::String,
     >,
-    #[prost(string, optional, tag = "13")]
+    #[prost(string, optional, tag = "17")]
     pub secondary_content_color_light: ::core::option::Option<
         ::prost::alloc::string::String,
     >,
-    #[prost(string, optional, tag = "14")]
+    #[prost(string, optional, tag = "18")]
     pub secondary_content_color_dark: ::core::option::Option<
         ::prost::alloc::string::String,
     >,
@@ -118,6 +126,12 @@ pub struct PutBannerImageToShopRequest {
     pub shop_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub image: ::core::option::Option<super::super::media::v1::MediaUpload>,
+    #[prost(message, optional, tag = "3")]
+    pub image_dark: ::core::option::Option<super::super::media::v1::MediaUpload>,
+    #[prost(bool, optional, tag = "4")]
+    pub show_in_listing: ::core::option::Option<bool>,
+    #[prost(bool, optional, tag = "5")]
+    pub show_on_home: ::core::option::Option<bool>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -138,6 +152,8 @@ pub struct PutLogoImageToShopRequest {
     pub shop_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub image: ::core::option::Option<super::super::media::v1::MediaUpload>,
+    #[prost(message, optional, tag = "3")]
+    pub image_dark: ::core::option::Option<super::super::media::v1::MediaUpload>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

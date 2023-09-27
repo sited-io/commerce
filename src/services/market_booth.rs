@@ -104,12 +104,20 @@ impl MarketBoothService {
                 user_id: shop.user_id.to_string(),
                 created_at: 0,
                 updated_at: 0,
-                banner_image_url: self
+                logo_image_light_url: self
                     .image_service
-                    .get_opt_image_url(customization.banner_image_url_path),
-                logo_image_url: self
+                    .get_opt_image_url(customization.logo_image_light_url_path),
+                logo_image_dark_url: self
                     .image_service
-                    .get_opt_image_url(customization.logo_image_url_path),
+                    .get_opt_image_url(customization.logo_image_dark_url_path),
+                banner_image_light_url: self.image_service.get_opt_image_url(
+                    customization.banner_image_light_url_path,
+                ),
+                banner_image_dark_url: self.image_service.get_opt_image_url(
+                    customization.banner_image_dark_url_path,
+                ),
+                show_banner_in_listing: customization.show_banner_in_listing,
+                show_banner_on_home: customization.show_banner_on_home,
                 header_background_color_light: customization
                     .header_background_color_light,
                 header_background_color_dark: customization

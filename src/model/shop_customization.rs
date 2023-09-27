@@ -22,7 +22,11 @@ pub enum ShopCustomizationIden {
     CreatedAt,
     UpdatedAt,
     LogoImageUrlPath,
+    LogoImageDarkUrlPath,
     BannerImageUrlPath,
+    BannerImageDarkUrlPath,
+    ShowBannerInListing,
+    ShowBannerOnHome,
     HeaderBackgroundColorLight,
     HeaderBackgroundColorDark,
     HeaderContentColorLight,
@@ -39,8 +43,12 @@ pub struct ShopCustomization {
     pub user_id: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub logo_image_url_path: Option<String>,
-    pub banner_image_url_path: Option<String>,
+    pub logo_image_light_url_path: Option<String>,
+    pub logo_image_dark_url_path: Option<String>,
+    pub banner_image_light_url_path: Option<String>,
+    pub banner_image_dark_url_path: Option<String>,
+    pub show_banner_in_listing: Option<bool>,
+    pub show_banner_on_home: Option<bool>,
     pub header_background_color_light: Option<String>,
     pub header_background_color_dark: Option<String>,
     pub header_content_color_light: Option<String>,
@@ -65,6 +73,7 @@ impl ShopCustomization {
         ShopCustomizationIden::SecondaryContentColorDark,
     ];
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn put(
         pool: &Pool,
         shop_id: &Uuid,
@@ -125,19 +134,40 @@ impl ShopCustomization {
         Ok(row.map(Self::from))
     }
 
-    pub async fn update_logo_image_url_path<'a>(
+    pub async fn update_logo_image_url_paths<'a>(
         transaction: &Transaction<'a>,
         shop_id: &Uuid,
         user_id: &String,
-        logo_image_url_path: Option<String>,
+        logo_image_light_url_path: Option<Option<String>>,
+        logo_image_dark_url_path: Option<Option<String>>,
     ) -> Result<Self, DbError> {
-        let (sql, values) = Query::update()
-            .table(ShopCustomizationIden::Table)
-            .value(ShopCustomizationIden::LogoImageUrlPath, logo_image_url_path)
-            .and_where(Expr::col(ShopCustomizationIden::UserId).eq(user_id))
-            .and_where(Expr::col(ShopCustomizationIden::ShopId).eq(*shop_id))
-            .returning_all()
-            .build_postgres(PostgresQueryBuilder);
+        let (sql, values) = {
+            let mut query = Query::update();
+
+            query.table(ShopCustomizationIden::Table);
+
+            if let Some(logo_image_light_url_path) = logo_image_light_url_path {
+                query.value(
+                    ShopCustomizationIden::LogoImageUrlPath,
+                    logo_image_light_url_path,
+                );
+            }
+
+            if let Some(logo_image_dark_url_path) = logo_image_dark_url_path {
+                query.value(
+                    ShopCustomizationIden::LogoImageDarkUrlPath,
+                    logo_image_dark_url_path,
+                );
+            }
+
+            query
+                .and_where(Expr::col(ShopCustomizationIden::UserId).eq(user_id))
+                .and_where(
+                    Expr::col(ShopCustomizationIden::ShopId).eq(*shop_id),
+                )
+                .returning_all()
+                .build_postgres(PostgresQueryBuilder)
+        };
 
         let row = transaction
             .query_one(sql.as_str(), &values.as_params())
@@ -146,22 +176,59 @@ impl ShopCustomization {
         Ok(Self::from(row))
     }
 
-    pub async fn update_banner_image_url_path<'a>(
+    pub async fn update_banner_image_url_paths<'a>(
         transaction: &Transaction<'a>,
         shop_id: &Uuid,
         user_id: &String,
-        banner_image_url_path: Option<String>,
+        banner_image_light_url_path: Option<Option<String>>,
+        banner_image_dark_url_path: Option<Option<String>>,
+        show_in_listing: Option<bool>,
+        show_on_home: Option<bool>,
     ) -> Result<Self, DbError> {
-        let (sql, values) = Query::update()
-            .table(ShopCustomizationIden::Table)
-            .value(
-                ShopCustomizationIden::BannerImageUrlPath,
-                banner_image_url_path,
-            )
-            .and_where(Expr::col(ShopCustomizationIden::UserId).eq(user_id))
-            .and_where(Expr::col(ShopCustomizationIden::ShopId).eq(*shop_id))
-            .returning_all()
-            .build_postgres(PostgresQueryBuilder);
+        let (sql, values) = {
+            let mut query = Query::update();
+
+            query.table(ShopCustomizationIden::Table);
+
+            if let Some(banner_image_light_url_path) =
+                banner_image_light_url_path
+            {
+                query.value(
+                    ShopCustomizationIden::BannerImageUrlPath,
+                    banner_image_light_url_path,
+                );
+            }
+
+            if let Some(banner_image_dark_url_path) = banner_image_dark_url_path
+            {
+                query.value(
+                    ShopCustomizationIden::BannerImageDarkUrlPath,
+                    banner_image_dark_url_path,
+                );
+            }
+
+            if show_in_listing.is_some() {
+                query.value(
+                    ShopCustomizationIden::ShowBannerInListing,
+                    show_in_listing,
+                );
+            }
+
+            if show_on_home.is_some() {
+                query.value(
+                    ShopCustomizationIden::ShowBannerOnHome,
+                    show_on_home,
+                );
+            }
+
+            query
+                .and_where(Expr::col(ShopCustomizationIden::UserId).eq(user_id))
+                .and_where(
+                    Expr::col(ShopCustomizationIden::ShopId).eq(*shop_id),
+                )
+                .returning_all()
+                .build_postgres(PostgresQueryBuilder)
+        };
 
         let row = transaction
             .query_one(sql.as_str(), &values.as_params())
@@ -198,13 +265,31 @@ impl From<&Row> for ShopCustomization {
                 .get(ShopCustomizationIden::CreatedAt.to_string().as_str()),
             updated_at: row
                 .get(ShopCustomizationIden::UpdatedAt.to_string().as_str()),
-            logo_image_url_path: row.get(
+            logo_image_light_url_path: row.get(
                 ShopCustomizationIden::LogoImageUrlPath.to_string().as_str(),
             ),
-            banner_image_url_path: row.get(
+            logo_image_dark_url_path: row.get(
+                ShopCustomizationIden::LogoImageDarkUrlPath
+                    .to_string()
+                    .as_str(),
+            ),
+            banner_image_light_url_path: row.get(
                 ShopCustomizationIden::BannerImageUrlPath
                     .to_string()
                     .as_str(),
+            ),
+            banner_image_dark_url_path: row.get(
+                ShopCustomizationIden::BannerImageDarkUrlPath
+                    .to_string()
+                    .as_str(),
+            ),
+            show_banner_in_listing: row.get(
+                ShopCustomizationIden::ShowBannerInListing
+                    .to_string()
+                    .as_str(),
+            ),
+            show_banner_on_home: row.get(
+                ShopCustomizationIden::ShowBannerOnHome.to_string().as_str(),
             ),
             header_background_color_light: row.get(
                 ShopCustomizationIden::HeaderBackgroundColorLight
@@ -258,8 +343,12 @@ impl From<Row> for ShopCustomization {
 
 #[derive(Debug, Clone)]
 pub struct ShopCustomizationAsRel {
-    pub logo_image_url_path: Option<String>,
-    pub banner_image_url_path: Option<String>,
+    pub logo_image_light_url_path: Option<String>,
+    pub logo_image_dark_url_path: Option<String>,
+    pub banner_image_light_url_path: Option<String>,
+    pub banner_image_dark_url_path: Option<String>,
+    pub show_banner_in_listing: Option<bool>,
+    pub show_banner_on_home: Option<bool>,
     pub header_background_color_light: Option<String>,
     pub header_background_color_dark: Option<String>,
     pub header_content_color_light: Option<String>,
@@ -281,7 +370,27 @@ impl ShopCustomizationAsRel {
                 .into(),
                 Expr::col((
                     ShopCustomizationIden::Table,
+                    ShopCustomizationIden::LogoImageDarkUrlPath,
+                ))
+                .into(),
+                Expr::col((
+                    ShopCustomizationIden::Table,
                     ShopCustomizationIden::BannerImageUrlPath,
+                ))
+                .into(),
+                Expr::col((
+                    ShopCustomizationIden::Table,
+                    ShopCustomizationIden::BannerImageDarkUrlPath,
+                ))
+                .into(),
+                Expr::col((
+                    ShopCustomizationIden::Table,
+                    ShopCustomizationIden::ShowBannerInListing,
+                ))
+                .into(),
+                Expr::col((
+                    ShopCustomizationIden::Table,
+                    ShopCustomizationIden::ShowBannerOnHome,
                 ))
                 .into(),
                 Expr::col((
@@ -343,12 +452,32 @@ impl<'a> FromSql<'a> for ShopCustomizationAsRel {
 
         let oid = private::read_be_i32(&mut raw)?;
         let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let logo_image_url_path: Option<String> =
+        let logo_image_light_url_path: Option<String> =
             private::read_value(&ty, &mut raw)?;
 
         let oid = private::read_be_i32(&mut raw)?;
         let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let banner_image_url_path: Option<String> =
+        let logo_image_dark_url_path: Option<String> =
+            private::read_value(&ty, &mut raw)?;
+
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<Option<String>>(oid)?;
+        let banner_image_light_url_path: Option<String> =
+            private::read_value(&ty, &mut raw)?;
+
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<Option<String>>(oid)?;
+        let banner_image_dark_url_path: Option<String> =
+            private::read_value(&ty, &mut raw)?;
+
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<Option<bool>>(oid)?;
+        let show_banner_in_listing: Option<bool> =
+            private::read_value(&ty, &mut raw)?;
+
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<Option<bool>>(oid)?;
+        let show_banner_on_home: Option<bool> =
             private::read_value(&ty, &mut raw)?;
 
         let oid = private::read_be_i32(&mut raw)?;
@@ -392,8 +521,12 @@ impl<'a> FromSql<'a> for ShopCustomizationAsRel {
             private::read_value(&ty, &mut raw)?;
 
         Ok(Self {
-            logo_image_url_path,
-            banner_image_url_path,
+            logo_image_light_url_path,
+            logo_image_dark_url_path,
+            banner_image_light_url_path,
+            banner_image_dark_url_path,
+            show_banner_in_listing,
+            show_banner_on_home,
             header_background_color_light,
             header_background_color_dark,
             header_content_color_light,

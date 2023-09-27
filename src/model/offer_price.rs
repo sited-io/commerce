@@ -45,6 +45,7 @@ pub struct OfferPrice {
 }
 
 impl OfferPrice {
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         pool: &Pool,
         offer_id: &Uuid,
@@ -106,6 +107,7 @@ impl OfferPrice {
             .map(Self::from))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn put(
         pool: &Pool,
         user_id: &String,

@@ -339,6 +339,7 @@ impl Offer {
         Ok(row.map(Self::from))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn list(
         pool: &Pool,
         market_booth_id: Option<Uuid>,
@@ -397,6 +398,7 @@ impl Offer {
         Ok(rows.iter().map(Self::from).collect())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update(
         pool: &Pool,
         user_id: &String,

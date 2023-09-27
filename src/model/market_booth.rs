@@ -327,6 +327,7 @@ impl MarketBooth {
         Ok(rows.iter().map(Self::from).collect())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update(
         pool: &Pool,
         user_id: &String,

@@ -49,7 +49,7 @@ impl ShopCustomizationService {
         ShopCustomizationServiceServer::new(service)
     }
 
-    fn to_response(
+    fn customization_to_response(
         &self,
         shop_customization: ShopCustomization,
     ) -> ShopCustomizationResponse {
@@ -64,12 +64,21 @@ impl ShopCustomizationService {
                 shop_customization.updated_at.timestamp(),
             )
             .unwrap(),
-            logo_image_url: self
+            logo_image_light_url: self.image_service.get_opt_image_url(
+                shop_customization.logo_image_light_url_path,
+            ),
+            logo_image_dark_url: self
                 .image_service
-                .get_opt_image_url(shop_customization.logo_image_url_path),
-            banner_image_url: self
-                .image_service
-                .get_opt_image_url(shop_customization.banner_image_url_path),
+                .get_opt_image_url(shop_customization.logo_image_dark_url_path),
+
+            banner_image_light_url: self.image_service.get_opt_image_url(
+                shop_customization.banner_image_light_url_path,
+            ),
+            banner_image_dark_url: self.image_service.get_opt_image_url(
+                shop_customization.banner_image_dark_url_path,
+            ),
+            show_banner_in_listing: shop_customization.show_banner_in_listing,
+            show_banner_on_home: shop_customization.show_banner_on_home,
             header_background_color_light: shop_customization
                 .header_background_color_light,
             header_background_color_dark: shop_customization
@@ -134,7 +143,9 @@ impl shop_customization_service_server::ShopCustomizationService
         .await?;
 
         Ok(Response::new(PutShopCustomizationResponse {
-            shop_customization: Some(self.to_response(shop_customization)),
+            shop_customization: Some(
+                self.customization_to_response(shop_customization),
+            ),
         }))
     }
 
@@ -151,7 +162,9 @@ impl shop_customization_service_server::ShopCustomizationService
             .ok_or(Status::not_found(shop_id))?;
 
         Ok(Response::new(GetShopCustomizationResponse {
-            shop_customization: Some(self.to_response(shop_customization)),
+            shop_customization: Some(
+                self.customization_to_response(shop_customization),
+            ),
         }))
     }
 
@@ -174,10 +187,11 @@ impl shop_customization_service_server::ShopCustomizationService
 
         ShopCustomization::delete(&transaction, &shop_uuid, &user_id).await?;
 
-        if let Some(image_path) = shop_customization.logo_image_url_path {
+        if let Some(image_path) = shop_customization.logo_image_light_url_path {
             self.image_service.remove_image(&image_path).await?;
         }
-        if let Some(image_path) = shop_customization.banner_image_url_path {
+        if let Some(image_path) = shop_customization.banner_image_light_url_path
+        {
             self.image_service.remove_image(&image_path).await?;
         }
 
@@ -192,13 +206,13 @@ impl shop_customization_service_server::ShopCustomizationService
     ) -> Result<Response<PutBannerImageToShopResponse>, Status> {
         let user_id = get_user_id(request.metadata(), &self.verifier).await?;
 
-        let PutBannerImageToShopRequest { shop_id, image } =
-            request.into_inner();
-
-        let image = match image {
-            None => return Err(Status::invalid_argument("image")),
-            Some(i) => i,
-        };
+        let PutBannerImageToShopRequest {
+            shop_id,
+            image,
+            image_dark,
+            show_in_listing,
+            show_on_home,
+        } = request.into_inner();
 
         let shop_uuid = parse_uuid(&shop_id, "shop_id")?;
 
@@ -206,28 +220,68 @@ impl shop_customization_service_server::ShopCustomizationService
             .await?
             .ok_or_else(|| Status::not_found(shop_id))?;
 
-        self.image_service.validate_image(&image.data)?;
+        let mut image_light_update_path = None;
+        let mut image_light_update = None;
+        if let Some(image) = image {
+            self.image_service.validate_image(&image.data)?;
 
-        if let Some(existing) = shop_customization.banner_image_url_path {
-            self.image_service.remove_image(&existing).await?;
-        }
+            if let Some(existing) =
+                shop_customization.banner_image_light_url_path
+            {
+                self.image_service.remove_image(&existing).await?;
+            }
 
-        let image_path = Self::gen_image_path(&user_id, &shop_uuid);
+            let image_path = Self::gen_image_path(&user_id, &shop_uuid);
+
+            image_light_update_path = Some(Some(image_path));
+            image_light_update = Some(image);
+        };
+
+        let mut image_dark_update_path = None;
+        let mut image_dark_update = None;
+        if let Some(image) = image_dark {
+            self.image_service.validate_image(&image.data)?;
+
+            if let Some(existing) =
+                shop_customization.banner_image_dark_url_path
+            {
+                self.image_service.remove_image(&existing).await?;
+            }
+
+            let image_path = Self::gen_image_path(&user_id, &shop_uuid);
+
+            image_dark_update_path = Some(Some(image_path));
+            image_dark_update = Some(image);
+        };
 
         let mut conn = self.pool.get().await.map_err(DbError::from)?;
         let transaction = conn.transaction().await.map_err(DbError::from)?;
 
-        ShopCustomization::update_banner_image_url_path(
+        ShopCustomization::update_banner_image_url_paths(
             &transaction,
             &shop_uuid,
             &user_id,
-            Some(image_path.clone()),
+            image_light_update_path.clone(),
+            image_dark_update_path.clone(),
+            show_in_listing,
+            show_on_home,
         )
         .await?;
 
-        self.image_service
-            .put_image(&image_path, &image.data)
-            .await?;
+        if let (Some(Some(image_path)), Some(image)) =
+            (image_light_update_path, image_light_update)
+        {
+            self.image_service
+                .put_image(&image_path, &image.data)
+                .await?;
+        }
+        if let (Some(Some(image_path)), Some(image)) =
+            (image_dark_update_path, image_dark_update)
+        {
+            self.image_service
+                .put_image(&image_path, &image.data)
+                .await?;
+        }
 
         transaction.commit().await.map_err(DbError::from)?;
 
@@ -251,16 +305,25 @@ impl shop_customization_service_server::ShopCustomizationService
         let mut conn = self.pool.get().await.map_err(DbError::from)?;
         let transaction = conn.transaction().await.map_err(DbError::from)?;
 
-        ShopCustomization::update_banner_image_url_path(
+        ShopCustomization::update_banner_image_url_paths(
             &transaction,
             &shop_id,
             &user_id,
+            Some(None),
+            Some(None),
+            None,
             None,
         )
         .await?;
 
-        if let Some(image_path) = shop_customization.banner_image_url_path {
-            self.image_service.remove_image(&image_path).await?;
+        if let Some(image_light_path) =
+            shop_customization.banner_image_light_url_path
+        {
+            self.image_service.remove_image(&image_light_path).await?;
+        }
+        if let Some(image_dark) = shop_customization.banner_image_dark_url_path
+        {
+            self.image_service.remove_image(&image_dark).await?;
         }
 
         transaction.commit().await.map_err(DbError::from)?;
@@ -274,12 +337,11 @@ impl shop_customization_service_server::ShopCustomizationService
     ) -> Result<Response<PutLogoImageToShopResponse>, Status> {
         let user_id = get_user_id(request.metadata(), &self.verifier).await?;
 
-        let PutLogoImageToShopRequest { shop_id, image } = request.into_inner();
-
-        let image = match image {
-            None => return Err(Status::invalid_argument("image")),
-            Some(i) => i,
-        };
+        let PutLogoImageToShopRequest {
+            shop_id,
+            image,
+            image_dark,
+        } = request.into_inner();
 
         let shop_uuid = parse_uuid(&shop_id, "shop_id")?;
 
@@ -287,28 +349,62 @@ impl shop_customization_service_server::ShopCustomizationService
             .await?
             .ok_or_else(|| Status::not_found(shop_id))?;
 
-        self.image_service.validate_image(&image.data)?;
+        let mut image_light_update_path = None;
+        let mut image_light_update = None;
+        if let Some(image) = image {
+            self.image_service.validate_image(&image.data)?;
 
-        if let Some(existing) = shop_customization.logo_image_url_path {
-            self.image_service.remove_image(&existing).await?;
+            if let Some(existing) = shop_customization.logo_image_light_url_path
+            {
+                self.image_service.remove_image(&existing).await?;
+            }
+
+            let image_path = Self::gen_image_path(&user_id, &shop_uuid);
+            image_light_update_path = Some(Some(image_path));
+            image_light_update = Some(image);
         }
 
-        let image_path = Self::gen_image_path(&user_id, &shop_uuid);
+        let mut image_dark_update_path = None;
+        let mut image_dark_update = None;
+        if let Some(image) = image_dark {
+            self.image_service.validate_image(&image.data)?;
+
+            if let Some(existing) = shop_customization.logo_image_dark_url_path
+            {
+                self.image_service.remove_image(&existing).await?;
+            }
+
+            let image_path = Self::gen_image_path(&user_id, &shop_uuid);
+            image_dark_update_path = Some(Some(image_path));
+            image_dark_update = Some(image);
+        }
 
         let mut conn = self.pool.get().await.map_err(DbError::from)?;
         let transaction = conn.transaction().await.map_err(DbError::from)?;
 
-        ShopCustomization::update_logo_image_url_path(
+        ShopCustomization::update_logo_image_url_paths(
             &transaction,
             &shop_uuid,
             &user_id,
-            Some(image_path.clone()),
+            image_light_update_path.clone(),
+            image_dark_update_path.clone(),
         )
         .await?;
 
-        self.image_service
-            .put_image(&image_path, &image.data)
-            .await?;
+        if let (Some(Some(image_path)), Some(image)) =
+            (image_light_update_path, image_light_update)
+        {
+            self.image_service
+                .put_image(&image_path, &image.data)
+                .await?;
+        }
+        if let (Some(Some(image_path)), Some(image)) =
+            (image_dark_update_path, image_dark_update)
+        {
+            self.image_service
+                .put_image(&image_path, &image.data)
+                .await?;
+        }
 
         transaction.commit().await.map_err(DbError::from)?;
 
@@ -332,15 +428,19 @@ impl shop_customization_service_server::ShopCustomizationService
         let mut conn = self.pool.get().await.map_err(DbError::from)?;
         let transaction = conn.transaction().await.map_err(DbError::from)?;
 
-        ShopCustomization::update_banner_image_url_path(
+        ShopCustomization::update_logo_image_url_paths(
             &transaction,
             &shop_id,
             &user_id,
-            None,
+            Some(None),
+            Some(None),
         )
         .await?;
 
-        if let Some(image_path) = shop_customization.logo_image_url_path {
+        if let Some(image_path) = shop_customization.logo_image_light_url_path {
+            self.image_service.remove_image(&image_path).await?;
+        }
+        if let Some(image_path) = shop_customization.logo_image_dark_url_path {
             self.image_service.remove_image(&image_path).await?;
         }
 
