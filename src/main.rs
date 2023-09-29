@@ -5,13 +5,13 @@ use tonic::transport::Server;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 
-use commerce::api::peoplesmarkets::commerce::v1::market_booth_service_server::MarketBoothServiceServer;
+use commerce::api::peoplesmarkets::commerce::v1::shop_service_server::ShopServiceServer;
 use commerce::db::{init_db_pool, migrate};
 use commerce::images::ImageService;
 use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
 use commerce::{
-    get_env_var, init_jwks_verifier, MarketBoothService, OfferService,
-    ShopCustomizationService, ShopDomainService,
+    get_env_var, init_jwks_verifier, OfferService, ShopCustomizationService,
+    ShopDomainService, ShopService,
 };
 
 #[tokio::main(flavor = "current_thread")]
@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (mut health_reporter, health_service) =
         tonic_health::server::health_reporter();
     health_reporter
-        .set_serving::<MarketBoothServiceServer<MarketBoothService>>()
+        .set_serving::<ShopServiceServer<ShopService>>()
         .await;
     health_reporter
         .set_serving::<OfferServiceServer<OfferService>>()
@@ -76,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()
         .unwrap();
 
-    let market_booth_service = MarketBoothService::build(
+    let shop_service = ShopService::build(
         db_pool.clone(),
         init_jwks_verifier(&jwks_host, &jwks_url)?,
         image_service.clone(),
@@ -127,7 +127,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .accept_http1(true)
         .add_service(tonic_web::enable(reflection_service))
         .add_service(tonic_web::enable(health_service))
-        .add_service(tonic_web::enable(market_booth_service))
+        .add_service(tonic_web::enable(shop_service))
         .add_service(tonic_web::enable(shop_customization_service))
         .add_service(tonic_web::enable(shop_domain_service))
         .add_service(tonic_web::enable(offer_service))

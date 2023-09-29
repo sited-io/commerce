@@ -66,7 +66,8 @@ impl OfferService {
 
         Ok(OfferResponse {
             offer_id: offer.offer_id.to_string(),
-            market_booth_id: offer.market_booth_id.to_string(),
+            shop_id: offer.shop_id.to_string(),
+            shop_name: offer.shop_name,
             user_id: offer.user_id,
             created_at: offer.created_at.timestamp(),
             updated_at: offer.updated_at.timestamp(),
@@ -75,7 +76,6 @@ impl OfferService {
             is_active: offer.is_active,
             images: self.offer_images_to_response(offer.images),
             price,
-            market_booth_name: offer.market_booth_name,
             r#type,
             is_featured: offer.is_featured,
             shop_slug: offer.shop_slug,
@@ -169,14 +169,11 @@ impl OfferService {
 
     fn build_image_path(
         user_id: &String,
-        market_booth_id: &Uuid,
+        shop_id: &Uuid,
         offer_id: &Uuid,
         offer_image_id: &Uuid,
     ) -> String {
-        format!(
-            "{}/{}/{}/{}",
-            user_id, market_booth_id, offer_id, offer_image_id
-        )
+        format!("{}/{}/{}/{}", user_id, shop_id, offer_id, offer_image_id)
     }
 }
 
@@ -189,20 +186,20 @@ impl offer_service_server::OfferService for OfferService {
         let user_id = get_user_id(request.metadata(), &self.verifier).await?;
 
         let CreateOfferRequest {
-            market_booth_id,
+            shop_id,
             name,
             description,
             r#type,
             is_featured,
         } = request.into_inner();
 
-        let market_booth_id = parse_uuid(&market_booth_id, "market_booth_id")?;
+        let shop_id = parse_uuid(&shop_id, "shop_id")?;
 
         let type_ = Self::get_offer_type(r#type)?;
 
         let created_offer = Offer::create(
             &self.pool,
-            market_booth_id,
+            shop_id,
             &user_id,
             name,
             description,
@@ -241,7 +238,7 @@ impl offer_service_server::OfferService for OfferService {
             get_user_id(request.metadata(), &self.verifier).await.ok();
 
         let ListOffersRequest {
-            market_booth_id,
+            shop_id,
             user_id,
             pagination,
             filter,
@@ -250,7 +247,7 @@ impl offer_service_server::OfferService for OfferService {
 
         let (limit, offset, pagination) = paginate(pagination)?;
 
-        if filter.is_none() && order_by.is_none() && market_booth_id.is_none() {
+        if filter.is_none() && order_by.is_none() && shop_id.is_none() {
             return Err(Status::invalid_argument("filter,order_by"));
         }
 
@@ -258,14 +255,14 @@ impl offer_service_server::OfferService for OfferService {
 
         let order_by = order_by.map(|o| (o.field(), o.direction()));
 
-        let market_booth_id = match market_booth_id {
-            Some(id) => Some(parse_uuid(&id, "market_booth_id")?),
+        let shop_id = match shop_id {
+            Some(id) => Some(parse_uuid(&id, "shop_id")?),
             None => None,
         };
 
         let found_offers = Offer::list(
             &self.pool,
-            market_booth_id,
+            shop_id,
             user_id.as_ref(),
             limit,
             offset,
@@ -384,7 +381,7 @@ impl offer_service_server::OfferService for OfferService {
         let offer_image_id = Uuid::new_v4();
         let image_path = &Self::build_image_path(
             &user_id,
-            &offer.market_booth_id,
+            &offer.shop_id,
             &offer_id,
             &offer_image_id,
         );

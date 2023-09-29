@@ -1,4 +1,0 @@
-ALTER TABLE
-  offers
-ADD
-  COLUMN is_active BOOLEAN NOT NULL DEFAULT 'f';

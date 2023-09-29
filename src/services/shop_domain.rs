@@ -14,7 +14,7 @@ use crate::api::peoplesmarkets::commerce::v1::{
 };
 use crate::auth::{get_user_id, verify_service_user};
 use crate::db::DbError;
-use crate::model::{MarketBooth, ShopDomain};
+use crate::model::{Shop, ShopDomain};
 use crate::parse_uuid;
 
 pub struct ShopDomainService {
@@ -131,8 +131,7 @@ impl shop_domain_service_server::ShopDomainService for ShopDomainService {
         )
         .await?;
 
-        MarketBooth::update_domain(&transaction, &shop_uuid, Some(domain))
-            .await?;
+        Shop::update_domain(&transaction, &shop_uuid, Some(domain)).await?;
 
         transaction.commit().await.map_err(DbError::from)?;
 
@@ -155,7 +154,7 @@ impl shop_domain_service_server::ShopDomainService for ShopDomainService {
 
         ShopDomain::delete(&transaction, &user_id, &shop_uuid, &domain).await?;
 
-        MarketBooth::update_domain(&transaction, &shop_uuid, None).await?;
+        Shop::update_domain(&transaction, &shop_uuid, None).await?;
 
         transaction.commit().await.map_err(DbError::from)?;
 

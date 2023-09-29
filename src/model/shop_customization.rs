@@ -21,9 +21,9 @@ pub enum ShopCustomizationIden {
     UserId,
     CreatedAt,
     UpdatedAt,
-    LogoImageUrlPath,
+    LogoImageLightUrlPath,
     LogoImageDarkUrlPath,
-    BannerImageUrlPath,
+    BannerImageLightUrlPath,
     BannerImageDarkUrlPath,
     ShowBannerInListing,
     ShowBannerOnHome,
@@ -148,7 +148,7 @@ impl ShopCustomization {
 
             if let Some(logo_image_light_url_path) = logo_image_light_url_path {
                 query.value(
-                    ShopCustomizationIden::LogoImageUrlPath,
+                    ShopCustomizationIden::LogoImageLightUrlPath,
                     logo_image_light_url_path,
                 );
             }
@@ -194,7 +194,7 @@ impl ShopCustomization {
                 banner_image_light_url_path
             {
                 query.value(
-                    ShopCustomizationIden::BannerImageUrlPath,
+                    ShopCustomizationIden::BannerImageLightUrlPath,
                     banner_image_light_url_path,
                 );
             }
@@ -266,7 +266,9 @@ impl From<&Row> for ShopCustomization {
             updated_at: row
                 .get(ShopCustomizationIden::UpdatedAt.to_string().as_str()),
             logo_image_light_url_path: row.get(
-                ShopCustomizationIden::LogoImageUrlPath.to_string().as_str(),
+                ShopCustomizationIden::LogoImageLightUrlPath
+                    .to_string()
+                    .as_str(),
             ),
             logo_image_dark_url_path: row.get(
                 ShopCustomizationIden::LogoImageDarkUrlPath
@@ -274,7 +276,7 @@ impl From<&Row> for ShopCustomization {
                     .as_str(),
             ),
             banner_image_light_url_path: row.get(
-                ShopCustomizationIden::BannerImageUrlPath
+                ShopCustomizationIden::BannerImageLightUrlPath
                     .to_string()
                     .as_str(),
             ),
@@ -365,7 +367,7 @@ impl ShopCustomizationAsRel {
             .args([Expr::tuple([
                 Expr::col((
                     ShopCustomizationIden::Table,
-                    ShopCustomizationIden::LogoImageUrlPath,
+                    ShopCustomizationIden::LogoImageLightUrlPath,
                 ))
                 .into(),
                 Expr::col((
@@ -375,7 +377,7 @@ impl ShopCustomizationAsRel {
                 .into(),
                 Expr::col((
                     ShopCustomizationIden::Table,
-                    ShopCustomizationIden::BannerImageUrlPath,
+                    ShopCustomizationIden::BannerImageLightUrlPath,
                 ))
                 .into(),
                 Expr::col((

@@ -17,14 +17,14 @@ use crate::db::{build_simple_plain_ts_query, DbError};
 
 use super::offer_image::{OfferImageAsRel, OfferImageAsRelVec};
 use super::offer_price::{OfferPriceAsRel, OfferPriceAsRelVec, OfferPriceIden};
-use super::{MarketBoothIden, OfferImageIden};
+use super::{OfferImageIden, ShopIden};
 
 #[derive(Debug, Clone, Copy, Iden)]
 #[iden(rename = "offers")]
 pub enum OfferIden {
     Table,
     OfferId,
-    MarketBoothId,
+    ShopId,
     UserId,
     CreatedAt,
     UpdatedAt,
@@ -32,35 +32,35 @@ pub enum OfferIden {
     NameTs,
     Description,
     DescriptionTs,
-    IsActive,
     #[iden(rename = "type_")]
     Type,
+    IsActive,
     IsFeatured,
 }
 
 #[derive(Debug, Clone)]
 pub struct Offer {
     pub offer_id: Uuid,
-    pub market_booth_id: Uuid,
+    pub shop_id: Uuid,
+    pub shop_name: String,
+    pub shop_slug: String,
+    pub shop_domain: Option<String>,
     pub user_id: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub name: String,
     pub description: String,
     pub is_active: bool,
+    pub is_featured: bool,
+    pub type_: Option<String>,
     pub images: Vec<OfferImageAsRel>,
     pub price: Option<OfferPriceAsRel>,
-    pub market_booth_name: String,
-    pub type_: Option<String>,
-    pub is_featured: bool,
-    pub shop_slug: String,
-    pub shop_domain: Option<String>,
 }
 
 impl Offer {
     const OFFER_IMAGES_ALIAS: &str = "images";
     const OFFER_PRICES_ALIAS: &str = "prices";
-    const MARKET_BOOTH_NAME_ALIAS: &str = "market_booth_name";
+    const SHOP_NAME_ALIAS: &str = "shop_name";
     const SHOP_SLUG_ALIAS: &str = "shop_slug";
     const SHOP_DOMAIN_ALIAS: &str = "shop_domain";
     const NAME_TS_RANK_ALIAS: &str = "name_ts_rank";
@@ -74,8 +74,8 @@ impl Offer {
         Alias::new(Self::OFFER_PRICES_ALIAS)
     }
 
-    fn get_market_booth_name_alias() -> Alias {
-        Alias::new(Self::MARKET_BOOTH_NAME_ALIAS)
+    fn get_shop_name_alias() -> Alias {
+        Alias::new(Self::SHOP_NAME_ALIAS)
     }
 
     fn get_shop_slug_alias() -> Alias {
@@ -102,15 +102,15 @@ impl Offer {
             .expr_as(OfferImageAsRel::get_agg(), Self::get_offer_images_alias())
             .expr_as(OfferPriceAsRel::get_agg(), Self::get_offer_price_alias())
             .expr_as(
-                Expr::col((MarketBoothIden::Table, MarketBoothIden::Name)),
-                Self::get_market_booth_name_alias(),
+                Expr::col((ShopIden::Table, ShopIden::Name)),
+                Self::get_shop_name_alias(),
             )
             .expr_as(
-                Expr::col((MarketBoothIden::Table, MarketBoothIden::Slug)),
+                Expr::col((ShopIden::Table, ShopIden::Slug)),
                 Self::get_shop_slug_alias(),
             )
             .expr_as(
-                Expr::col((MarketBoothIden::Table, MarketBoothIden::Domain)),
+                Expr::col((ShopIden::Table, ShopIden::Domain)),
                 Self::get_shop_domain_alias(),
             )
             .from(OfferIden::Table)
@@ -125,14 +125,13 @@ impl Offer {
                     .equals((OfferPriceIden::Table, OfferPriceIden::OfferId)),
             )
             .left_join(
-                MarketBoothIden::Table,
-                Expr::col((OfferIden::Table, OfferIden::MarketBoothId)).equals(
-                    (MarketBoothIden::Table, MarketBoothIden::MarketBoothId),
-                ),
+                ShopIden::Table,
+                Expr::col((OfferIden::Table, OfferIden::ShopId))
+                    .equals((ShopIden::Table, ShopIden::ShopId)),
             )
             .group_by_columns([
                 (OfferIden::Table, OfferIden::OfferId).into_column_ref(),
-                Self::get_market_booth_name_alias().into_column_ref(),
+                Self::get_shop_name_alias().into_column_ref(),
                 Self::get_shop_slug_alias().into_column_ref(),
                 Self::get_shop_domain_alias().into_column_ref(),
             ]);
@@ -260,7 +259,7 @@ impl Offer {
 
     pub async fn create(
         pool: &Pool,
-        market_booth_id: Uuid,
+        shop_id: Uuid,
         user_id: &String,
         name: String,
         description: Option<String>,
@@ -272,7 +271,7 @@ impl Offer {
         let (sql, values) = Query::insert()
             .into_table(OfferIden::Table)
             .columns([
-                OfferIden::MarketBoothId,
+                OfferIden::ShopId,
                 OfferIden::UserId,
                 OfferIden::Name,
                 OfferIden::Description,
@@ -280,7 +279,7 @@ impl Offer {
                 OfferIden::IsFeatured,
             ])
             .values([
-                market_booth_id.into(),
+                shop_id.into(),
                 user_id.into(),
                 name.into(),
                 description.unwrap_or_default().into(),
@@ -342,7 +341,7 @@ impl Offer {
     #[allow(clippy::too_many_arguments)]
     pub async fn list(
         pool: &Pool,
-        market_booth_id: Option<Uuid>,
+        shop_id: Option<Uuid>,
         user_id: Option<&String>,
         limit: u64,
         offset: u64,
@@ -355,10 +354,10 @@ impl Offer {
         let (sql, values) = {
             let mut query = Self::select_with_relations();
 
-            if let Some(market_booth_id) = market_booth_id {
+            if let Some(shop_id) = shop_id {
                 query.cond_where(
-                    Expr::col((OfferIden::Table, OfferIden::MarketBoothId))
-                        .eq(market_booth_id),
+                    Expr::col((OfferIden::Table, OfferIden::ShopId))
+                        .eq(shop_id),
                 );
             }
 
@@ -479,8 +478,7 @@ impl From<&Row> for Offer {
 
         Self {
             offer_id: row.get(OfferIden::OfferId.to_string().as_str()),
-            market_booth_id: row
-                .get(OfferIden::MarketBoothId.to_string().as_str()),
+            shop_id: row.get(OfferIden::ShopId.to_string().as_str()),
             user_id: row.get(OfferIden::UserId.to_string().as_str()),
             created_at: row.get(OfferIden::CreatedAt.to_string().as_str()),
             updated_at: row.get(OfferIden::UpdatedAt.to_string().as_str()),
@@ -489,9 +487,7 @@ impl From<&Row> for Offer {
             is_active: row.get(OfferIden::IsActive.to_string().as_str()),
             images,
             price: prices.and_then(|p| p.0.first().cloned()),
-            market_booth_name: row
-                .try_get(Self::MARKET_BOOTH_NAME_ALIAS)
-                .unwrap_or_default(),
+            shop_name: row.try_get(Self::SHOP_NAME_ALIAS).unwrap_or_default(),
             type_: row.get(OfferIden::Type.to_string().as_str()),
             is_featured: row.get(OfferIden::IsFeatured.to_string().as_str()),
             shop_slug: row.try_get(Self::SHOP_SLUG_ALIAS).unwrap_or_default(),

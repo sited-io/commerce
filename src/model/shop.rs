@@ -10,7 +10,7 @@ use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
 use crate::api::peoplesmarkets::commerce::v1::{
-    MarketBoothsFilterField, MarketBoothsOrderByField,
+    ShopsFilterField, ShopsOrderByField,
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::db::{build_simple_plain_ts_query, DbError};
@@ -20,41 +20,39 @@ use super::shop_customization::{
 };
 
 #[derive(Debug, Clone, Iden)]
-#[iden(rename = "market_booths")]
-pub enum MarketBoothIden {
+#[iden(rename = "shops")]
+pub enum ShopIden {
     Table,
-    MarketBoothId,
+    ShopId,
     UserId,
     CreatedAt,
     UpdatedAt,
+    Slug,
+    Domain,
     Name,
     NameTs,
-    Slug,
     Description,
     DescriptionTs,
-    ImageUrlPath,
     PlatformFeePercent,
     MinimumPlatformFeeCent,
-    Domain,
 }
 
 #[derive(Debug, Clone)]
-pub struct MarketBooth {
-    pub market_booth_id: Uuid,
+pub struct Shop {
+    pub shop_id: Uuid,
     pub user_id: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub name: String,
     pub slug: String,
+    pub domain: Option<String>,
+    pub name: String,
     pub description: Option<String>,
-    pub image_url_path: Option<String>,
     pub platform_fee_percent: u32,
     pub minimum_platform_fee_cent: u32,
     pub customization: Option<ShopCustomizationAsRel>,
-    pub domain: Option<String>,
 }
 
-impl MarketBooth {
+impl Shop {
     const SHOP_CUSTOMIZATION_ALIAS: &str = "shop_customization";
 
     fn get_shop_customization_alias() -> Alias {
@@ -65,37 +63,31 @@ impl MarketBooth {
         let mut query = Query::select();
 
         query
-            .column((MarketBoothIden::Table, Asterisk))
+            .column((ShopIden::Table, Asterisk))
             .expr_as(
                 ShopCustomizationAsRel::get_agg(),
                 Self::get_shop_customization_alias(),
             )
-            .from(MarketBoothIden::Table)
+            .from(ShopIden::Table)
             .left_join(
                 ShopCustomizationIden::Table,
                 Expr::col((
                     ShopCustomizationIden::Table,
                     ShopCustomizationIden::ShopId,
                 ))
-                .equals((
-                    MarketBoothIden::Table,
-                    MarketBoothIden::MarketBoothId,
-                )),
+                .equals((ShopIden::Table, ShopIden::ShopId)),
             )
-            .group_by_col((
-                MarketBoothIden::Table,
-                MarketBoothIden::MarketBoothId,
-            ));
+            .group_by_col((ShopIden::Table, ShopIden::ShopId));
 
         query
     }
 
     fn add_order_by(
         query: &mut SelectStatement,
-        order_by_field: MarketBoothsOrderByField,
+        order_by_field: ShopsOrderByField,
         order_by_direction: Direction,
     ) {
-        use MarketBoothsOrderByField::*;
+        use ShopsOrderByField::*;
 
         let order = match order_by_direction {
             Direction::Unspecified | Direction::Asc => Order::Asc,
@@ -103,18 +95,13 @@ impl MarketBooth {
         };
 
         match order_by_field {
-            Unspecified | CreatedAt => query.order_by(
-                (MarketBoothIden::Table, MarketBoothIden::CreatedAt),
-                order,
-            ),
-            UpdatedAt => query.order_by(
-                (MarketBoothIden::Table, MarketBoothIden::UpdatedAt),
-                order,
-            ),
-            Name => query.order_by(
-                (MarketBoothIden::Table, MarketBoothIden::Name),
-                order,
-            ),
+            Unspecified | CreatedAt => {
+                query.order_by((ShopIden::Table, ShopIden::CreatedAt), order)
+            }
+            UpdatedAt => {
+                query.order_by((ShopIden::Table, ShopIden::UpdatedAt), order)
+            }
+            Name => query.order_by((ShopIden::Table, ShopIden::Name), order),
             Random => query.order_by_expr(
                 SimpleExpr::FunctionCall(Func::random()),
                 Order::Asc,
@@ -124,32 +111,24 @@ impl MarketBooth {
 
     fn add_filter(
         query: &mut SelectStatement,
-        filter_field: MarketBoothsFilterField,
+        filter_field: ShopsFilterField,
         filter_query: String,
     ) {
-        use MarketBoothsFilterField::*;
+        use ShopsFilterField::*;
 
         match filter_field {
             Unspecified => {}
-            Name => Self::add_ts_filter(
-                query,
-                MarketBoothIden::NameTs,
-                &filter_query,
-            ),
+            Name => Self::add_ts_filter(query, ShopIden::NameTs, &filter_query),
             Description => Self::add_ts_filter(
                 query,
-                MarketBoothIden::DescriptionTs,
+                ShopIden::DescriptionTs,
                 &filter_query,
             ),
             NameAndDescription => {
+                Self::add_ts_filter(query, ShopIden::NameTs, &filter_query);
                 Self::add_ts_filter(
                     query,
-                    MarketBoothIden::NameTs,
-                    &filter_query,
-                );
-                Self::add_ts_filter(
-                    query,
-                    MarketBoothIden::DescriptionTs,
+                    ShopIden::DescriptionTs,
                     &filter_query,
                 );
             }
@@ -158,7 +137,7 @@ impl MarketBooth {
 
     fn add_ts_filter(
         query: &mut SelectStatement,
-        col: MarketBoothIden,
+        col: ShopIden,
         filter_query: &String,
     ) {
         let tsquery = build_simple_plain_ts_query(filter_query);
@@ -166,7 +145,7 @@ impl MarketBooth {
         query
             .expr_as(
                 Expr::expr(PgFunc::ts_rank(
-                    Expr::col((MarketBoothIden::Table, col.clone())),
+                    Expr::col((ShopIden::Table, col.clone())),
                     tsquery.clone(),
                 )),
                 rank_alias.clone(),
@@ -187,14 +166,14 @@ impl MarketBooth {
         let client = pool.get().await?;
 
         let (sql, values) = Query::insert()
-            .into_table(MarketBoothIden::Table)
+            .into_table(ShopIden::Table)
             .columns([
-                MarketBoothIden::UserId,
-                MarketBoothIden::Name,
-                MarketBoothIden::Slug,
-                MarketBoothIden::Description,
-                MarketBoothIden::PlatformFeePercent,
-                MarketBoothIden::MinimumPlatformFeeCent,
+                ShopIden::UserId,
+                ShopIden::Name,
+                ShopIden::Slug,
+                ShopIden::Description,
+                ShopIden::PlatformFeePercent,
+                ShopIden::MinimumPlatformFeeCent,
             ])
             .values([
                 user_id.into(),
@@ -214,7 +193,7 @@ impl MarketBooth {
 
     pub async fn get(
         pool: &Pool,
-        market_booth_id: &Uuid,
+        shop_id: &Uuid,
         extended: bool,
     ) -> Result<Option<Self>, DbError> {
         let client = pool.get().await?;
@@ -223,14 +202,11 @@ impl MarketBooth {
             Self::select_with_relations()
         } else {
             Query::select()
-                .column((MarketBoothIden::Table, Asterisk))
-                .from(MarketBoothIden::Table)
+                .column((ShopIden::Table, Asterisk))
+                .from(ShopIden::Table)
                 .to_owned()
         }
-        .and_where(
-            Expr::col((MarketBoothIden::Table, MarketBoothIden::MarketBoothId))
-                .eq(*market_booth_id),
-        )
+        .and_where(Expr::col((ShopIden::Table, ShopIden::ShopId)).eq(*shop_id))
         .build_postgres(PostgresQueryBuilder);
 
         Ok(client
@@ -247,8 +223,8 @@ impl MarketBooth {
 
         let (sql, values) = Query::select()
             .column(Asterisk)
-            .from(MarketBoothIden::Table)
-            .and_where(Expr::col(MarketBoothIden::Slug).eq(slug))
+            .from(ShopIden::Table)
+            .and_where(Expr::col(ShopIden::Slug).eq(slug))
             .build_postgres(PostgresQueryBuilder);
 
         let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
@@ -264,8 +240,8 @@ impl MarketBooth {
 
         let (sql, values) = Query::select()
             .column(Asterisk)
-            .from(MarketBoothIden::Table)
-            .and_where(Expr::col(MarketBoothIden::Domain).eq(domain))
+            .from(ShopIden::Table)
+            .and_where(Expr::col(ShopIden::Domain).eq(domain))
             .build_postgres(PostgresQueryBuilder);
 
         let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
@@ -278,8 +254,8 @@ impl MarketBooth {
         user_id: Option<&String>,
         limit: u64,
         offset: u64,
-        filter: Option<(MarketBoothsFilterField, String)>,
-        order_by: Option<(MarketBoothsOrderByField, Direction)>,
+        filter: Option<(ShopsFilterField, String)>,
+        order_by: Option<(ShopsOrderByField, Direction)>,
         extended: bool,
     ) -> Result<Vec<Self>, DbError> {
         let client = pool.get().await?;
@@ -289,18 +265,14 @@ impl MarketBooth {
                 Self::select_with_relations()
             } else {
                 Query::select()
-                    .column((MarketBoothIden::Table, Asterisk))
-                    .from(MarketBoothIden::Table)
+                    .column((ShopIden::Table, Asterisk))
+                    .from(ShopIden::Table)
                     .to_owned()
             };
 
             if let Some(user_id) = user_id {
                 query.and_where(
-                    Expr::col((
-                        MarketBoothIden::Table,
-                        MarketBoothIden::UserId,
-                    ))
-                    .eq(user_id),
+                    Expr::col((ShopIden::Table, ShopIden::UserId)).eq(user_id),
                 );
             }
 
@@ -331,7 +303,7 @@ impl MarketBooth {
     pub async fn update(
         pool: &Pool,
         user_id: &String,
-        market_booth_id: &Uuid,
+        shop_id: &Uuid,
         name: Option<String>,
         slug: Option<String>,
         description: Option<String>,
@@ -342,38 +314,31 @@ impl MarketBooth {
 
         let (sql, values) = {
             let mut query = Query::update();
-            query.table(MarketBoothIden::Table);
+            query.table(ShopIden::Table);
 
             if let Some(name) = name {
-                query.value(MarketBoothIden::Name, name);
+                query.value(ShopIden::Name, name);
             }
 
             if let Some(slug) = slug {
-                query.value(MarketBoothIden::Slug, slug);
+                query.value(ShopIden::Slug, slug);
             }
 
             if let Some(description) = description {
-                query.value(MarketBoothIden::Description, description);
+                query.value(ShopIden::Description, description);
             }
 
             if let Some(pfp) = platform_fee_percent {
-                query
-                    .value(MarketBoothIden::PlatformFeePercent, i64::from(pfp));
+                query.value(ShopIden::PlatformFeePercent, i64::from(pfp));
             }
 
             if let Some(mpfc) = minimum_platform_fee_cent {
-                query.value(
-                    MarketBoothIden::MinimumPlatformFeeCent,
-                    i64::from(mpfc),
-                );
+                query.value(ShopIden::MinimumPlatformFeeCent, i64::from(mpfc));
             }
 
             query
-                .and_where(Expr::col(MarketBoothIden::UserId).eq(user_id))
-                .and_where(
-                    Expr::col(MarketBoothIden::MarketBoothId)
-                        .eq(*market_booth_id),
-                )
+                .and_where(Expr::col(ShopIden::UserId).eq(user_id))
+                .and_where(Expr::col(ShopIden::ShopId).eq(*shop_id))
                 .returning_all();
 
             query.build_postgres(PostgresQueryBuilder)
@@ -386,15 +351,13 @@ impl MarketBooth {
 
     pub async fn update_domain<'a>(
         transaction: &Transaction<'a>,
-        market_booth_id: &Uuid,
+        shop_id: &Uuid,
         domain: Option<String>,
     ) -> Result<Self, DbError> {
         let (sql, values) = Query::update()
-            .table(MarketBoothIden::Table)
-            .value(MarketBoothIden::Domain, domain)
-            .and_where(
-                Expr::col(MarketBoothIden::MarketBoothId).eq(*market_booth_id),
-            )
+            .table(ShopIden::Table)
+            .value(ShopIden::Domain, domain)
+            .and_where(Expr::col(ShopIden::ShopId).eq(*shop_id))
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
 
@@ -408,14 +371,12 @@ impl MarketBooth {
     pub async fn delete<'a>(
         transaction: &Transaction<'a>,
         user_id: &String,
-        market_booth_id: &Uuid,
+        shop_id: &Uuid,
     ) -> Result<Self, DbError> {
         let (sql, values) = Query::delete()
-            .from_table(MarketBoothIden::Table)
-            .and_where(Expr::col(MarketBoothIden::UserId).eq(user_id))
-            .and_where(
-                Expr::col(MarketBoothIden::MarketBoothId).eq(*market_booth_id),
-            )
+            .from_table(ShopIden::Table)
+            .and_where(Expr::col(ShopIden::UserId).eq(user_id))
+            .and_where(Expr::col(ShopIden::ShopId).eq(*shop_id))
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
 
@@ -427,40 +388,34 @@ impl MarketBooth {
     }
 }
 
-impl From<&Row> for MarketBooth {
+impl From<&Row> for Shop {
     fn from(row: &Row) -> Self {
         let customization: Option<ShopCustomizationAsRelVec> =
             row.try_get(Self::SHOP_CUSTOMIZATION_ALIAS).ok();
 
         Self {
-            market_booth_id: row
-                .get(MarketBoothIden::MarketBoothId.to_string().as_str()),
-            user_id: row.get(MarketBoothIden::UserId.to_string().as_str()),
-            created_at: row
-                .get(MarketBoothIden::CreatedAt.to_string().as_str()),
-            updated_at: row
-                .get(MarketBoothIden::UpdatedAt.to_string().as_str()),
-            name: row.get(MarketBoothIden::Name.to_string().as_str()),
-            slug: row.get(MarketBoothIden::Slug.to_string().as_str()),
-            description: row
-                .get(MarketBoothIden::Description.to_string().as_str()),
-            image_url_path: row
-                .get(MarketBoothIden::ImageUrlPath.to_string().as_str()),
+            shop_id: row.get(ShopIden::ShopId.to_string().as_str()),
+            user_id: row.get(ShopIden::UserId.to_string().as_str()),
+            created_at: row.get(ShopIden::CreatedAt.to_string().as_str()),
+            updated_at: row.get(ShopIden::UpdatedAt.to_string().as_str()),
+            name: row.get(ShopIden::Name.to_string().as_str()),
+            slug: row.get(ShopIden::Slug.to_string().as_str()),
+            description: row.get(ShopIden::Description.to_string().as_str()),
             platform_fee_percent: u32::try_from(row.get::<&str, i64>(
-                MarketBoothIden::PlatformFeePercent.to_string().as_str(),
+                ShopIden::PlatformFeePercent.to_string().as_str(),
             ))
             .expect("Should never be greater than 100"),
             minimum_platform_fee_cent: u32::try_from(row.get::<&str, i64>(
-                MarketBoothIden::MinimumPlatformFeeCent.to_string().as_str(),
+                ShopIden::MinimumPlatformFeeCent.to_string().as_str(),
             ))
             .expect("Should not be greater than 4294967295"),
             customization: customization.and_then(|c| c.0.first().cloned()),
-            domain: row.get(MarketBoothIden::Domain.to_string().as_str()),
+            domain: row.get(ShopIden::Domain.to_string().as_str()),
         }
     }
 }
 
-impl From<Row> for MarketBooth {
+impl From<Row> for Shop {
     fn from(row: Row) -> Self {
         Self::from(&row)
     }
