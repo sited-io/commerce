@@ -188,11 +188,19 @@ impl Offer {
                     )
                     .cond_where(Expr::col(column).matches(tsquery));
             }
-            Description => Self::add_ts_filter(
-                query,
-                (OfferIden::Table, OfferIden::DescriptionTs),
-                &filter_query,
-            ),
+            Description => {
+                let column = (OfferIden::Table, OfferIden::DescriptionTs);
+                let tsquery = build_simple_plain_ts_query(&filter_query);
+                query
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(column),
+                            tsquery.clone(),
+                        )),
+                        Self::get_description_ts_rank_alias(),
+                    )
+                    .cond_where(Expr::col(column).matches(tsquery));
+            }
             NameAndDescription => {
                 let name_col = (OfferIden::Table, OfferIden::NameTs);
                 let description_col =
@@ -239,22 +247,6 @@ impl Offer {
         }
 
         Ok(())
-    }
-
-    fn add_ts_filter(
-        query: &mut SelectStatement,
-        col: (OfferIden, OfferIden),
-        filter_query: &String,
-    ) {
-        let tsquery = build_simple_plain_ts_query(filter_query);
-        let rank_alias = Alias::new(format!("{}_rank", col.1.to_string()));
-        query
-            .expr_as(
-                Expr::expr(PgFunc::ts_rank(Expr::col(col), tsquery.clone())),
-                rank_alias.clone(),
-            )
-            .cond_where(Expr::col(col).matches(tsquery))
-            .order_by(rank_alias, Order::Desc);
     }
 
     pub async fn create(
@@ -445,6 +437,25 @@ impl Offer {
         let row = client.query_one(sql.as_str(), &values.as_params()).await?;
 
         Ok(Self::from(row))
+    }
+
+    pub async fn deactivate_for_shop(
+        pool: &Pool,
+        user_id: &String,
+        shop_id: &Uuid,
+    ) -> Result<(), DbError> {
+        let conn = pool.get().await?;
+
+        let (sql, values) = Query::update()
+            .table(OfferIden::Table)
+            .value(OfferIden::IsActive, false)
+            .and_where(Expr::col(OfferIden::UserId).eq(user_id))
+            .and_where(Expr::col(OfferIden::ShopId).eq(*shop_id))
+            .build_postgres(PostgresQueryBuilder);
+
+        conn.execute(sql.as_str(), &values.as_params()).await?;
+
+        Ok(())
     }
 
     pub async fn delete<'a>(

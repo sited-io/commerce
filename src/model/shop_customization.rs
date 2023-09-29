@@ -73,6 +73,32 @@ impl ShopCustomization {
         ShopCustomizationIden::SecondaryContentColorDark,
     ];
 
+    pub async fn create(
+        pool: &Pool,
+        shop_id: &Uuid,
+        user_id: &String,
+    ) -> Result<(), DbError> {
+        let conn = pool.get().await?;
+
+        let (sql, values) = Query::insert()
+            .into_table(ShopCustomizationIden::Table)
+            .columns([
+                ShopCustomizationIden::ShopId,
+                ShopCustomizationIden::UserId,
+            ])
+            .values([(*shop_id).into(), user_id.into()])?
+            .on_conflict(
+                OnConflict::column(ShopCustomizationIden::ShopId)
+                    .do_nothing()
+                    .to_owned(),
+            )
+            .build_postgres(PostgresQueryBuilder);
+
+        conn.execute(sql.as_str(), &values.as_params()).await?;
+
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn put(
         pool: &Pool,
