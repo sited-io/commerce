@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use deadpool_postgres::tokio_postgres::Row;
-use deadpool_postgres::Pool;
+use deadpool_postgres::{Pool, Transaction};
 use sea_query::extension::postgres::PgExpr;
 use sea_query::{
     all, any, Alias, Asterisk, Expr, Func, Iden, IntoColumnRef, Order, PgFunc,
@@ -448,20 +448,20 @@ impl Offer {
         Ok(Self::from(row))
     }
 
-    pub async fn delete(
-        pool: &Pool,
+    pub async fn delete<'a>(
+        transaction: &Transaction<'a>,
         user_id: &String,
         offer_id: &Uuid,
     ) -> Result<(), DbError> {
-        let client = pool.get().await?;
-
         let (sql, values) = Query::delete()
             .from_table(OfferIden::Table)
             .and_where(Expr::col(OfferIden::UserId).eq(user_id))
             .and_where(Expr::col(OfferIden::OfferId).eq(*offer_id))
             .build_postgres(PostgresQueryBuilder);
 
-        client.execute(sql.as_str(), &values.as_params()).await?;
+        transaction
+            .execute(sql.as_str(), &values.as_params())
+            .await?;
 
         Ok(())
     }

@@ -100,6 +100,23 @@ impl OfferImage {
         Ok(row.map(Self::from))
     }
 
+    pub async fn list<'a>(
+        transaction: &Transaction<'a>,
+        offer_id: &Uuid,
+        user_id: &String,
+    ) -> Result<Vec<Self>, DbError> {
+        let (sql, values) = Query::select()
+            .column(Asterisk)
+            .from(OfferImageIden::Table)
+            .and_where(Expr::col(OfferImageIden::OfferId).eq(*offer_id))
+            .and_where(Expr::col(OfferImageIden::UserId).eq(user_id))
+            .build_postgres(PostgresQueryBuilder);
+
+        let rows = transaction.query(sql.as_str(), &values.as_params()).await?;
+
+        Ok(rows.iter().map(Self::from).collect())
+    }
+
     pub async fn delete<'a>(
         transaction: &Transaction<'a>,
         user_id: &String,

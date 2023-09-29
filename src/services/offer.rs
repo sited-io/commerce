@@ -333,7 +333,28 @@ impl offer_service_server::OfferService for OfferService {
         let user_id = get_user_id(request.metadata(), &self.verifier).await?;
         let offer_id = parse_uuid(&request.into_inner().offer_id, "offer_id")?;
 
-        Offer::delete(&self.pool, &user_id, &offer_id).await?;
+        let mut conn = self.pool.get().await.map_err(DbError::from)?;
+        let transaction = conn.transaction().await.map_err(DbError::from)?;
+
+        let found_images =
+            OfferImage::list(&transaction, &offer_id, &user_id).await?;
+
+        for found_image in found_images {
+            OfferImage::delete(
+                &transaction,
+                &user_id,
+                &found_image.offer_image_id,
+            )
+            .await?;
+
+            self.image_service
+                .remove_image(&found_image.image_url_path)
+                .await?;
+        }
+
+        Offer::delete(&transaction, &user_id, &offer_id).await?;
+
+        transaction.commit().await.map_err(DbError::from)?;
 
         Ok(Response::new(DeleteOfferResponse {}))
     }

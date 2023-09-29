@@ -18,7 +18,7 @@ use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
 use crate::db::DbError;
 use crate::images::ImageService;
-use crate::model::MarketBooth;
+use crate::model::{MarketBooth, ShopCustomization};
 use crate::parse_uuid;
 
 use super::paginate;
@@ -393,16 +393,29 @@ impl market_booth_service_server::MarketBoothService for MarketBoothService {
             "market_booth_id",
         )?;
 
+        let found_shop_customization =
+            ShopCustomization::get(&self.pool, &market_booth_id).await?;
+
         let mut conn = self.pool.get().await.map_err(DbError::from)?;
         let transaction = conn.transaction().await.map_err(DbError::from)?;
 
-        let deleted_market_booth =
-            MarketBooth::delete(&transaction, &user_id, &market_booth_id)
+        if let Some(found_shop_customization) = found_shop_customization {
+            ShopCustomization::delete(&transaction, &market_booth_id, &user_id)
                 .await?;
 
-        if let Some(image_path) = deleted_market_booth.image_url_path {
-            self.image_service.remove_image(&image_path).await?;
+            if let Some(image_path) =
+                found_shop_customization.logo_image_light_url_path
+            {
+                self.image_service.remove_image(&image_path).await?;
+            }
+            if let Some(image_path) =
+                found_shop_customization.banner_image_light_url_path
+            {
+                self.image_service.remove_image(&image_path).await?;
+            }
         }
+
+        MarketBooth::delete(&transaction, &user_id, &market_booth_id).await?;
 
         transaction.commit().await.map_err(DbError::from)?;
 
