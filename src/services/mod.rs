@@ -1,10 +1,10 @@
-mod shop;
 mod offer;
+mod shop;
 mod shop_customization;
 mod shop_domain;
 
-pub use shop::ShopService;
 pub use offer::OfferService;
+pub use shop::ShopService;
 pub use shop_customization::ShopCustomizationService;
 pub use shop_domain::ShopDomainService;
 

@@ -3,7 +3,7 @@ use deadpool_postgres::Transaction;
 use deadpool_postgres::{tokio_postgres::Row, Pool};
 use sea_query::extension::postgres::PgExpr;
 use sea_query::{
-    Alias, Asterisk, Expr, Func, Iden, LogicalChainOper, Order, PgFunc,
+    all, any, Alias, Asterisk, Expr, Func, Iden, Order, PgFunc,
     PostgresQueryBuilder, Query, SelectStatement, SimpleExpr,
 };
 use sea_query_postgres::PostgresBinder;
@@ -19,7 +19,7 @@ use super::shop_customization::{
     ShopCustomizationAsRel, ShopCustomizationAsRelVec, ShopCustomizationIden,
 };
 
-#[derive(Debug, Clone, Iden)]
+#[derive(Debug, Clone, Copy, Iden)]
 #[iden(rename = "shops")]
 pub enum ShopIden {
     Table,
@@ -35,6 +35,7 @@ pub enum ShopIden {
     DescriptionTs,
     PlatformFeePercent,
     MinimumPlatformFeeCent,
+    IsActive,
 }
 
 #[derive(Debug, Clone)]
@@ -50,13 +51,24 @@ pub struct Shop {
     pub platform_fee_percent: u32,
     pub minimum_platform_fee_cent: u32,
     pub customization: Option<ShopCustomizationAsRel>,
+    pub is_active: bool,
 }
 
 impl Shop {
     const SHOP_CUSTOMIZATION_ALIAS: &str = "shop_customization";
+    const NAME_TS_RANK_ALIAS: &str = "name_ts_rank";
+    const DESCRIPTION_TS_RANK_ALIAS: &str = "description_ts_rank";
 
     fn get_shop_customization_alias() -> Alias {
         Alias::new(Self::SHOP_CUSTOMIZATION_ALIAS)
+    }
+
+    fn get_name_ts_rank_alias() -> Alias {
+        Alias::new(Self::NAME_TS_RANK_ALIAS)
+    }
+
+    fn get_description_ts_rank_alias() -> Alias {
+        Alias::new(Self::DESCRIPTION_TS_RANK_ALIAS)
     }
 
     fn select_with_relations() -> SelectStatement {
@@ -118,40 +130,60 @@ impl Shop {
 
         match filter_field {
             Unspecified => {}
-            Name => Self::add_ts_filter(query, ShopIden::NameTs, &filter_query),
-            Description => Self::add_ts_filter(
-                query,
-                ShopIden::DescriptionTs,
-                &filter_query,
-            ),
+            Name => {
+                let column = (ShopIden::Table, ShopIden::NameTs);
+                let tsquery = build_simple_plain_ts_query(&filter_query);
+                query
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(column),
+                            tsquery.clone(),
+                        )),
+                        Self::get_name_ts_rank_alias(),
+                    )
+                    .cond_where(Expr::col(column).matches(tsquery));
+            }
+            Description => {
+                let column = (ShopIden::Table, ShopIden::DescriptionTs);
+                let tsquery = build_simple_plain_ts_query(&filter_query);
+                query
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(column),
+                            tsquery.clone(),
+                        )),
+                        Self::get_description_ts_rank_alias(),
+                    )
+                    .cond_where(Expr::col(column).matches(tsquery));
+            }
             NameAndDescription => {
-                Self::add_ts_filter(query, ShopIden::NameTs, &filter_query);
-                Self::add_ts_filter(
-                    query,
-                    ShopIden::DescriptionTs,
-                    &filter_query,
-                );
+                let name_col = (ShopIden::Table, ShopIden::NameTs);
+                let description_col =
+                    (ShopIden::Table, ShopIden::DescriptionTs);
+
+                let tsquery = build_simple_plain_ts_query(&filter_query);
+
+                query
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(name_col),
+                            tsquery.clone(),
+                        )),
+                        Self::get_name_ts_rank_alias(),
+                    )
+                    .expr_as(
+                        Expr::expr(PgFunc::ts_rank(
+                            Expr::col(description_col),
+                            tsquery.clone(),
+                        )),
+                        Self::get_description_ts_rank_alias(),
+                    )
+                    .cond_where(any![
+                        Expr::col(name_col).matches(tsquery.clone()),
+                        Expr::col(description_col).matches(tsquery),
+                    ]);
             }
         }
-    }
-
-    fn add_ts_filter(
-        query: &mut SelectStatement,
-        col: ShopIden,
-        filter_query: &String,
-    ) {
-        let tsquery = build_simple_plain_ts_query(filter_query);
-        let rank_alias = Alias::new(format!("{}_rank", col.to_string()));
-        query
-            .expr_as(
-                Expr::expr(PgFunc::ts_rank(
-                    Expr::col((ShopIden::Table, col.clone())),
-                    tsquery.clone(),
-                )),
-                rank_alias.clone(),
-            )
-            .and_or_where(LogicalChainOper::Or(Expr::col(col).matches(tsquery)))
-            .order_by(rank_alias, Order::Desc);
     }
 
     pub async fn create(
@@ -194,6 +226,7 @@ impl Shop {
     pub async fn get(
         pool: &Pool,
         shop_id: &Uuid,
+        user_id: Option<&String>,
         extended: bool,
     ) -> Result<Option<Self>, DbError> {
         let client = pool.get().await?;
@@ -206,7 +239,14 @@ impl Shop {
                 .from(ShopIden::Table)
                 .to_owned()
         }
-        .and_where(Expr::col((ShopIden::Table, ShopIden::ShopId)).eq(*shop_id))
+        .cond_where(all![
+            Expr::col((ShopIden::Table, ShopIden::ShopId)).eq(*shop_id),
+            any![
+                Expr::col((ShopIden::Table, ShopIden::IsActive)).eq(true),
+                Expr::col((ShopIden::Table, ShopIden::UserId))
+                    .eq(user_id.cloned())
+            ]
+        ])
         .build_postgres(PostgresQueryBuilder);
 
         Ok(client
@@ -218,13 +258,21 @@ impl Shop {
     pub async fn get_by_slug(
         pool: &Pool,
         slug: &String,
+        user_id: Option<&String>,
     ) -> Result<Option<Self>, DbError> {
         let conn = pool.get().await?;
 
         let (sql, values) = Query::select()
             .column(Asterisk)
             .from(ShopIden::Table)
-            .and_where(Expr::col(ShopIden::Slug).eq(slug))
+            .cond_where(all![
+                Expr::col(ShopIden::Slug).eq(slug),
+                any![
+                    Expr::col((ShopIden::Table, ShopIden::IsActive)).eq(true),
+                    Expr::col((ShopIden::Table, ShopIden::UserId))
+                        .eq(user_id.cloned())
+                ]
+            ])
             .build_postgres(PostgresQueryBuilder);
 
         let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
@@ -235,13 +283,21 @@ impl Shop {
     pub async fn get_by_domain(
         pool: &Pool,
         domain: &String,
+        user_id: Option<&String>,
     ) -> Result<Option<Self>, DbError> {
         let conn = pool.get().await?;
 
         let (sql, values) = Query::select()
             .column(Asterisk)
             .from(ShopIden::Table)
-            .and_where(Expr::col(ShopIden::Domain).eq(domain))
+            .cond_where(all![
+                Expr::col(ShopIden::Domain).eq(domain),
+                any![
+                    Expr::col((ShopIden::Table, ShopIden::IsActive)).eq(true),
+                    Expr::col((ShopIden::Table, ShopIden::UserId))
+                        .eq(user_id.cloned())
+                ]
+            ])
             .build_postgres(PostgresQueryBuilder);
 
         let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
@@ -249,6 +305,7 @@ impl Shop {
         Ok(row.map(Self::from))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn list(
         pool: &Pool,
         user_id: Option<&String>,
@@ -257,6 +314,7 @@ impl Shop {
         filter: Option<(ShopsFilterField, String)>,
         order_by: Option<(ShopsOrderByField, Direction)>,
         extended: bool,
+        request_user_id: Option<&String>,
     ) -> Result<Vec<Self>, DbError> {
         let client = pool.get().await?;
 
@@ -271,7 +329,7 @@ impl Shop {
             };
 
             if let Some(user_id) = user_id {
-                query.and_where(
+                query.cond_where(
                     Expr::col((ShopIden::Table, ShopIden::UserId)).eq(user_id),
                 );
             }
@@ -287,6 +345,12 @@ impl Shop {
                     order_by_direction,
                 );
             }
+
+            query.cond_where(any![
+                Expr::col((ShopIden::Table, ShopIden::IsActive)).eq(true),
+                Expr::col((ShopIden::Table, ShopIden::UserId))
+                    .eq(request_user_id.cloned())
+            ]);
 
             query
                 .limit(limit)
@@ -309,6 +373,7 @@ impl Shop {
         description: Option<String>,
         platform_fee_percent: Option<u32>,
         minimum_platform_fee_cent: Option<u32>,
+        is_active: Option<bool>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -334,6 +399,10 @@ impl Shop {
 
             if let Some(mpfc) = minimum_platform_fee_cent {
                 query.value(ShopIden::MinimumPlatformFeeCent, i64::from(mpfc));
+            }
+
+            if let Some(is_active) = is_active {
+                query.value(ShopIden::IsActive, is_active);
             }
 
             query
@@ -411,6 +480,7 @@ impl From<&Row> for Shop {
             .expect("Should not be greater than 4294967295"),
             customization: customization.and_then(|c| c.0.first().cloned()),
             domain: row.get(ShopIden::Domain.to_string().as_str()),
+            is_active: row.get(ShopIden::IsActive.to_string().as_str()),
         }
     }
 }

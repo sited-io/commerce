@@ -714,6 +714,8 @@ pub struct ShopResponse {
     pub minimum_platform_fee_cent: u32,
     #[prost(message, optional, tag = "11")]
     pub customization: ::core::option::Option<ShopCustomizationResponse>,
+    #[prost(bool, tag = "12")]
+    pub is_active: bool,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -826,6 +828,8 @@ pub struct UpdateShopRequest {
     pub platform_fee_percent: ::core::option::Option<u32>,
     #[prost(uint32, optional, tag = "6")]
     pub minimum_platform_fee_cent: ::core::option::Option<u32>,
+    #[prost(bool, optional, tag = "7")]
+    pub is_active: ::core::option::Option<bool>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

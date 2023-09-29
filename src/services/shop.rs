@@ -17,7 +17,7 @@ use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
 use crate::db::DbError;
 use crate::images::ImageService;
-use crate::model::{Shop, ShopCustomization};
+use crate::model::{Offer, Shop, ShopCustomization};
 use crate::parse_uuid;
 
 use super::paginate;
@@ -87,6 +87,7 @@ impl ShopService {
             minimum_platform_fee_cent: shop.minimum_platform_fee_cent,
             customization,
             domain: shop.domain,
+            is_active: shop.is_active,
         }
     }
 
@@ -201,6 +202,9 @@ impl shop_service_server::ShopService for ShopService {
         )
         .await?;
 
+        ShopCustomization::create(&self.pool, &created_shop.shop_id, &user_id)
+            .await?;
+
         Ok(Response::new(CreateShopResponse {
             shop: Some(self.shop_to_response(created_shop)),
         }))
@@ -210,15 +214,19 @@ impl shop_service_server::ShopService for ShopService {
         &self,
         request: Request<GetShopRequest>,
     ) -> Result<Response<GetShopResponse>, Status> {
+        let user_id =
+            get_user_id(request.metadata(), &self.verifier).await.ok();
+
         let GetShopRequest { shop_id, extended } = request.into_inner();
 
         let shop_id = parse_uuid(&shop_id, "shop_id")?;
 
         let extended = extended.unwrap_or(false);
 
-        let found_shop = Shop::get(&self.pool, &shop_id, extended)
-            .await?
-            .ok_or(Status::not_found(""))?;
+        let found_shop =
+            Shop::get(&self.pool, &shop_id, user_id.as_ref(), extended)
+                .await?
+                .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetShopResponse {
             shop: Some(self.shop_to_response(found_shop)),
@@ -229,9 +237,12 @@ impl shop_service_server::ShopService for ShopService {
         &self,
         request: Request<GetShopBySlugRequest>,
     ) -> Result<Response<GetShopBySlugResponse>, Status> {
+        let user_id =
+            get_user_id(request.metadata(), &self.verifier).await.ok();
+
         let GetShopBySlugRequest { slug } = request.into_inner();
 
-        let found_shop = Shop::get_by_slug(&self.pool, &slug)
+        let found_shop = Shop::get_by_slug(&self.pool, &slug, user_id.as_ref())
             .await?
             .ok_or(Status::not_found(""))?;
 
@@ -244,11 +255,15 @@ impl shop_service_server::ShopService for ShopService {
         &self,
         request: Request<GetShopByDomainRequest>,
     ) -> Result<Response<GetShopByDomainResponse>, Status> {
+        let user_id =
+            get_user_id(request.metadata(), &self.verifier).await.ok();
+
         let GetShopByDomainRequest { domain } = request.into_inner();
 
-        let found_shop = Shop::get_by_domain(&self.pool, &domain)
-            .await?
-            .ok_or(Status::not_found(""))?;
+        let found_shop =
+            Shop::get_by_domain(&self.pool, &domain, user_id.as_ref())
+                .await?
+                .ok_or(Status::not_found(""))?;
 
         Ok(Response::new(GetShopByDomainResponse {
             shop: Some(self.shop_to_response(found_shop)),
@@ -259,6 +274,9 @@ impl shop_service_server::ShopService for ShopService {
         &self,
         request: Request<ListShopsRequest>,
     ) -> Result<Response<ListShopsResponse>, Status> {
+        let request_user_id =
+            get_user_id(request.metadata(), &self.verifier).await.ok();
+
         let ListShopsRequest {
             user_id,
             pagination,
@@ -310,6 +328,7 @@ impl shop_service_server::ShopService for ShopService {
             filter,
             order_by,
             extended,
+            request_user_id.as_ref(),
         )
         .await?;
 
@@ -335,6 +354,7 @@ impl shop_service_server::ShopService for ShopService {
             platform_fee_percent,
             minimum_platform_fee_cent,
             slug,
+            is_active,
         } = request.into_inner();
 
         let shop_id = parse_uuid(&shop_id, "shop_id")?;
@@ -357,6 +377,10 @@ impl shop_service_server::ShopService for ShopService {
             Self::validate_slug(slug)?;
         }
 
+        if matches!(is_active, Some(false)) {
+            Offer::deactivate_for_shop(&self.pool, &user_id, &shop_id).await?;
+        }
+
         let updated_shop = Shop::update(
             &self.pool,
             &user_id,
@@ -366,6 +390,7 @@ impl shop_service_server::ShopService for ShopService {
             description,
             platform_fee_percent,
             minimum_platform_fee_cent,
+            is_active,
         )
         .await?;
 
