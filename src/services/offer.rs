@@ -104,13 +104,17 @@ impl OfferService {
         let recurring = match (
             offer_price.recurring_interval,
             offer_price.recurring_interval_count,
+            offer_price.trial_period_days,
         ) {
-            (Some(interval), Some(interval_count)) => Some(Recurring {
-                interval: RecurringInterval::from_str_name(&interval)
-                    .ok_or(Status::internal(""))?
-                    .into(),
-                interval_count,
-            }),
+            (Some(interval), Some(interval_count), trial_period_days) => {
+                Some(Recurring {
+                    interval: RecurringInterval::from_str_name(&interval)
+                        .ok_or(Status::internal(""))?
+                        .into(),
+                    interval_count,
+                    trial_period_days,
+                })
+            }
             _ => None,
         };
 
@@ -456,7 +460,9 @@ impl offer_service_server::OfferService for OfferService {
         let recurring_interval =
             price.recurring.as_ref().map(|r| r.interval().as_str_name());
         let recurring_interval_count =
-            price.recurring.map(|r| r.interval_count);
+            price.recurring.as_ref().map(|r| r.interval_count);
+        let trial_period_days =
+            price.recurring.and_then(|r| r.trial_period_days);
 
         let found_price =
             OfferPrice::get_by_offer_id(&self.pool, &offer_id).await?;
@@ -472,6 +478,7 @@ impl offer_service_server::OfferService for OfferService {
                 unit_amount,
                 recurring_interval,
                 recurring_interval_count,
+                trial_period_days,
             )
             .await?;
         } else {
@@ -485,6 +492,7 @@ impl offer_service_server::OfferService for OfferService {
                 unit_amount,
                 recurring_interval,
                 recurring_interval_count,
+                trial_period_days,
             )
             .await?;
         }

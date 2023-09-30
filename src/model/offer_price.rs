@@ -27,6 +27,7 @@ pub enum OfferPriceIden {
     UnitAmount,
     RecurringInterval,
     RecurringIntervalCount,
+    TrialPeriodDays,
 }
 
 #[derive(Debug, Clone)]
@@ -42,6 +43,7 @@ pub struct OfferPrice {
     pub unit_amount: u32,
     pub recurring_interval: Option<String>,
     pub recurring_interval_count: Option<u32>,
+    pub trial_period_days: Option<u32>,
 }
 
 impl OfferPrice {
@@ -56,6 +58,7 @@ impl OfferPrice {
         unit_amount: u32,
         recurring_interval: Option<&str>,
         recurring_interval_count: Option<u32>,
+        trial_period_days: Option<u32>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -70,6 +73,7 @@ impl OfferPrice {
                 OfferPriceIden::UnitAmount,
                 OfferPriceIden::RecurringInterval,
                 OfferPriceIden::RecurringIntervalCount,
+                OfferPriceIden::TrialPeriodDays,
             ])
             .values([
                 (*offer_id).into(),
@@ -80,6 +84,7 @@ impl OfferPrice {
                 i64::from(unit_amount).into(),
                 recurring_interval.into(),
                 recurring_interval_count.map(i64::from).into(),
+                trial_period_days.map(i64::from).into(),
             ])?
             .returning_all()
             .build_postgres(PostgresQueryBuilder);
@@ -118,6 +123,7 @@ impl OfferPrice {
         unit_amount: u32,
         recurring_interval: Option<&str>,
         recurring_interval_count: Option<u32>,
+        trial_period_days: Option<u32>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -131,6 +137,10 @@ impl OfferPrice {
             .value(
                 OfferPriceIden::RecurringIntervalCount,
                 recurring_interval_count.map(i64::from),
+            )
+            .value(
+                OfferPriceIden::TrialPeriodDays,
+                trial_period_days.map(i64::from),
             )
             .and_where(Expr::col(OfferPriceIden::UserId).eq(user_id))
             .and_where(Expr::col(OfferPriceIden::OfferId).eq(*offer_id))
@@ -188,6 +198,14 @@ impl From<&Row> for OfferPrice {
                     u32::try_from(c)
                         .expect("Should not be greater than 4294967295")
                 }),
+            trial_period_days: row
+                .get::<&str, Option<i64>>(
+                    OfferPriceIden::TrialPeriodDays.to_string().as_str(),
+                )
+                .map(|c| {
+                    u32::try_from(c)
+                        .expect("Should not be greater than 4294967295")
+                }),
         }
     }
 }
@@ -207,6 +225,7 @@ pub struct OfferPriceAsRel {
     pub unit_amount: u32,
     pub recurring_interval: Option<String>,
     pub recurring_interval_count: Option<u32>,
+    pub trial_period_days: Option<u32>,
 }
 
 impl OfferPriceAsRel {
@@ -237,6 +256,11 @@ impl OfferPriceAsRel {
                 Expr::col((
                     OfferPriceIden::Table,
                     OfferPriceIden::RecurringIntervalCount,
+                ))
+                .into(),
+                Expr::col((
+                    OfferPriceIden::Table,
+                    OfferPriceIden::TrialPeriodDays,
                 ))
                 .into(),
             ])
@@ -300,6 +324,16 @@ impl<'a> FromSql<'a> for OfferPriceAsRel {
             None => None,
         };
 
+        let oid = private::read_be_i32(&mut raw)?;
+        let ty = get_type_from_oid::<Option<i64>>(oid)?;
+        let trial_period_days: Option<i64> =
+            private::read_value(&ty, &mut raw)?;
+
+        let trial_period_days = match trial_period_days {
+            Some(c) => Some(u32::try_from(c)?),
+            None => None,
+        };
+
         Ok(Self {
             offer_price_id,
             currency,
@@ -308,6 +342,7 @@ impl<'a> FromSql<'a> for OfferPriceAsRel {
             unit_amount: u32::try_from(unit_amount)?,
             recurring_interval,
             recurring_interval_count,
+            trial_period_days,
         })
     }
 }
