@@ -10,8 +10,8 @@ use commerce::db::{init_db_pool, migrate};
 use commerce::images::ImageService;
 use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
 use commerce::{
-    get_env_var, init_jwks_verifier, OfferService, ShopCustomizationService,
-    ShopDomainService, ShopService,
+    get_env_var, init_jwks_verifier, OfferService, ShippingRateService,
+    ShopCustomizationService, ShopDomainService, ShopService,
 };
 
 #[tokio::main(flavor = "current_thread")]
@@ -96,9 +96,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let offer_service = OfferService::build(
-        db_pool,
+        db_pool.clone(),
         init_jwks_verifier(&jwks_host, &jwks_url)?,
         image_service,
+    );
+
+    let shipping_rate_service = ShippingRateService::build(
+        db_pool,
+        init_jwks_verifier(&jwks_host, &jwks_url)?,
     );
 
     tracing::log::info!("gRPC+web server listening on {}", host);
@@ -131,6 +136,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(tonic_web::enable(shop_customization_service))
         .add_service(tonic_web::enable(shop_domain_service))
         .add_service(tonic_web::enable(offer_service))
+        .add_service(tonic_web::enable(shipping_rate_service))
         .serve(host.parse().unwrap())
         .await?;
 
