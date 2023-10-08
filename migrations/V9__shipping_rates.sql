@@ -4,8 +4,9 @@ CREATE TABLE shipping_rates (
   user_id VARCHAR NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() ON UPDATE NOW(),
-  country VARCHAR NOT NULL,
   amount INT NOT NULL,
   currency VARCHAR NOT NULL,
-  CONSTRAINT uq_offer_id_country UNIQUE (offer_id, country)
+  all_countries BOOLEAN NOT NULL,
+  specific_countries VARCHAR,
+  CONSTRAINT uq_offer_id_user_id_currency UNIQUE (offer_id, user_id, currency)
 )

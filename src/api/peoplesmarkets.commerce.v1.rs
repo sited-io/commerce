@@ -2876,338 +2876,293 @@ pub struct ShippingRateResponse {
     pub offer_id: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub user_id: ::prost::alloc::string::String,
-    #[prost(enumeration = "ShippingCountry", tag = "4")]
-    pub country: i32,
-    #[prost(uint32, tag = "5")]
+    #[prost(uint32, tag = "4")]
     pub amount: u32,
-    #[prost(enumeration = "Currency", tag = "6")]
+    #[prost(enumeration = "Currency", tag = "5")]
     pub currency: i32,
+    #[prost(bool, tag = "6")]
+    pub all_countries: bool,
+    #[prost(enumeration = "ShippingCountry", repeated, tag = "7")]
+    pub specific_countries: ::prost::alloc::vec::Vec<i32>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AddShippingRateToOfferRequest {
+pub struct PutShippingRateRequest {
     #[prost(string, tag = "1")]
     pub offer_id: ::prost::alloc::string::String,
-    #[prost(enumeration = "ShippingCountry", tag = "2")]
-    pub country: i32,
-    #[prost(uint32, tag = "3")]
+    #[prost(uint32, tag = "2")]
     pub amount: u32,
-    #[prost(enumeration = "Currency", tag = "4")]
+    #[prost(enumeration = "Currency", tag = "3")]
     pub currency: i32,
+    #[prost(bool, tag = "4")]
+    pub all_countries: bool,
+    #[prost(enumeration = "ShippingCountry", repeated, tag = "5")]
+    pub specific_countries: ::prost::alloc::vec::Vec<i32>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AddShippingRateToOfferResponse {}
+pub struct PutShippingRateResponse {}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ShippingRatesOrderBy {
-    #[prost(enumeration = "ShippingRatesOrderByField", tag = "1")]
-    pub field: i32,
-    #[prost(enumeration = "super::super::ordering::v1::Direction", tag = "2")]
-    pub direction: i32,
+pub struct GetShippingRateRequest {
+    #[prost(string, optional, tag = "1")]
+    pub offer_id: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ListShippingRatesRequest {
+pub struct GetShippingRateResponse {
+    #[prost(message, optional, tag = "1")]
+    pub shipping_rate: ::core::option::Option<ShippingRateResponse>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DeleteShippingRateRequest {
     #[prost(string, tag = "1")]
-    pub offer_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::pagination::v1::PaginationRequest,
-    >,
-    #[prost(message, optional, tag = "3")]
-    pub order_by: ::core::option::Option<ShippingRatesOrderBy>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ListShippingRatesResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub shipping_rates: ::prost::alloc::vec::Vec<ShippingRateResponse>,
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::pagination::v1::PaginationResponse,
-    >,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RemoveShippingRateFromOfferRequest {
-    #[prost(string, tag = "1")]
-    pub offer_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
     pub shipping_rate_id: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RemoveShippingRateFromOfferResponse {}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum ShippingRatesOrderByField {
-    Unspecified = 0,
-    Country = 1,
-}
-impl ShippingRatesOrderByField {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            ShippingRatesOrderByField::Unspecified => {
-                "SHIPPING_RATES_ORDER_BY_FIELD_UNSPECIFIED"
-            }
-            ShippingRatesOrderByField::Country => "SHIPPING_RATES_ORDER_BY_FIELD_COUNTRY",
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "SHIPPING_RATES_ORDER_BY_FIELD_UNSPECIFIED" => Some(Self::Unspecified),
-            "SHIPPING_RATES_ORDER_BY_FIELD_COUNTRY" => Some(Self::Country),
-            _ => None,
-        }
-    }
-}
+pub struct DeleteShippingRateResponse {}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ShippingCountry {
     Unspecified = 0,
-    AaallCountries = 1,
-    Ac = 2,
-    Ad = 3,
-    Ae = 4,
-    Af = 5,
-    Ag = 6,
-    Ai = 7,
-    Al = 8,
-    Am = 9,
-    Ao = 10,
-    Aq = 11,
-    Ar = 12,
-    At = 13,
-    Au = 14,
-    Aw = 15,
-    Ax = 16,
-    Az = 17,
-    Ba = 18,
-    Bb = 19,
-    Bd = 20,
-    Be = 21,
-    Bf = 22,
-    Bg = 23,
-    Bh = 24,
-    Bi = 25,
-    Bj = 26,
-    Bl = 27,
-    Bm = 28,
-    Bn = 29,
-    Bo = 30,
-    Bq = 31,
-    Br = 32,
-    Bs = 33,
-    Bt = 34,
-    Bv = 35,
-    Bw = 36,
-    By = 37,
-    Bz = 38,
-    Ca = 39,
-    Cd = 40,
-    Cf = 41,
-    Cg = 42,
-    Ch = 43,
-    Ci = 44,
-    Ck = 45,
-    Cl = 46,
-    Cm = 47,
-    Cn = 48,
-    Co = 49,
-    Cr = 50,
-    Cv = 51,
-    Cw = 52,
-    Cy = 53,
-    Cz = 54,
-    De = 55,
-    Dj = 56,
-    Dk = 57,
-    Dm = 58,
-    Do = 59,
-    Dz = 60,
-    Ec = 61,
-    Ee = 62,
-    Eg = 63,
-    Eh = 64,
-    Er = 65,
-    Es = 66,
-    Et = 67,
-    Fi = 68,
-    Fj = 69,
-    Fk = 70,
-    Fo = 71,
-    Fr = 72,
-    Ga = 73,
-    Gb = 74,
-    Gd = 75,
-    Ge = 76,
-    Gf = 77,
-    Gg = 78,
-    Gh = 79,
-    Gi = 80,
-    Gl = 81,
-    Gm = 82,
-    Gn = 83,
-    Gp = 84,
-    Gq = 85,
-    Gr = 86,
-    Gs = 87,
-    Gt = 88,
-    Gu = 89,
-    Gw = 90,
-    Gy = 91,
-    Hk = 92,
-    Hn = 93,
-    Hr = 94,
-    Ht = 95,
-    Hu = 96,
-    Id = 97,
-    Ie = 98,
-    Il = 99,
-    Im = 100,
-    In = 101,
-    Io = 102,
-    Iq = 103,
-    Is = 104,
-    It = 105,
-    Je = 106,
-    Jm = 107,
-    Jo = 108,
-    Jp = 109,
-    Ke = 110,
-    Kg = 111,
-    Kh = 112,
-    Ki = 113,
-    Km = 114,
-    Kn = 115,
-    Kr = 116,
-    Kw = 117,
-    Ky = 118,
-    La = 119,
-    Lb = 120,
-    Lc = 121,
-    Li = 122,
-    Lk = 123,
-    Lr = 124,
-    Ls = 125,
-    Lt = 126,
-    Lu = 127,
-    Lv = 128,
-    Ly = 129,
-    Ma = 130,
-    Mc = 131,
-    Md = 132,
-    Me = 133,
-    Mf = 134,
-    Mg = 135,
-    Mk = 136,
-    Ml = 137,
-    Mm = 138,
-    Mn = 139,
-    Mo = 140,
-    Mq = 141,
-    Mr = 142,
-    Ms = 143,
-    Mt = 144,
-    Mu = 145,
-    Mv = 146,
-    Mw = 147,
-    Mx = 148,
-    My = 149,
-    Mz = 150,
-    Na = 151,
-    Nc = 152,
-    Ne = 153,
-    Ng = 154,
-    Ni = 155,
-    Nl = 156,
-    No = 157,
-    Np = 158,
-    Nr = 159,
-    Nu = 160,
-    Nz = 161,
-    Om = 162,
-    Pa = 163,
-    Pe = 164,
-    Pf = 165,
-    Pg = 166,
-    Ph = 167,
-    Pk = 168,
-    Pl = 169,
-    Pm = 170,
-    Pn = 171,
-    Pr = 172,
-    Ps = 173,
-    Pt = 174,
-    Py = 175,
-    Qa = 176,
-    Re = 177,
-    Ro = 178,
-    Rs = 179,
-    Ru = 180,
-    Rw = 181,
-    Sa = 182,
-    Sb = 183,
-    Sc = 184,
-    Se = 185,
-    Sg = 186,
-    Sh = 187,
-    Si = 188,
-    Sj = 189,
-    Sk = 190,
-    Sl = 191,
-    Sm = 192,
-    Sn = 193,
-    So = 194,
-    Sr = 195,
-    Ss = 196,
-    St = 197,
-    Sv = 198,
-    Sx = 199,
-    Sz = 200,
-    Ta = 201,
-    Tc = 202,
-    Td = 203,
-    Tf = 204,
-    Tg = 205,
-    Th = 206,
-    Tj = 207,
-    Tk = 208,
-    Tl = 209,
-    Tm = 210,
-    Tn = 211,
-    To = 212,
-    Tr = 213,
-    Tt = 214,
-    Tv = 215,
-    Tw = 216,
-    Tz = 217,
-    Ua = 218,
-    Ug = 219,
-    Us = 220,
-    Uy = 221,
-    Uz = 222,
-    Va = 223,
-    Vc = 224,
-    Ve = 225,
-    Vg = 226,
-    Vn = 227,
-    Vu = 228,
-    Wf = 229,
-    Ws = 230,
-    Xk = 231,
-    Ye = 232,
-    Yt = 233,
-    Za = 234,
-    Zm = 235,
-    Zw = 236,
-    Zz = 237,
+    Ac = 1,
+    Ad = 2,
+    Ae = 3,
+    Af = 4,
+    Ag = 5,
+    Ai = 6,
+    Al = 7,
+    Am = 8,
+    Ao = 9,
+    Aq = 10,
+    Ar = 11,
+    At = 12,
+    Au = 13,
+    Aw = 14,
+    Ax = 15,
+    Az = 16,
+    Ba = 17,
+    Bb = 18,
+    Bd = 19,
+    Be = 20,
+    Bf = 21,
+    Bg = 22,
+    Bh = 23,
+    Bi = 24,
+    Bj = 25,
+    Bl = 26,
+    Bm = 27,
+    Bn = 28,
+    Bo = 29,
+    Bq = 30,
+    Br = 31,
+    Bs = 32,
+    Bt = 33,
+    Bv = 34,
+    Bw = 35,
+    By = 36,
+    Bz = 37,
+    Ca = 38,
+    Cd = 39,
+    Cf = 40,
+    Cg = 41,
+    Ch = 42,
+    Ci = 43,
+    Ck = 44,
+    Cl = 45,
+    Cm = 46,
+    Cn = 47,
+    Co = 48,
+    Cr = 49,
+    Cv = 50,
+    Cw = 51,
+    Cy = 52,
+    Cz = 53,
+    De = 54,
+    Dj = 55,
+    Dk = 56,
+    Dm = 57,
+    Do = 58,
+    Dz = 59,
+    Ec = 60,
+    Ee = 61,
+    Eg = 62,
+    Eh = 63,
+    Er = 64,
+    Es = 65,
+    Et = 66,
+    Fi = 67,
+    Fj = 68,
+    Fk = 69,
+    Fo = 70,
+    Fr = 71,
+    Ga = 72,
+    Gb = 73,
+    Gd = 74,
+    Ge = 75,
+    Gf = 76,
+    Gg = 77,
+    Gh = 78,
+    Gi = 79,
+    Gl = 80,
+    Gm = 81,
+    Gn = 82,
+    Gp = 83,
+    Gq = 84,
+    Gr = 85,
+    Gs = 86,
+    Gt = 87,
+    Gu = 88,
+    Gw = 89,
+    Gy = 90,
+    Hk = 91,
+    Hn = 92,
+    Hr = 93,
+    Ht = 94,
+    Hu = 95,
+    Id = 96,
+    Ie = 97,
+    Il = 98,
+    Im = 99,
+    In = 100,
+    Io = 101,
+    Iq = 102,
+    Is = 103,
+    It = 104,
+    Je = 105,
+    Jm = 106,
+    Jo = 107,
+    Jp = 108,
+    Ke = 109,
+    Kg = 110,
+    Kh = 111,
+    Ki = 112,
+    Km = 113,
+    Kn = 114,
+    Kr = 115,
+    Kw = 116,
+    Ky = 117,
+    La = 118,
+    Lb = 119,
+    Lc = 120,
+    Li = 121,
+    Lk = 122,
+    Lr = 123,
+    Ls = 124,
+    Lt = 125,
+    Lu = 126,
+    Lv = 127,
+    Ly = 128,
+    Ma = 129,
+    Mc = 130,
+    Md = 131,
+    Me = 132,
+    Mf = 133,
+    Mg = 134,
+    Mk = 135,
+    Ml = 136,
+    Mm = 137,
+    Mn = 138,
+    Mo = 139,
+    Mq = 140,
+    Mr = 141,
+    Ms = 142,
+    Mt = 143,
+    Mu = 144,
+    Mv = 145,
+    Mw = 146,
+    Mx = 147,
+    My = 148,
+    Mz = 149,
+    Na = 150,
+    Nc = 151,
+    Ne = 152,
+    Ng = 153,
+    Ni = 154,
+    Nl = 155,
+    No = 156,
+    Np = 157,
+    Nr = 158,
+    Nu = 159,
+    Nz = 160,
+    Om = 161,
+    Pa = 162,
+    Pe = 163,
+    Pf = 164,
+    Pg = 165,
+    Ph = 166,
+    Pk = 167,
+    Pl = 168,
+    Pm = 169,
+    Pn = 170,
+    Pr = 171,
+    Ps = 172,
+    Pt = 173,
+    Py = 174,
+    Qa = 175,
+    Re = 176,
+    Ro = 177,
+    Rs = 178,
+    Ru = 179,
+    Rw = 180,
+    Sa = 181,
+    Sb = 182,
+    Sc = 183,
+    Se = 184,
+    Sg = 185,
+    Sh = 186,
+    Si = 187,
+    Sj = 188,
+    Sk = 189,
+    Sl = 190,
+    Sm = 191,
+    Sn = 192,
+    So = 193,
+    Sr = 194,
+    Ss = 195,
+    St = 196,
+    Sv = 197,
+    Sx = 198,
+    Sz = 199,
+    Ta = 200,
+    Tc = 201,
+    Td = 202,
+    Tf = 203,
+    Tg = 204,
+    Th = 205,
+    Tj = 206,
+    Tk = 207,
+    Tl = 208,
+    Tm = 209,
+    Tn = 210,
+    To = 211,
+    Tr = 212,
+    Tt = 213,
+    Tv = 214,
+    Tw = 215,
+    Tz = 216,
+    Ua = 217,
+    Ug = 218,
+    Us = 219,
+    Uy = 220,
+    Uz = 221,
+    Va = 222,
+    Vc = 223,
+    Ve = 224,
+    Vg = 225,
+    Vn = 226,
+    Vu = 227,
+    Wf = 228,
+    Ws = 229,
+    Xk = 230,
+    Ye = 231,
+    Yt = 232,
+    Za = 233,
+    Zm = 234,
+    Zw = 235,
+    Zz = 236,
 }
 impl ShippingCountry {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -3217,7 +3172,6 @@ impl ShippingCountry {
     pub fn as_str_name(&self) -> &'static str {
         match self {
             ShippingCountry::Unspecified => "SHIPPING_COUNTRY_UNSPECIFIED",
-            ShippingCountry::AaallCountries => "SHIPPING_COUNTRY_AAALL_COUNTRIES",
             ShippingCountry::Ac => "SHIPPING_COUNTRY_AC",
             ShippingCountry::Ad => "SHIPPING_COUNTRY_AD",
             ShippingCountry::Ae => "SHIPPING_COUNTRY_AE",
@@ -3460,7 +3414,6 @@ impl ShippingCountry {
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
         match value {
             "SHIPPING_COUNTRY_UNSPECIFIED" => Some(Self::Unspecified),
-            "SHIPPING_COUNTRY_AAALL_COUNTRIES" => Some(Self::AaallCountries),
             "SHIPPING_COUNTRY_AC" => Some(Self::Ac),
             "SHIPPING_COUNTRY_AD" => Some(Self::Ad),
             "SHIPPING_COUNTRY_AE" => Some(Self::Ae),
@@ -3708,25 +3661,25 @@ pub mod shipping_rate_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with ShippingRateServiceServer.
     #[async_trait]
     pub trait ShippingRateService: Send + Sync + 'static {
-        async fn add_shipping_rate_to_offer(
+        async fn put_shipping_rate(
             &self,
-            request: tonic::Request<super::AddShippingRateToOfferRequest>,
+            request: tonic::Request<super::PutShippingRateRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::AddShippingRateToOfferResponse>,
+            tonic::Response<super::PutShippingRateResponse>,
             tonic::Status,
         >;
-        async fn list_shipping_rates(
+        async fn get_shipping_rate(
             &self,
-            request: tonic::Request<super::ListShippingRatesRequest>,
+            request: tonic::Request<super::GetShippingRateRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::ListShippingRatesResponse>,
+            tonic::Response<super::GetShippingRateResponse>,
             tonic::Status,
         >;
-        async fn remove_shipping_rate_from_offer(
+        async fn delete_shipping_rate(
             &self,
-            request: tonic::Request<super::RemoveShippingRateFromOfferRequest>,
+            request: tonic::Request<super::DeleteShippingRateRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::RemoveShippingRateFromOfferResponse>,
+            tonic::Response<super::DeleteShippingRateResponse>,
             tonic::Status,
         >;
     }
@@ -3809,25 +3762,25 @@ pub mod shipping_rate_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/peoplesmarkets.commerce.v1.ShippingRateService/AddShippingRateToOffer" => {
+                "/peoplesmarkets.commerce.v1.ShippingRateService/PutShippingRate" => {
                     #[allow(non_camel_case_types)]
-                    struct AddShippingRateToOfferSvc<T: ShippingRateService>(pub Arc<T>);
+                    struct PutShippingRateSvc<T: ShippingRateService>(pub Arc<T>);
                     impl<
                         T: ShippingRateService,
-                    > tonic::server::UnaryService<super::AddShippingRateToOfferRequest>
-                    for AddShippingRateToOfferSvc<T> {
-                        type Response = super::AddShippingRateToOfferResponse;
+                    > tonic::server::UnaryService<super::PutShippingRateRequest>
+                    for PutShippingRateSvc<T> {
+                        type Response = super::PutShippingRateResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::AddShippingRateToOfferRequest>,
+                            request: tonic::Request<super::PutShippingRateRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).add_shipping_rate_to_offer(request).await
+                                (*inner).put_shipping_rate(request).await
                             };
                             Box::pin(fut)
                         }
@@ -3839,7 +3792,7 @@ pub mod shipping_rate_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = AddShippingRateToOfferSvc(inner);
+                        let method = PutShippingRateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -3855,25 +3808,25 @@ pub mod shipping_rate_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShippingRateService/ListShippingRates" => {
+                "/peoplesmarkets.commerce.v1.ShippingRateService/GetShippingRate" => {
                     #[allow(non_camel_case_types)]
-                    struct ListShippingRatesSvc<T: ShippingRateService>(pub Arc<T>);
+                    struct GetShippingRateSvc<T: ShippingRateService>(pub Arc<T>);
                     impl<
                         T: ShippingRateService,
-                    > tonic::server::UnaryService<super::ListShippingRatesRequest>
-                    for ListShippingRatesSvc<T> {
-                        type Response = super::ListShippingRatesResponse;
+                    > tonic::server::UnaryService<super::GetShippingRateRequest>
+                    for GetShippingRateSvc<T> {
+                        type Response = super::GetShippingRateResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::ListShippingRatesRequest>,
+                            request: tonic::Request<super::GetShippingRateRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).list_shipping_rates(request).await
+                                (*inner).get_shipping_rate(request).await
                             };
                             Box::pin(fut)
                         }
@@ -3885,7 +3838,7 @@ pub mod shipping_rate_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = ListShippingRatesSvc(inner);
+                        let method = GetShippingRateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -3901,30 +3854,25 @@ pub mod shipping_rate_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShippingRateService/RemoveShippingRateFromOffer" => {
+                "/peoplesmarkets.commerce.v1.ShippingRateService/DeleteShippingRate" => {
                     #[allow(non_camel_case_types)]
-                    struct RemoveShippingRateFromOfferSvc<T: ShippingRateService>(
-                        pub Arc<T>,
-                    );
+                    struct DeleteShippingRateSvc<T: ShippingRateService>(pub Arc<T>);
                     impl<
                         T: ShippingRateService,
-                    > tonic::server::UnaryService<
-                        super::RemoveShippingRateFromOfferRequest,
-                    > for RemoveShippingRateFromOfferSvc<T> {
-                        type Response = super::RemoveShippingRateFromOfferResponse;
+                    > tonic::server::UnaryService<super::DeleteShippingRateRequest>
+                    for DeleteShippingRateSvc<T> {
+                        type Response = super::DeleteShippingRateResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::RemoveShippingRateFromOfferRequest,
-                            >,
+                            request: tonic::Request<super::DeleteShippingRateRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).remove_shipping_rate_from_offer(request).await
+                                (*inner).delete_shipping_rate(request).await
                             };
                             Box::pin(fut)
                         }
@@ -3936,7 +3884,7 @@ pub mod shipping_rate_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = RemoveShippingRateFromOfferSvc(inner);
+                        let method = DeleteShippingRateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
