@@ -8,9 +8,11 @@ use crate::api::peoplesmarkets::commerce::v1::shop_domain_service_server::{
 };
 use crate::api::peoplesmarkets::commerce::v1::{
     AddDomainToShopRequest, AddDomainToShopResponse, DomainStatus,
-    DomainStatusResponse, GetDomainStatusRequest, GetDomainStatusResponse,
-    RemoveDomainFromShopRequest, RemoveDomainFromShopResponse,
-    UpdateDomainStatusRequest, UpdateDomainStatusResponse,
+    DomainStatusResponse, GetClientIdForDomainRequest,
+    GetClientIdForDomainResponse, GetDomainStatusRequest,
+    GetDomainStatusResponse, RemoveDomainFromShopRequest,
+    RemoveDomainFromShopResponse, UpdateDomainStatusRequest,
+    UpdateDomainStatusResponse,
 };
 use crate::auth::{get_user_id, verify_service_user};
 use crate::db::DbError;
@@ -92,6 +94,20 @@ impl shop_domain_service_server::ShopDomainService for ShopDomainService {
 
         Ok(Response::new(GetDomainStatusResponse {
             domain_status: Some(Self::shop_domain_to_response(found_domain)?),
+        }))
+    }
+
+    async fn get_client_id_for_domain(
+        &self,
+        request: Request<GetClientIdForDomainRequest>,
+    ) -> Result<Response<GetClientIdForDomainResponse>, Status> {
+        let GetClientIdForDomainRequest { domain } = request.into_inner();
+
+        let found_domain =
+            ShopDomain::get_by_domain(&self.pool, &domain).await?;
+
+        Ok(Response::new(GetClientIdForDomainResponse {
+            client_id: found_domain.and_then(|d| d.client_id),
         }))
     }
 

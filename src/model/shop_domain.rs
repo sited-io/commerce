@@ -80,6 +80,23 @@ impl ShopDomain {
         Ok(row.map(Self::from))
     }
 
+    pub async fn get_by_domain(
+        pool: &Pool,
+        domain: &String,
+    ) -> Result<Option<Self>, DbError> {
+        let conn = pool.get().await?;
+
+        let (sql, values) = Query::select()
+            .column(Asterisk)
+            .from(ShopDomainIden::Table)
+            .and_where(Expr::col(ShopDomainIden::Domain).eq(domain))
+            .build_postgres(PostgresQueryBuilder);
+
+        let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
+
+        Ok(row.map(Self::from))
+    }
+
     pub async fn get_for_user(
         pool: &Pool,
         user_id: &String,

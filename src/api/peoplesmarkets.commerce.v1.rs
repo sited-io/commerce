@@ -1438,6 +1438,18 @@ pub struct GetDomainStatusResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetClientIdForDomainRequest {
+    #[prost(string, tag = "1")]
+    pub domain: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetClientIdForDomainResponse {
+    #[prost(string, optional, tag = "1")]
+    pub client_id: ::core::option::Option<::prost::alloc::string::String>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UpdateDomainStatusRequest {
     #[prost(string, tag = "1")]
     pub shop_id: ::prost::alloc::string::String,
@@ -1510,6 +1522,13 @@ pub mod shop_domain_service_server {
             request: tonic::Request<super::GetDomainStatusRequest>,
         ) -> std::result::Result<
             tonic::Response<super::GetDomainStatusResponse>,
+            tonic::Status,
+        >;
+        async fn get_client_id_for_domain(
+            &self,
+            request: tonic::Request<super::GetClientIdForDomainRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetClientIdForDomainResponse>,
             tonic::Status,
         >;
         async fn update_domain_status(
@@ -1683,6 +1702,52 @@ pub mod shop_domain_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetDomainStatusSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.ShopDomainService/GetClientIdForDomain" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetClientIdForDomainSvc<T: ShopDomainService>(pub Arc<T>);
+                    impl<
+                        T: ShopDomainService,
+                    > tonic::server::UnaryService<super::GetClientIdForDomainRequest>
+                    for GetClientIdForDomainSvc<T> {
+                        type Response = super::GetClientIdForDomainResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetClientIdForDomainRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).get_client_id_for_domain(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetClientIdForDomainSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
