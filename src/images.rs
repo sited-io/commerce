@@ -53,24 +53,24 @@ impl ImageService {
     }
 
     pub fn validate_image(&self, image_data: &[u8]) -> Result<(), Status> {
-        let image_size_ok = image_data.len() < self.max_size;
-        let image_mime_ok = infer::image::is_jpeg(image_data)
-            || infer::image::is_jpeg2000(image_data)
-            || infer::image::is_png(image_data)
-            || infer::image::is_webp(image_data);
-
-        if image_size_ok && image_mime_ok {
-            Ok(())
-        } else if !image_size_ok {
-            Err(Status::resource_exhausted(format!(
+        if image_data.len() > self.max_size {
+            return Err(Status::resource_exhausted(format!(
                 "image.size: max_size={}",
                 self.max_size
-            )))
-        } else {
-            Err(Status::invalid_argument(
-                "image.type: allowed_types=jpg,png,webp",
-            ))
+            )));
         }
+
+        if !(infer::image::is_jpeg(image_data)
+            || infer::image::is_jpeg2000(image_data)
+            || infer::image::is_png(image_data)
+            || infer::image::is_webp(image_data))
+        {
+            return Err(Status::invalid_argument(
+                "image.type: allowed_types=jpg,png,webp",
+            ));
+        }
+
+        Ok(())
     }
 
     pub async fn put_image(
