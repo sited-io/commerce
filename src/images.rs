@@ -54,17 +54,11 @@ impl ImageService {
 
     pub fn validate_image(&self, image_data: &[u8]) -> Result<(), Status> {
         let image_size_ok = image_data.len() < self.max_size;
-        let image_mime_ok = infer::image::is_jpeg(image_data)
-            || infer::image::is_jpeg2000(image_data)
-            || infer::image::is_png(image_data)
-            || infer::image::is_webp(image_data);
 
-        if image_size_ok && image_mime_ok {
+        if image_size_ok {
             Ok(())
-        } else if !image_size_ok {
-            Err(Status::resource_exhausted("image"))
         } else {
-            Err(Status::invalid_argument("image"))
+            Err(Status::resource_exhausted("image"))
         }
     }
 
@@ -75,11 +69,13 @@ impl ImageService {
     ) -> Result<(), Status> {
         let img = image::load_from_memory(image_data).map_err(|err| {
             tracing::log::error!("[ImageService.put_image]: {err}");
-            Status::internal("")
+            Status::internal("image")
         })?;
         let encoder = webp::Encoder::from_image(&img).map_err(|err| {
             tracing::log::error!("[ImageService.put_image]: {err}");
-            Status::internal("")
+            Status::invalid_argument(format!(
+                "Could not convert to 'webp': {err}"
+            ))
         })?;
         let img_webp = encoder.encode_lossless().to_owned();
 
