@@ -58,7 +58,10 @@ impl ImageService {
         if image_size_ok {
             Ok(())
         } else {
-            Err(Status::resource_exhausted("image"))
+            Err(Status::resource_exhausted(format!(
+                "image too lagre max bytes: {}",
+                self.max_size
+            )))
         }
     }
 
