@@ -40,6 +40,11 @@ job "commerce" {
     task "commerce-api" {
       driver = "docker"
 
+      resources {
+        cpu    = 100
+        memory = 1024
+      }
+
       vault {
         policies = ["service-commerce"]
       }
