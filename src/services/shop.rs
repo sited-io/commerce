@@ -88,6 +88,7 @@ impl ShopService {
             customization,
             domain: shop.domain,
             is_active: shop.is_active,
+            contact_email_address: shop.contact_email_address,
         }
     }
 
@@ -355,6 +356,7 @@ impl shop_service_server::ShopService for ShopService {
             minimum_platform_fee_cent,
             slug,
             is_active,
+            contact_email_address,
         } = request.into_inner();
 
         let shop_id = parse_uuid(&shop_id, "shop_id")?;
@@ -391,6 +393,7 @@ impl shop_service_server::ShopService for ShopService {
             platform_fee_percent,
             minimum_platform_fee_cent,
             is_active,
+            contact_email_address,
         )
         .await?;
 

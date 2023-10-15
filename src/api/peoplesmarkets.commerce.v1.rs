@@ -716,6 +716,8 @@ pub struct ShopResponse {
     pub customization: ::core::option::Option<ShopCustomizationResponse>,
     #[prost(bool, tag = "12")]
     pub is_active: bool,
+    #[prost(string, optional, tag = "13")]
+    pub contact_email_address: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -830,6 +832,8 @@ pub struct UpdateShopRequest {
     pub minimum_platform_fee_cent: ::core::option::Option<u32>,
     #[prost(bool, optional, tag = "7")]
     pub is_active: ::core::option::Option<bool>,
+    #[prost(string, optional, tag = "8")]
+    pub contact_email_address: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -36,6 +36,7 @@ pub enum ShopIden {
     PlatformFeePercent,
     MinimumPlatformFeeCent,
     IsActive,
+    ContactEmailAddress,
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +53,7 @@ pub struct Shop {
     pub minimum_platform_fee_cent: u32,
     pub customization: Option<ShopCustomizationAsRel>,
     pub is_active: bool,
+    pub contact_email_address: Option<String>,
 }
 
 impl Shop {
@@ -374,6 +376,7 @@ impl Shop {
         platform_fee_percent: Option<u32>,
         minimum_platform_fee_cent: Option<u32>,
         is_active: Option<bool>,
+        contact_email_address: Option<String>,
     ) -> Result<Self, DbError> {
         let client = pool.get().await?;
 
@@ -403,6 +406,13 @@ impl Shop {
 
             if let Some(is_active) = is_active {
                 query.value(ShopIden::IsActive, is_active);
+            }
+
+            if let Some(contact_email_address) = contact_email_address {
+                query.value(
+                    ShopIden::ContactEmailAddress,
+                    contact_email_address,
+                );
             }
 
             query
@@ -481,6 +491,8 @@ impl From<&Row> for Shop {
             customization: customization.and_then(|c| c.0.first().cloned()),
             domain: row.get(ShopIden::Domain.to_string().as_str()),
             is_active: row.get(ShopIden::IsActive.to_string().as_str()),
+            contact_email_address: row
+                .get(ShopIden::ContactEmailAddress.to_string().as_str()),
         }
     }
 }
