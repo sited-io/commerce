@@ -88,13 +88,11 @@ impl shop_domain_service_server::ShopDomainService for ShopDomainService {
 
         let shop_uuid = parse_uuid(&shop_id, "shop_id")?;
 
-        let found_domain = ShopDomain::get(&self.pool, &shop_uuid)
+        let domain_status = ShopDomain::get(&self.pool, &shop_uuid)
             .await?
-            .ok_or(Status::not_found(shop_id))?;
+            .and_then(|d| Self::shop_domain_to_response(d).ok());
 
-        Ok(Response::new(GetDomainStatusResponse {
-            domain_status: Some(Self::shop_domain_to_response(found_domain)?),
-        }))
+        Ok(Response::new(GetDomainStatusResponse { domain_status }))
     }
 
     async fn get_client_id_for_domain(
