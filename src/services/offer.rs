@@ -241,13 +241,15 @@ impl offer_service_server::OfferService for OfferService {
     ) -> Result<Response<GetMyOfferResponse>, Status> {
         let user_id = get_user_id(request.metadata(), &self.verifier).await?;
 
-        let offer = self
-            .get_offer(Request::new(GetOfferRequest {
-                offer_id: request.into_inner().offer_id,
-            }))
-            .await?
-            .into_inner()
-            .offer;
+        let metadata = request.metadata().clone();
+
+        let mut req = Request::new(GetOfferRequest {
+            offer_id: request.into_inner().offer_id,
+        });
+
+        *req.metadata_mut() = metadata;
+
+        let offer = self.get_offer(req).await?.into_inner().offer;
 
         if let Some(offer) = offer {
             if offer.user_id == user_id {

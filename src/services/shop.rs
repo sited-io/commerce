@@ -277,6 +277,8 @@ impl shop_service_server::ShopService for ShopService {
     ) -> Result<Response<GetMyShopResponse>, Status> {
         let user_id = get_user_id(request.metadata(), &self.verifier).await?;
 
+        let metadata = request.metadata().clone();
+
         let GetMyShopRequest {
             shop_id,
             slug,
@@ -286,33 +288,24 @@ impl shop_service_server::ShopService for ShopService {
 
         let shop = match (shop_id, slug, domain) {
             (Some(shop_id), _, _) => {
-                self.get_shop(Request::new(GetShopRequest {
-                    shop_id,
-                    extended,
-                }))
-                .await?
-                .into_inner()
-                .shop
+                let mut req =
+                    Request::new(GetShopRequest { shop_id, extended });
+                *req.metadata_mut() = metadata;
+                self.get_shop(req).await?.into_inner().shop
             }
             (_, Some(slug), _) => {
-                self.get_shop_by_slug(Request::new(GetShopBySlugRequest {
-                    slug,
-                }))
-                .await?
-                .into_inner()
-                .shop
+                let mut req = Request::new(GetShopBySlugRequest { slug });
+                *req.metadata_mut() = metadata;
+                self.get_shop_by_slug(req).await?.into_inner().shop
             }
             (_, _, Some(domain)) => {
-                self.get_shop_by_domain(Request::new(GetShopByDomainRequest {
-                    domain,
-                }))
-                .await?
-                .into_inner()
-                .shop
+                let mut req = Request::new(GetShopByDomainRequest { domain });
+                *req.metadata_mut() = metadata;
+                self.get_shop_by_domain(req).await?.into_inner().shop
             }
             (None, None, None) => {
                 return Err(Status::invalid_argument(
-                    "provide one of ['shop_id', 'slug', 'domain'",
+                    "provide one of ['shop_id', 'slug', 'domain']",
                 ))
             }
         };
