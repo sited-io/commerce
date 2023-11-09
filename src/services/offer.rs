@@ -9,12 +9,13 @@ use crate::api::peoplesmarkets::commerce::v1::offer_service_server::{
 use crate::api::peoplesmarkets::commerce::v1::{
     AddImageToOfferRequest, AddImageToOfferResponse, CreateOfferRequest,
     CreateOfferResponse, Currency, DeleteOfferRequest, DeleteOfferResponse,
-    GetOfferRequest, GetOfferResponse, ListOffersRequest, ListOffersResponse,
-    OfferImageResponse, OfferResponse, OfferType, Price, PriceBillingScheme,
-    PriceType, PutPriceToOfferRequest, PutPriceToOfferResponse, Recurring,
-    RecurringInterval, RemoveImageFromOfferRequest,
-    RemoveImageFromOfferResponse, RemovePriceFromOfferRequest,
-    RemovePriceFromOfferResponse, UpdateOfferRequest, UpdateOfferResponse,
+    GetMyOfferRequest, GetMyOfferResponse, GetOfferRequest, GetOfferResponse,
+    ListOffersRequest, ListOffersResponse, OfferImageResponse, OfferResponse,
+    OfferType, Price, PriceBillingScheme, PriceType, PutPriceToOfferRequest,
+    PutPriceToOfferResponse, Recurring, RecurringInterval,
+    RemoveImageFromOfferRequest, RemoveImageFromOfferResponse,
+    RemovePriceFromOfferRequest, RemovePriceFromOfferResponse,
+    UpdateOfferRequest, UpdateOfferResponse,
 };
 use crate::auth::get_user_id;
 use crate::db::DbError;
@@ -234,6 +235,30 @@ impl offer_service_server::OfferService for OfferService {
         }))
     }
 
+    async fn get_my_offer(
+        &self,
+        request: Request<GetMyOfferRequest>,
+    ) -> Result<Response<GetMyOfferResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
+        let offer = self
+            .get_offer(Request::new(GetOfferRequest {
+                offer_id: request.into_inner().offer_id,
+            }))
+            .await?
+            .into_inner()
+            .offer;
+
+        if let Some(offer) = offer {
+            if offer.user_id == user_id {
+                return Ok(Response::new(GetMyOfferResponse {
+                    offer: Some(offer),
+                }));
+            }
+        }
+
+        Err(Status::not_found("offer"))
+    }
     async fn list_offers(
         &self,
         request: Request<ListOffersRequest>,

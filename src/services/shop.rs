@@ -7,11 +7,11 @@ use crate::api::peoplesmarkets::commerce::v1::shop_service_server::{
 };
 use crate::api::peoplesmarkets::commerce::v1::{
     CreateShopRequest, CreateShopResponse, DeleteShopRequest,
-    DeleteShopResponse, GetShopByDomainRequest, GetShopByDomainResponse,
-    GetShopBySlugRequest, GetShopBySlugResponse, GetShopRequest,
-    GetShopResponse, ListShopsRequest, ListShopsResponse,
-    ShopCustomizationResponse, ShopResponse, ShopsFilterField,
-    ShopsOrderByField, UpdateShopRequest, UpdateShopResponse,
+    DeleteShopResponse, GetMyShopRequest, GetMyShopResponse,
+    GetShopByDomainRequest, GetShopByDomainResponse, GetShopBySlugRequest,
+    GetShopBySlugResponse, GetShopRequest, GetShopResponse, ListShopsRequest,
+    ListShopsResponse, ShopCustomizationResponse, ShopResponse,
+    ShopsFilterField, ShopsOrderByField, UpdateShopRequest, UpdateShopResponse,
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
 use crate::auth::get_user_id;
@@ -269,6 +269,63 @@ impl shop_service_server::ShopService for ShopService {
         Ok(Response::new(GetShopByDomainResponse {
             shop: Some(self.shop_to_response(found_shop)),
         }))
+    }
+
+    async fn get_my_shop(
+        &self,
+        request: Request<GetMyShopRequest>,
+    ) -> Result<Response<GetMyShopResponse>, Status> {
+        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
+
+        let GetMyShopRequest {
+            shop_id,
+            slug,
+            domain,
+            extended,
+        } = request.into_inner();
+
+        let shop = match (shop_id, slug, domain) {
+            (Some(shop_id), _, _) => {
+                self.get_shop(Request::new(GetShopRequest {
+                    shop_id,
+                    extended,
+                }))
+                .await?
+                .into_inner()
+                .shop
+            }
+            (_, Some(slug), _) => {
+                self.get_shop_by_slug(Request::new(GetShopBySlugRequest {
+                    slug,
+                }))
+                .await?
+                .into_inner()
+                .shop
+            }
+            (_, _, Some(domain)) => {
+                self.get_shop_by_domain(Request::new(GetShopByDomainRequest {
+                    domain,
+                }))
+                .await?
+                .into_inner()
+                .shop
+            }
+            (None, None, None) => {
+                return Err(Status::invalid_argument(
+                    "provide one of ['shop_id', 'slug', 'domain'",
+                ))
+            }
+        };
+
+        if let Some(shop) = shop {
+            if shop.user_id == user_id {
+                return Ok(Response::new(GetMyShopResponse {
+                    shop: Some(shop),
+                }));
+            }
+        }
+
+        Err(Status::not_found("shop"))
     }
 
     async fn list_shops(

@@ -755,6 +755,24 @@ pub struct GetShopResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetMyShopRequest {
+    #[prost(string, optional, tag = "1")]
+    pub shop_id: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, optional, tag = "2")]
+    pub slug: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, optional, tag = "3")]
+    pub domain: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(bool, optional, tag = "4")]
+    pub extended: ::core::option::Option<bool>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetMyShopResponse {
+    #[prost(message, optional, tag = "1")]
+    pub shop: ::core::option::Option<ShopResponse>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetShopBySlugRequest {
     #[prost(string, tag = "1")]
     pub slug: ::prost::alloc::string::String,
@@ -949,6 +967,13 @@ pub mod shop_service_server {
             request: tonic::Request<super::GetShopByDomainRequest>,
         ) -> std::result::Result<
             tonic::Response<super::GetShopByDomainResponse>,
+            tonic::Status,
+        >;
+        async fn get_my_shop(
+            &self,
+            request: tonic::Request<super::GetMyShopRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetMyShopResponse>,
             tonic::Status,
         >;
         async fn list_shops(
@@ -1217,6 +1242,50 @@ pub mod shop_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetShopByDomainSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.ShopService/GetMyShop" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetMyShopSvc<T: ShopService>(pub Arc<T>);
+                    impl<
+                        T: ShopService,
+                    > tonic::server::UnaryService<super::GetMyShopRequest>
+                    for GetMyShopSvc<T> {
+                        type Response = super::GetMyShopResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetMyShopRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move { (*inner).get_my_shop(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetMyShopSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -2119,6 +2188,18 @@ pub struct GetOfferResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetMyOfferRequest {
+    #[prost(string, tag = "1")]
+    pub offer_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetMyOfferResponse {
+    #[prost(message, optional, tag = "1")]
+    pub offer: ::core::option::Option<OfferResponse>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OffersOrderBy {
     #[prost(enumeration = "OffersOrderByField", tag = "1")]
     pub field: i32,
@@ -2356,6 +2437,13 @@ pub mod offer_service_server {
             tonic::Response<super::GetOfferResponse>,
             tonic::Status,
         >;
+        async fn get_my_offer(
+            &self,
+            request: tonic::Request<super::GetMyOfferRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetMyOfferResponse>,
+            tonic::Status,
+        >;
         async fn list_offers(
             &self,
             request: tonic::Request<super::ListOffersRequest>,
@@ -2560,6 +2648,52 @@ pub mod offer_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetOfferSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peoplesmarkets.commerce.v1.OfferService/GetMyOffer" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetMyOfferSvc<T: OfferService>(pub Arc<T>);
+                    impl<
+                        T: OfferService,
+                    > tonic::server::UnaryService<super::GetMyOfferRequest>
+                    for GetMyOfferSvc<T> {
+                        type Response = super::GetMyOfferResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetMyOfferRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).get_my_offer(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetMyOfferSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
