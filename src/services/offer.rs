@@ -22,6 +22,7 @@ use crate::db::DbError;
 use crate::images::ImageService;
 use crate::model::{
     Offer, OfferImage, OfferImageAsRel, OfferPrice, OfferPriceAsRel,
+    ShippingRate,
 };
 use crate::parse_uuid;
 
@@ -380,6 +381,7 @@ impl offer_service_server::OfferService for OfferService {
                 .await?;
         }
 
+        ShippingRate::delete_all(&transaction, &user_id, &offer_id).await?;
         Offer::delete(&transaction, &user_id, &offer_id).await?;
 
         transaction.commit().await.map_err(DbError::from)?;

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use deadpool_postgres::tokio_postgres::Row;
-use deadpool_postgres::Pool;
+use deadpool_postgres::{Pool, Transaction};
 use sea_query::{
     all, Asterisk, Expr, Iden, OnConflict, PostgresQueryBuilder, Query,
 };
@@ -120,6 +120,24 @@ impl ShippingRate {
             .build_postgres(PostgresQueryBuilder);
 
         conn.execute(sql.as_str(), &values.as_params()).await?;
+
+        Ok(())
+    }
+
+    pub async fn delete_all<'a>(
+        transaction: &Transaction<'a>,
+        user_id: &String,
+        offer_id: &Uuid,
+    ) -> Result<(), DbError> {
+        let (sql, values) = Query::delete()
+            .from_table(ShippingRateIden::Table)
+            .and_where(Expr::col(ShippingRateIden::UserId).eq(user_id))
+            .and_where(Expr::col(ShippingRateIden::OfferId).eq(*offer_id))
+            .build_postgres(PostgresQueryBuilder);
+
+        transaction
+            .execute(sql.as_str(), &values.as_params())
+            .await?;
 
         Ok(())
     }
