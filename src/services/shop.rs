@@ -409,6 +409,10 @@ impl shop_service_server::ShopService for ShopService {
             contact_email_address,
         } = request.into_inner();
 
+        if let Some(ref slug) = slug {
+            Self::validate_slug(&slug)?;
+        }
+
         let shop_id = parse_uuid(&shop_id, "shop_id")?;
 
         if matches!(
