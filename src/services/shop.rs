@@ -89,6 +89,7 @@ impl ShopService {
             domain: shop.domain,
             is_active: shop.is_active,
             contact_email_address: shop.contact_email_address,
+            client_id: shop.client_id,
         }
     }
 
@@ -410,7 +411,7 @@ impl shop_service_server::ShopService for ShopService {
         } = request.into_inner();
 
         if let Some(ref slug) = slug {
-            Self::validate_slug(&slug)?;
+            Self::validate_slug(slug)?;
         }
 
         let shop_id = parse_uuid(&shop_id, "shop_id")?;

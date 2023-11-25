@@ -37,6 +37,7 @@ pub enum ShopIden {
     MinimumPlatformFeeCent,
     IsActive,
     ContactEmailAddress,
+    ClientId,
 }
 
 #[derive(Debug, Clone)]
@@ -54,6 +55,7 @@ pub struct Shop {
     pub customization: Option<ShopCustomizationAsRel>,
     pub is_active: bool,
     pub contact_email_address: Option<String>,
+    pub client_id: Option<String>,
 }
 
 impl Shop {
@@ -493,6 +495,7 @@ impl From<&Row> for Shop {
             is_active: row.get(ShopIden::IsActive.to_string().as_str()),
             contact_email_address: row
                 .get(ShopIden::ContactEmailAddress.to_string().as_str()),
+            client_id: row.get(ShopIden::ClientId.to_string().as_str()),
         }
     }
 }

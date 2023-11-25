@@ -1,0 +1,4 @@
+ALTER TABLE
+  shops
+ADD
+  COLUMN client_id VARCHAR;

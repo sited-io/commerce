@@ -718,6 +718,8 @@ pub struct ShopResponse {
     pub is_active: bool,
     #[prost(string, optional, tag = "13")]
     pub contact_email_address: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, optional, tag = "14")]
+    pub client_id: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
