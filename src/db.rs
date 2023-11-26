@@ -2,6 +2,7 @@ use std::ops::DerefMut;
 
 use deadpool_postgres::tokio_postgres::error::SqlState;
 use deadpool_postgres::tokio_postgres::types::{FromSql, Type, WrongType};
+use deadpool_postgres::tokio_postgres::Row;
 use deadpool_postgres::{
     tokio_postgres::NoTls, Config, CreatePoolError, Pool, PoolError, Runtime,
     SslMode,
@@ -171,5 +172,14 @@ where
             Err(Box::new(WrongType::new::<T>(ty.clone())))
         }
         Some(ty) => Ok(ty),
+    }
+}
+
+pub fn get_count_from_rows(rows: &Vec<Row>) -> Result<i64, DbError> {
+    let row = rows.first();
+    if let Some(row) = row {
+        Ok(row.get("count"))
+    } else {
+        Err(DbError::Argument("count"))
     }
 }

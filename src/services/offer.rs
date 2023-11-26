@@ -26,7 +26,7 @@ use crate::model::{
 };
 use crate::parse_uuid;
 
-use super::paginate;
+use super::get_limit_offset_from_pagination;
 
 pub struct OfferService {
     pool: Pool,
@@ -277,7 +277,8 @@ impl offer_service_server::OfferService for OfferService {
             order_by,
         } = request.into_inner();
 
-        let (limit, offset, pagination) = paginate(pagination)?;
+        let (limit, offset, mut pagination) =
+            get_limit_offset_from_pagination(pagination)?;
 
         if filter.is_none() && order_by.is_none() && shop_id.is_none() {
             return Err(Status::invalid_argument("filter,order_by"));
@@ -292,12 +293,12 @@ impl offer_service_server::OfferService for OfferService {
             None => None,
         };
 
-        let found_offers = Offer::list(
+        let (found_offers, count) = Offer::list(
             &self.pool,
             shop_id,
             user_id.as_ref(),
-            limit,
-            offset,
+            limit.into(),
+            offset.into(),
             filter,
             order_by,
             request_user_id.as_ref(),
@@ -309,6 +310,9 @@ impl offer_service_server::OfferService for OfferService {
         for offer in found_offers {
             offers.push(self.offer_to_response(offer)?);
         }
+
+        pagination.total_elements =
+            count.try_into().map_err(|_| Status::internal(""))?;
 
         Ok(Response::new(ListOffersResponse {
             offers,

@@ -13,7 +13,7 @@ use crate::api::peoplesmarkets::commerce::v1::{
     OffersFilterField, OffersOrderByField,
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
-use crate::db::{build_simple_plain_ts_query, DbError};
+use crate::db::{build_simple_plain_ts_query, get_count_from_rows, DbError};
 
 use super::offer_image::{OfferImageAsRel, OfferImageAsRelVec};
 use super::offer_price::{OfferPriceAsRel, OfferPriceAsRelVec, OfferPriceIden};
@@ -340,8 +340,9 @@ impl Offer {
         filter: Option<(OffersFilterField, String)>,
         order_by: Option<(OffersOrderByField, Direction)>,
         request_user_id: Option<&String>,
-    ) -> Result<Vec<Self>, DbError> {
-        let client = pool.get().await?;
+    ) -> Result<(Vec<Self>, i64), DbError> {
+        let mut conn = pool.get().await?;
+        let transaction = conn.transaction().await?;
 
         let (sql, values) = {
             let mut query = Self::select_with_relations();
@@ -360,7 +361,7 @@ impl Offer {
                 );
             }
 
-            if let Some((filter_field, filter_query)) = filter {
+            if let Some((filter_field, filter_query)) = filter.clone() {
                 Self::add_filter(&mut query, filter_field, filter_query)?;
             }
 
@@ -384,9 +385,50 @@ impl Offer {
                 .build_postgres(PostgresQueryBuilder)
         };
 
-        let rows = client.query(sql.as_str(), &values.as_params()).await?;
+        let (count_sql, count_values) = {
+            let mut query = Query::select();
+            query
+                .expr(Expr::col(Asterisk).count())
+                .from(OfferIden::Table);
 
-        Ok(rows.iter().map(Self::from).collect())
+            if let Some(shop_id) = shop_id {
+                query.cond_where(
+                    Expr::col((OfferIden::Table, OfferIden::ShopId))
+                        .eq(shop_id),
+                );
+            }
+
+            if let Some(user_id) = user_id {
+                query.cond_where(
+                    Expr::col((OfferIden::Table, OfferIden::UserId))
+                        .eq(user_id),
+                );
+            }
+
+            if let Some((filter_field, filter_query)) = filter {
+                Self::add_filter(&mut query, filter_field, filter_query)?;
+            }
+
+            query.cond_where(any![
+                Expr::col((OfferIden::Table, OfferIden::IsActive)).eq(true),
+                Expr::col((OfferIden::Table, OfferIden::UserId))
+                    .eq(request_user_id.cloned())
+            ]);
+
+            query.build_postgres(PostgresQueryBuilder)
+        };
+
+        let rows = transaction.query(sql.as_str(), &values.as_params()).await?;
+
+        let count_rows = transaction
+            .query(count_sql.as_str(), &count_values.as_params())
+            .await?;
+
+        let count = get_count_from_rows(&count_rows)?;
+
+        transaction.commit().await?;
+
+        Ok((rows.iter().map(Self::from).collect(), count))
     }
 
     #[allow(clippy::too_many_arguments)]

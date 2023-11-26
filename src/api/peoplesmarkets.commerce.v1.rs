@@ -2224,7 +2224,9 @@ pub struct ListOffersRequest {
     #[prost(string, optional, tag = "2")]
     pub shop_id: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(message, optional, tag = "3")]
-    pub pagination: ::core::option::Option<super::super::pagination::v1::Pagination>,
+    pub pagination: ::core::option::Option<
+        super::super::pagination::v1::PaginationRequest,
+    >,
     #[prost(message, optional, tag = "4")]
     pub order_by: ::core::option::Option<OffersOrderBy>,
     #[prost(message, optional, tag = "5")]
@@ -2236,7 +2238,9 @@ pub struct ListOffersResponse {
     #[prost(message, repeated, tag = "1")]
     pub offers: ::prost::alloc::vec::Vec<OfferResponse>,
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::pagination::v1::Pagination>,
+    pub pagination: ::core::option::Option<
+        super::super::pagination::v1::PaginationResponse,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
