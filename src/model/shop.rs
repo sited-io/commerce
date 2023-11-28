@@ -306,8 +306,6 @@ impl Shop {
                 .from(ShopIden::Table)
                 .to_owned()
         }
-        .column(Asterisk)
-        .from(ShopIden::Table)
         .cond_where(all![
             Expr::col((ShopIden::Table, ShopIden::Domain)).eq(domain),
             any![
