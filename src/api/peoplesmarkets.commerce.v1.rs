@@ -17,42 +17,10 @@ pub struct ShopCustomizationResponse {
     pub banner_image_light_url: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "8")]
     pub banner_image_dark_url: ::core::option::Option<::prost::alloc::string::String>,
-    #[prost(bool, optional, tag = "9")]
-    pub show_banner_in_listing: ::core::option::Option<bool>,
-    #[prost(bool, optional, tag = "10")]
-    pub show_banner_on_home: ::core::option::Option<bool>,
-    #[prost(string, optional, tag = "11")]
-    pub header_background_color_light: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "12")]
-    pub header_background_color_dark: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "13")]
-    pub header_content_color_light: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "14")]
-    pub header_content_color_dark: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "15")]
-    pub secondary_background_color_light: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "16")]
-    pub secondary_background_color_dark: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "17")]
-    pub secondary_content_color_light: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "18")]
-    pub secondary_content_color_dark: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
+    #[prost(string, optional, tag = "9")]
+    pub primary_color: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(enumeration = "ShopLayoutType", tag = "10")]
+    pub layout_type: i32,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -60,37 +28,9 @@ pub struct PutShopCustomizationRequest {
     #[prost(string, tag = "1")]
     pub shop_id: ::prost::alloc::string::String,
     #[prost(string, optional, tag = "2")]
-    pub header_background_color_light: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "3")]
-    pub header_background_color_dark: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "4")]
-    pub header_content_color_light: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "5")]
-    pub header_content_color_dark: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "6")]
-    pub secondary_background_color_light: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "7")]
-    pub secondary_background_color_dark: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "8")]
-    pub secondary_content_color_light: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
-    #[prost(string, optional, tag = "9")]
-    pub secondary_content_color_dark: ::core::option::Option<
-        ::prost::alloc::string::String,
-    >,
+    pub primary_color: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(enumeration = "ShopLayoutType", tag = "3")]
+    pub layout_type: i32,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -128,10 +68,6 @@ pub struct PutBannerImageToShopRequest {
     pub image: ::core::option::Option<super::super::media::v1::MediaUpload>,
     #[prost(message, optional, tag = "3")]
     pub image_dark: ::core::option::Option<super::super::media::v1::MediaUpload>,
-    #[prost(bool, optional, tag = "4")]
-    pub show_in_listing: ::core::option::Option<bool>,
-    #[prost(bool, optional, tag = "5")]
-    pub show_on_home: ::core::option::Option<bool>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -167,6 +103,35 @@ pub struct RemoveLogoImageFromShopRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RemoveLogoImageFromShopResponse {}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ShopLayoutType {
+    Unspecified = 0,
+    Fead = 1,
+    OfferList = 2,
+}
+impl ShopLayoutType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            ShopLayoutType::Unspecified => "SHOP_LAYOUT_TYPE_UNSPECIFIED",
+            ShopLayoutType::Fead => "SHOP_LAYOUT_TYPE_FEAD",
+            ShopLayoutType::OfferList => "SHOP_LAYOUT_TYPE_OFFER_LIST",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "SHOP_LAYOUT_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "SHOP_LAYOUT_TYPE_FEAD" => Some(Self::Fead),
+            "SHOP_LAYOUT_TYPE_OFFER_LIST" => Some(Self::OfferList),
+            _ => None,
+        }
+    }
+}
 /// Generated server implementations.
 pub mod shop_customization_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
@@ -744,56 +709,20 @@ pub struct CreateShopResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetShopRequest {
-    #[prost(string, tag = "1")]
-    pub shop_id: ::prost::alloc::string::String,
+    #[prost(string, optional, tag = "1")]
+    pub shop_id: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(bool, optional, tag = "2")]
     pub extended: ::core::option::Option<bool>,
+    #[prost(string, optional, tag = "3")]
+    pub slug: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, optional, tag = "4")]
+    pub domain: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, optional, tag = "5")]
+    pub owner: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetShopResponse {
-    #[prost(message, optional, tag = "1")]
-    pub shop: ::core::option::Option<ShopResponse>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GetMyShopRequest {
-    #[prost(string, optional, tag = "1")]
-    pub shop_id: ::core::option::Option<::prost::alloc::string::String>,
-    #[prost(string, optional, tag = "2")]
-    pub slug: ::core::option::Option<::prost::alloc::string::String>,
-    #[prost(string, optional, tag = "3")]
-    pub domain: ::core::option::Option<::prost::alloc::string::String>,
-    #[prost(bool, optional, tag = "4")]
-    pub extended: ::core::option::Option<bool>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GetMyShopResponse {
-    #[prost(message, optional, tag = "1")]
-    pub shop: ::core::option::Option<ShopResponse>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GetShopBySlugRequest {
-    #[prost(string, tag = "1")]
-    pub slug: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GetShopBySlugResponse {
-    #[prost(message, optional, tag = "1")]
-    pub shop: ::core::option::Option<ShopResponse>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GetShopByDomainRequest {
-    #[prost(string, tag = "1")]
-    pub domain: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GetShopByDomainResponse {
     #[prost(message, optional, tag = "1")]
     pub shop: ::core::option::Option<ShopResponse>,
 }
@@ -957,27 +886,6 @@ pub mod shop_service_server {
             &self,
             request: tonic::Request<super::GetShopRequest>,
         ) -> std::result::Result<tonic::Response<super::GetShopResponse>, tonic::Status>;
-        async fn get_shop_by_slug(
-            &self,
-            request: tonic::Request<super::GetShopBySlugRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::GetShopBySlugResponse>,
-            tonic::Status,
-        >;
-        async fn get_shop_by_domain(
-            &self,
-            request: tonic::Request<super::GetShopByDomainRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::GetShopByDomainResponse>,
-            tonic::Status,
-        >;
-        async fn get_my_shop(
-            &self,
-            request: tonic::Request<super::GetMyShopRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::GetMyShopResponse>,
-            tonic::Status,
-        >;
         async fn list_shops(
             &self,
             request: tonic::Request<super::ListShopsRequest>,
@@ -1152,142 +1060,6 @@ pub mod shop_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetShopSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/peoplesmarkets.commerce.v1.ShopService/GetShopBySlug" => {
-                    #[allow(non_camel_case_types)]
-                    struct GetShopBySlugSvc<T: ShopService>(pub Arc<T>);
-                    impl<
-                        T: ShopService,
-                    > tonic::server::UnaryService<super::GetShopBySlugRequest>
-                    for GetShopBySlugSvc<T> {
-                        type Response = super::GetShopBySlugResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::GetShopBySlugRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                (*inner).get_shop_by_slug(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = GetShopBySlugSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/peoplesmarkets.commerce.v1.ShopService/GetShopByDomain" => {
-                    #[allow(non_camel_case_types)]
-                    struct GetShopByDomainSvc<T: ShopService>(pub Arc<T>);
-                    impl<
-                        T: ShopService,
-                    > tonic::server::UnaryService<super::GetShopByDomainRequest>
-                    for GetShopByDomainSvc<T> {
-                        type Response = super::GetShopByDomainResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::GetShopByDomainRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                (*inner).get_shop_by_domain(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = GetShopByDomainSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/peoplesmarkets.commerce.v1.ShopService/GetMyShop" => {
-                    #[allow(non_camel_case_types)]
-                    struct GetMyShopSvc<T: ShopService>(pub Arc<T>);
-                    impl<
-                        T: ShopService,
-                    > tonic::server::UnaryService<super::GetMyShopRequest>
-                    for GetMyShopSvc<T> {
-                        type Response = super::GetMyShopResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::GetMyShopRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).get_my_shop(request).await };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = GetMyShopSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

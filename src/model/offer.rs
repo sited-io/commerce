@@ -361,6 +361,12 @@ impl Offer {
                 );
             }
 
+            query.cond_where(any![
+                Expr::col((OfferIden::Table, OfferIden::IsActive)).eq(true),
+                Expr::col((OfferIden::Table, OfferIden::UserId))
+                    .eq(request_user_id.cloned())
+            ]);
+
             if let Some((filter_field, filter_query)) = filter.clone() {
                 Self::add_filter(&mut query, filter_field, filter_query)?;
             }
@@ -373,12 +379,6 @@ impl Offer {
                 );
             }
 
-            query.cond_where(any![
-                Expr::col((OfferIden::Table, OfferIden::IsActive)).eq(true),
-                Expr::col((OfferIden::Table, OfferIden::UserId))
-                    .eq(request_user_id.cloned())
-            ]);
-
             query
                 .limit(limit)
                 .offset(offset)
@@ -387,6 +387,7 @@ impl Offer {
 
         let (count_sql, count_values) = {
             let mut query = Query::select();
+
             query
                 .expr(Expr::col(Asterisk).count())
                 .from(OfferIden::Table);
@@ -405,15 +406,15 @@ impl Offer {
                 );
             }
 
-            if let Some((filter_field, filter_query)) = filter {
-                Self::add_filter(&mut query, filter_field, filter_query)?;
-            }
-
             query.cond_where(any![
                 Expr::col((OfferIden::Table, OfferIden::IsActive)).eq(true),
                 Expr::col((OfferIden::Table, OfferIden::UserId))
                     .eq(request_user_id.cloned())
             ]);
+
+            if let Some((filter_field, filter_query)) = filter {
+                Self::add_filter(&mut query, filter_field, filter_query)?;
+            }
 
             query.build_postgres(PostgresQueryBuilder)
         };
@@ -446,6 +447,7 @@ impl Offer {
 
         let (sql, values) = {
             let mut query = Query::update();
+
             query.table(OfferIden::Table);
 
             if let Some(name) = name {
@@ -471,9 +473,8 @@ impl Offer {
             query
                 .and_where(Expr::col(OfferIden::UserId).eq(user_id))
                 .and_where(Expr::col(OfferIden::OfferId).eq(*offer_id))
-                .returning_all();
-
-            query.build_postgres(PostgresQueryBuilder)
+                .returning_all()
+                .build_postgres(PostgresQueryBuilder)
         };
 
         let row = client.query_one(sql.as_str(), &values.as_params()).await?;

@@ -1,0 +1,6 @@
+ALTER TABLE
+  shop_customizations
+ADD
+  COLUMN primary_color VARCHAR,
+ADD
+  COLUMN layout_type VARCHAR NOT NULL DEFAULT 'SHOP_LAYOUT_TYPE_FEAD';

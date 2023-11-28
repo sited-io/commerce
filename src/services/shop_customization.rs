@@ -11,7 +11,7 @@ use crate::api::peoplesmarkets::commerce::v1::{
     PutShopCustomizationRequest, PutShopCustomizationResponse,
     RemoveBannerImageFromShopRequest, RemoveBannerImageFromShopResponse,
     RemoveLogoImageFromShopRequest, RemoveLogoImageFromShopResponse,
-    ShopCustomizationResponse,
+    ShopCustomizationResponse, ShopLayoutType,
 };
 use crate::api::peoplesmarkets::commerce::v1::shop_customization_service_server::{ShopCustomizationServiceServer, self};
 use crate::auth::get_user_id;
@@ -53,6 +53,11 @@ impl ShopCustomizationService {
         &self,
         shop_customization: ShopCustomization,
     ) -> ShopCustomizationResponse {
+        let layout_type =
+            ShopLayoutType::from_str_name(&shop_customization.layout_type)
+                .map(i32::from)
+                .unwrap_or(0);
+
         ShopCustomizationResponse {
             shop_id: shop_customization.shop_id.to_string(),
             user_id: shop_customization.user_id,
@@ -77,24 +82,8 @@ impl ShopCustomizationService {
             banner_image_dark_url: self.image_service.get_opt_image_url(
                 shop_customization.banner_image_dark_url_path,
             ),
-            show_banner_in_listing: shop_customization.show_banner_in_listing,
-            show_banner_on_home: shop_customization.show_banner_on_home,
-            header_background_color_light: shop_customization
-                .header_background_color_light,
-            header_background_color_dark: shop_customization
-                .header_background_color_dark,
-            header_content_color_light: shop_customization
-                .header_content_color_light,
-            header_content_color_dark: shop_customization
-                .header_content_color_dark,
-            secondary_background_color_light: shop_customization
-                .secondary_background_color_light,
-            secondary_background_color_dark: shop_customization
-                .secondary_background_color_dark,
-            secondary_content_color_light: shop_customization
-                .secondary_content_color_light,
-            secondary_content_color_dark: shop_customization
-                .secondary_content_color_dark,
+            primary_color: shop_customization.primary_color,
+            layout_type,
         }
     }
 
@@ -115,30 +104,23 @@ impl shop_customization_service_server::ShopCustomizationService
 
         let PutShopCustomizationRequest {
             shop_id,
-            header_background_color_light,
-            header_background_color_dark,
-            header_content_color_light,
-            header_content_color_dark,
-            secondary_background_color_light,
-            secondary_background_color_dark,
-            secondary_content_color_light,
-            secondary_content_color_dark,
+            primary_color,
+            layout_type,
         } = request.into_inner();
 
         let shop_id = parse_uuid(&shop_id, "shop_id")?;
+
+        let layout_type = ShopLayoutType::from_i32(layout_type)
+            .ok_or(Status::invalid_argument("layout_type"))?
+            .as_str_name()
+            .to_string();
 
         let shop_customization = ShopCustomization::put(
             &self.pool,
             &shop_id,
             &user_id,
-            header_background_color_light,
-            header_background_color_dark,
-            header_content_color_light,
-            header_content_color_dark,
-            secondary_background_color_light,
-            secondary_background_color_dark,
-            secondary_content_color_light,
-            secondary_content_color_dark,
+            primary_color,
+            layout_type,
         )
         .await?;
 
@@ -210,8 +192,6 @@ impl shop_customization_service_server::ShopCustomizationService
             shop_id,
             image,
             image_dark,
-            show_in_listing,
-            show_on_home,
         } = request.into_inner();
 
         let shop_uuid = parse_uuid(&shop_id, "shop_id")?;
@@ -263,8 +243,6 @@ impl shop_customization_service_server::ShopCustomizationService
             &user_id,
             image_light_update_path.clone(),
             image_dark_update_path.clone(),
-            show_in_listing,
-            show_on_home,
         )
         .await?;
 
@@ -311,8 +289,6 @@ impl shop_customization_service_server::ShopCustomizationService
             &user_id,
             Some(None),
             Some(None),
-            None,
-            None,
         )
         .await?;
 

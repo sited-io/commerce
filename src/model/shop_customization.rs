@@ -25,16 +25,8 @@ pub enum ShopCustomizationIden {
     LogoImageDarkUrlPath,
     BannerImageLightUrlPath,
     BannerImageDarkUrlPath,
-    ShowBannerInListing,
-    ShowBannerOnHome,
-    HeaderBackgroundColorLight,
-    HeaderBackgroundColorDark,
-    HeaderContentColorLight,
-    HeaderContentColorDark,
-    SecondaryBackgroundColorLight,
-    SecondaryBackgroundColorDark,
-    SecondaryContentColorLight,
-    SecondaryContentColorDark,
+    PrimaryColor,
+    LayoutType,
 }
 
 #[derive(Debug, Clone)]
@@ -47,30 +39,16 @@ pub struct ShopCustomization {
     pub logo_image_dark_url_path: Option<String>,
     pub banner_image_light_url_path: Option<String>,
     pub banner_image_dark_url_path: Option<String>,
-    pub show_banner_in_listing: Option<bool>,
-    pub show_banner_on_home: Option<bool>,
-    pub header_background_color_light: Option<String>,
-    pub header_background_color_dark: Option<String>,
-    pub header_content_color_light: Option<String>,
-    pub header_content_color_dark: Option<String>,
-    pub secondary_background_color_light: Option<String>,
-    pub secondary_background_color_dark: Option<String>,
-    pub secondary_content_color_light: Option<String>,
-    pub secondary_content_color_dark: Option<String>,
+    pub primary_color: Option<String>,
+    pub layout_type: String,
 }
 
 impl ShopCustomization {
-    const PUT_COLUMNS: [ShopCustomizationIden; 10] = [
+    const PUT_COLUMNS: [ShopCustomizationIden; 4] = [
         ShopCustomizationIden::ShopId,
         ShopCustomizationIden::UserId,
-        ShopCustomizationIden::HeaderBackgroundColorLight,
-        ShopCustomizationIden::HeaderBackgroundColorDark,
-        ShopCustomizationIden::HeaderContentColorLight,
-        ShopCustomizationIden::HeaderContentColorDark,
-        ShopCustomizationIden::SecondaryBackgroundColorLight,
-        ShopCustomizationIden::SecondaryBackgroundColorDark,
-        ShopCustomizationIden::SecondaryContentColorLight,
-        ShopCustomizationIden::SecondaryContentColorDark,
+        ShopCustomizationIden::PrimaryColor,
+        ShopCustomizationIden::LayoutType,
     ];
 
     pub async fn create(
@@ -104,14 +82,8 @@ impl ShopCustomization {
         pool: &Pool,
         shop_id: &Uuid,
         user_id: &String,
-        header_background_color_light: Option<String>,
-        header_background_color_dark: Option<String>,
-        header_content_color_light: Option<String>,
-        header_content_color_dark: Option<String>,
-        secondary_background_color_light: Option<String>,
-        secondary_background_color_dark: Option<String>,
-        secondary_content_color_light: Option<String>,
-        secondary_content_color_dark: Option<String>,
+        primary_color: Option<String>,
+        layout_type: String,
     ) -> Result<Self, DbError> {
         let conn = pool.get().await?;
 
@@ -121,14 +93,8 @@ impl ShopCustomization {
             .values([
                 (*shop_id).into(),
                 user_id.into(),
-                header_background_color_light.into(),
-                header_background_color_dark.into(),
-                header_content_color_light.into(),
-                header_content_color_dark.into(),
-                secondary_background_color_light.into(),
-                secondary_background_color_dark.into(),
-                secondary_content_color_light.into(),
-                secondary_content_color_dark.into(),
+                primary_color.into(),
+                layout_type.into(),
             ])?
             .on_conflict(
                 OnConflict::column(ShopCustomizationIden::ShopId)
@@ -208,8 +174,6 @@ impl ShopCustomization {
         user_id: &String,
         banner_image_light_url_path: Option<Option<String>>,
         banner_image_dark_url_path: Option<Option<String>>,
-        show_in_listing: Option<bool>,
-        show_on_home: Option<bool>,
     ) -> Result<Self, DbError> {
         let (sql, values) = {
             let mut query = Query::update();
@@ -230,20 +194,6 @@ impl ShopCustomization {
                 query.value(
                     ShopCustomizationIden::BannerImageDarkUrlPath,
                     banner_image_dark_url_path,
-                );
-            }
-
-            if show_in_listing.is_some() {
-                query.value(
-                    ShopCustomizationIden::ShowBannerInListing,
-                    show_in_listing,
-                );
-            }
-
-            if show_on_home.is_some() {
-                query.value(
-                    ShopCustomizationIden::ShowBannerOnHome,
-                    show_on_home,
                 );
             }
 
@@ -311,54 +261,10 @@ impl From<&Row> for ShopCustomization {
                     .to_string()
                     .as_str(),
             ),
-            show_banner_in_listing: row.get(
-                ShopCustomizationIden::ShowBannerInListing
-                    .to_string()
-                    .as_str(),
-            ),
-            show_banner_on_home: row.get(
-                ShopCustomizationIden::ShowBannerOnHome.to_string().as_str(),
-            ),
-            header_background_color_light: row.get(
-                ShopCustomizationIden::HeaderBackgroundColorLight
-                    .to_string()
-                    .as_str(),
-            ),
-            header_background_color_dark: row.get(
-                ShopCustomizationIden::HeaderBackgroundColorDark
-                    .to_string()
-                    .as_str(),
-            ),
-            header_content_color_light: row.get(
-                ShopCustomizationIden::HeaderContentColorLight
-                    .to_string()
-                    .as_str(),
-            ),
-            header_content_color_dark: row.get(
-                ShopCustomizationIden::HeaderContentColorDark
-                    .to_string()
-                    .as_str(),
-            ),
-            secondary_background_color_light: row.get(
-                ShopCustomizationIden::SecondaryBackgroundColorLight
-                    .to_string()
-                    .as_str(),
-            ),
-            secondary_background_color_dark: row.get(
-                ShopCustomizationIden::SecondaryBackgroundColorDark
-                    .to_string()
-                    .as_str(),
-            ),
-            secondary_content_color_light: row.get(
-                ShopCustomizationIden::SecondaryContentColorLight
-                    .to_string()
-                    .as_str(),
-            ),
-            secondary_content_color_dark: row.get(
-                ShopCustomizationIden::SecondaryContentColorDark
-                    .to_string()
-                    .as_str(),
-            ),
+            primary_color: row
+                .get(ShopCustomizationIden::PrimaryColor.to_string().as_str()),
+            layout_type: row
+                .get(ShopCustomizationIden::LayoutType.to_string().as_str()),
         }
     }
 }
@@ -375,16 +281,8 @@ pub struct ShopCustomizationAsRel {
     pub logo_image_dark_url_path: Option<String>,
     pub banner_image_light_url_path: Option<String>,
     pub banner_image_dark_url_path: Option<String>,
-    pub show_banner_in_listing: Option<bool>,
-    pub show_banner_on_home: Option<bool>,
-    pub header_background_color_light: Option<String>,
-    pub header_background_color_dark: Option<String>,
-    pub header_content_color_light: Option<String>,
-    pub header_content_color_dark: Option<String>,
-    pub secondary_background_color_light: Option<String>,
-    pub secondary_background_color_dark: Option<String>,
-    pub secondary_content_color_light: Option<String>,
-    pub secondary_content_color_dark: Option<String>,
+    pub primary_color: Option<String>,
+    pub layout_type: String,
 }
 
 impl ShopCustomizationAsRel {
@@ -413,52 +311,12 @@ impl ShopCustomizationAsRel {
                 .into(),
                 Expr::col((
                     ShopCustomizationIden::Table,
-                    ShopCustomizationIden::ShowBannerInListing,
+                    ShopCustomizationIden::PrimaryColor,
                 ))
                 .into(),
                 Expr::col((
                     ShopCustomizationIden::Table,
-                    ShopCustomizationIden::ShowBannerOnHome,
-                ))
-                .into(),
-                Expr::col((
-                    ShopCustomizationIden::Table,
-                    ShopCustomizationIden::HeaderBackgroundColorLight,
-                ))
-                .into(),
-                Expr::col((
-                    ShopCustomizationIden::Table,
-                    ShopCustomizationIden::HeaderBackgroundColorDark,
-                ))
-                .into(),
-                Expr::col((
-                    ShopCustomizationIden::Table,
-                    ShopCustomizationIden::HeaderContentColorLight,
-                ))
-                .into(),
-                Expr::col((
-                    ShopCustomizationIden::Table,
-                    ShopCustomizationIden::HeaderContentColorDark,
-                ))
-                .into(),
-                Expr::col((
-                    ShopCustomizationIden::Table,
-                    ShopCustomizationIden::SecondaryBackgroundColorLight,
-                ))
-                .into(),
-                Expr::col((
-                    ShopCustomizationIden::Table,
-                    ShopCustomizationIden::SecondaryBackgroundColorDark,
-                ))
-                .into(),
-                Expr::col((
-                    ShopCustomizationIden::Table,
-                    ShopCustomizationIden::SecondaryContentColorLight,
-                ))
-                .into(),
-                Expr::col((
-                    ShopCustomizationIden::Table,
-                    ShopCustomizationIden::SecondaryContentColorDark,
+                    ShopCustomizationIden::LayoutType,
                 ))
                 .into(),
             ])
@@ -499,70 +357,20 @@ impl<'a> FromSql<'a> for ShopCustomizationAsRel {
             private::read_value(&ty, &mut raw)?;
 
         let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<Option<bool>>(oid)?;
-        let show_banner_in_listing: Option<bool> =
-            private::read_value(&ty, &mut raw)?;
-
-        let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<Option<bool>>(oid)?;
-        let show_banner_on_home: Option<bool> =
-            private::read_value(&ty, &mut raw)?;
-
-        let oid = private::read_be_i32(&mut raw)?;
         let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let header_background_color_light: Option<String> =
-            private::read_value(&ty, &mut raw)?;
+        let primary_color: Option<String> = private::read_value(&ty, &mut raw)?;
 
         let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let header_background_color_dark: Option<String> =
-            private::read_value(&ty, &mut raw)?;
-
-        let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let header_content_color_light: Option<String> =
-            private::read_value(&ty, &mut raw)?;
-
-        let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let header_content_color_dark: Option<String> =
-            private::read_value(&ty, &mut raw)?;
-
-        let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let secondary_background_color_light: Option<String> =
-            private::read_value(&ty, &mut raw)?;
-
-        let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let secondary_background_color_dark: Option<String> =
-            private::read_value(&ty, &mut raw)?;
-
-        let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let secondary_content_color_light: Option<String> =
-            private::read_value(&ty, &mut raw)?;
-
-        let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<Option<String>>(oid)?;
-        let secondary_content_color_dark: Option<String> =
-            private::read_value(&ty, &mut raw)?;
+        let ty = get_type_from_oid::<String>(oid)?;
+        let layout_type: String = private::read_value(&ty, &mut raw)?;
 
         Ok(Self {
             logo_image_light_url_path,
             logo_image_dark_url_path,
             banner_image_light_url_path,
             banner_image_dark_url_path,
-            show_banner_in_listing,
-            show_banner_on_home,
-            header_background_color_light,
-            header_background_color_dark,
-            header_content_color_light,
-            header_content_color_dark,
-            secondary_background_color_light,
-            secondary_background_color_dark,
-            secondary_content_color_light,
-            secondary_content_color_dark,
+            primary_color,
+            layout_type,
         })
     }
 }

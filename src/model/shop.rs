@@ -263,21 +263,27 @@ impl Shop {
         pool: &Pool,
         slug: &String,
         user_id: Option<&String>,
+        extended: bool,
     ) -> Result<Option<Self>, DbError> {
         let conn = pool.get().await?;
 
-        let (sql, values) = Query::select()
-            .column(Asterisk)
-            .from(ShopIden::Table)
-            .cond_where(all![
-                Expr::col(ShopIden::Slug).eq(slug),
-                any![
-                    Expr::col((ShopIden::Table, ShopIden::IsActive)).eq(true),
-                    Expr::col((ShopIden::Table, ShopIden::UserId))
-                        .eq(user_id.cloned())
-                ]
-            ])
-            .build_postgres(PostgresQueryBuilder);
+        let (sql, values) = if extended {
+            Self::select_with_relations()
+        } else {
+            Query::select()
+                .column((ShopIden::Table, Asterisk))
+                .from(ShopIden::Table)
+                .to_owned()
+        }
+        .cond_where(all![
+            Expr::col((ShopIden::Table, ShopIden::Slug)).eq(slug),
+            any![
+                Expr::col((ShopIden::Table, ShopIden::IsActive)).eq(true),
+                Expr::col((ShopIden::Table, ShopIden::UserId))
+                    .eq(user_id.cloned())
+            ]
+        ])
+        .build_postgres(PostgresQueryBuilder);
 
         let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
 
@@ -288,21 +294,29 @@ impl Shop {
         pool: &Pool,
         domain: &String,
         user_id: Option<&String>,
+        extended: bool,
     ) -> Result<Option<Self>, DbError> {
         let conn = pool.get().await?;
 
-        let (sql, values) = Query::select()
-            .column(Asterisk)
-            .from(ShopIden::Table)
-            .cond_where(all![
-                Expr::col(ShopIden::Domain).eq(domain),
-                any![
-                    Expr::col((ShopIden::Table, ShopIden::IsActive)).eq(true),
-                    Expr::col((ShopIden::Table, ShopIden::UserId))
-                        .eq(user_id.cloned())
-                ]
-            ])
-            .build_postgres(PostgresQueryBuilder);
+        let (sql, values) = if extended {
+            Self::select_with_relations()
+        } else {
+            Query::select()
+                .column((ShopIden::Table, Asterisk))
+                .from(ShopIden::Table)
+                .to_owned()
+        }
+        .column(Asterisk)
+        .from(ShopIden::Table)
+        .cond_where(all![
+            Expr::col((ShopIden::Table, ShopIden::Domain)).eq(domain),
+            any![
+                Expr::col((ShopIden::Table, ShopIden::IsActive)).eq(true),
+                Expr::col((ShopIden::Table, ShopIden::UserId))
+                    .eq(user_id.cloned())
+            ]
+        ])
+        .build_postgres(PostgresQueryBuilder);
 
         let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
 

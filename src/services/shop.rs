@@ -7,10 +7,8 @@ use crate::api::peoplesmarkets::commerce::v1::shop_service_server::{
 };
 use crate::api::peoplesmarkets::commerce::v1::{
     CreateShopRequest, CreateShopResponse, DeleteShopRequest,
-    DeleteShopResponse, GetMyShopRequest, GetMyShopResponse,
-    GetShopByDomainRequest, GetShopByDomainResponse, GetShopBySlugRequest,
-    GetShopBySlugResponse, GetShopRequest, GetShopResponse, ListShopsRequest,
-    ListShopsResponse, ShopCustomizationResponse, ShopResponse,
+    DeleteShopResponse, GetShopRequest, GetShopResponse, ListShopsRequest,
+    ListShopsResponse, ShopCustomizationResponse, ShopLayoutType, ShopResponse,
     ShopsFilterField, ShopsOrderByField, UpdateShopRequest, UpdateShopResponse,
 };
 use crate::api::peoplesmarkets::ordering::v1::Direction;
@@ -98,6 +96,11 @@ impl ShopService {
         shop: &Shop,
     ) -> Option<ShopCustomizationResponse> {
         shop.customization.clone().map(|customization| {
+            let layout_type =
+                ShopLayoutType::from_str_name(&customization.layout_type)
+                    .map(i32::from)
+                    .unwrap_or(0);
+
             ShopCustomizationResponse {
                 shop_id: shop.shop_id.to_string(),
                 user_id: shop.user_id.to_string(),
@@ -115,24 +118,8 @@ impl ShopService {
                 banner_image_dark_url: self.image_service.get_opt_image_url(
                     customization.banner_image_dark_url_path,
                 ),
-                show_banner_in_listing: customization.show_banner_in_listing,
-                show_banner_on_home: customization.show_banner_on_home,
-                header_background_color_light: customization
-                    .header_background_color_light,
-                header_background_color_dark: customization
-                    .header_background_color_dark,
-                header_content_color_light: customization
-                    .header_content_color_light,
-                header_content_color_dark: customization
-                    .header_content_color_dark,
-                secondary_background_color_light: customization
-                    .secondary_background_color_light,
-                secondary_background_color_dark: customization
-                    .secondary_background_color_dark,
-                secondary_content_color_light: customization
-                    .secondary_content_color_light,
-                secondary_content_color_dark: customization
-                    .secondary_content_color_dark,
+                primary_color: customization.primary_color,
+                layout_type,
             }
         })
     }
@@ -219,107 +206,50 @@ impl shop_service_server::ShopService for ShopService {
         let user_id =
             get_user_id(request.metadata(), &self.verifier).await.ok();
 
-        let GetShopRequest { shop_id, extended } = request.into_inner();
-
-        let shop_id = parse_uuid(&shop_id, "shop_id")?;
+        let GetShopRequest {
+            shop_id,
+            extended,
+            domain,
+            slug,
+            owner,
+        } = request.into_inner();
 
         let extended = extended.unwrap_or(false);
 
-        let found_shop =
-            Shop::get(&self.pool, &shop_id, user_id.as_ref(), extended)
+        let found_shop = match (shop_id, domain, slug) {
+            (Some(shop_id), _, _) => {
+                let shop_id = parse_uuid(&shop_id, "shop_id")?;
+                Shop::get(&self.pool, &shop_id, user_id.as_ref(), extended)
+                    .await?
+            }
+            (_, Some(domain), _) => {
+                Shop::get_by_domain(
+                    &self.pool,
+                    &domain,
+                    user_id.as_ref(),
+                    extended,
+                )
                 .await?
-                .ok_or(Status::not_found(""))?;
+            }
+            (_, _, Some(slug)) => {
+                Shop::get_by_slug(&self.pool, &slug, user_id.as_ref(), extended)
+                    .await?
+            }
+            (None, None, None) => {
+                return Err(Status::invalid_argument(
+                    "provide one of shop_id, slug or domain",
+                ))
+            }
+        }
+        .ok_or(Status::not_found(""))?;
+
+        if matches!(owner, Some(owner) if found_shop.user_id != owner) {
+            return Err(Status::not_found(""));
+        }
 
         Ok(Response::new(GetShopResponse {
             shop: Some(self.shop_to_response(found_shop)),
         }))
-    }
-
-    async fn get_shop_by_slug(
-        &self,
-        request: Request<GetShopBySlugRequest>,
-    ) -> Result<Response<GetShopBySlugResponse>, Status> {
-        let user_id =
-            get_user_id(request.metadata(), &self.verifier).await.ok();
-
-        let GetShopBySlugRequest { slug } = request.into_inner();
-
-        let found_shop = Shop::get_by_slug(&self.pool, &slug, user_id.as_ref())
-            .await?
-            .ok_or(Status::not_found(""))?;
-
-        Ok(Response::new(GetShopBySlugResponse {
-            shop: Some(self.shop_to_response(found_shop)),
-        }))
-    }
-
-    async fn get_shop_by_domain(
-        &self,
-        request: Request<GetShopByDomainRequest>,
-    ) -> Result<Response<GetShopByDomainResponse>, Status> {
-        let user_id =
-            get_user_id(request.metadata(), &self.verifier).await.ok();
-
-        let GetShopByDomainRequest { domain } = request.into_inner();
-
-        let found_shop =
-            Shop::get_by_domain(&self.pool, &domain, user_id.as_ref())
-                .await?
-                .ok_or(Status::not_found(""))?;
-
-        Ok(Response::new(GetShopByDomainResponse {
-            shop: Some(self.shop_to_response(found_shop)),
-        }))
-    }
-
-    async fn get_my_shop(
-        &self,
-        request: Request<GetMyShopRequest>,
-    ) -> Result<Response<GetMyShopResponse>, Status> {
-        let user_id = get_user_id(request.metadata(), &self.verifier).await?;
-
-        let metadata = request.metadata().clone();
-
-        let GetMyShopRequest {
-            shop_id,
-            slug,
-            domain,
-            extended,
-        } = request.into_inner();
-
-        let shop = match (shop_id, slug, domain) {
-            (Some(shop_id), _, _) => {
-                let mut req =
-                    Request::new(GetShopRequest { shop_id, extended });
-                *req.metadata_mut() = metadata;
-                self.get_shop(req).await?.into_inner().shop
-            }
-            (_, Some(slug), _) => {
-                let mut req = Request::new(GetShopBySlugRequest { slug });
-                *req.metadata_mut() = metadata;
-                self.get_shop_by_slug(req).await?.into_inner().shop
-            }
-            (_, _, Some(domain)) => {
-                let mut req = Request::new(GetShopByDomainRequest { domain });
-                *req.metadata_mut() = metadata;
-                self.get_shop_by_domain(req).await?.into_inner().shop
-            }
-            (None, None, None) => {
-                return Err(Status::invalid_argument(
-                    "provide one of ['shop_id', 'slug', 'domain']",
-                ))
-            }
-        };
-
-        if let Some(shop) = shop {
-            if shop.user_id == user_id {
-                return Ok(Response::new(GetMyShopResponse {
-                    shop: Some(shop),
-                }));
-            }
-        }
-
-        Err(Status::not_found("shop"))
     }
 
     async fn list_shops(
