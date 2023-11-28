@@ -175,11 +175,6 @@ where
     }
 }
 
-pub fn get_count_from_rows(rows: &Vec<Row>) -> Result<i64, DbError> {
-    let row = rows.first();
-    if let Some(row) = row {
-        Ok(row.get("count"))
-    } else {
-        Err(DbError::Argument("count"))
-    }
+pub fn get_count_from_rows(rows: &Vec<Row>) -> i64 {
+    rows.first().map(|row| row.get("count")).unwrap_or(0)
 }

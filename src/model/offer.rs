@@ -389,8 +389,9 @@ impl Offer {
             let mut query = Query::select();
 
             query
-                .expr(Expr::col(Asterisk).count())
-                .from(OfferIden::Table);
+                .expr(Expr::col((OfferIden::Table, Asterisk)).count())
+                .from(OfferIden::Table)
+                .group_by_col((OfferIden::Table, OfferIden::OfferId));
 
             if let Some(shop_id) = shop_id {
                 query.cond_where(
@@ -425,7 +426,7 @@ impl Offer {
             .query(count_sql.as_str(), &count_values.as_params())
             .await?;
 
-        let count = get_count_from_rows(&count_rows)?;
+        let count = get_count_from_rows(&count_rows);
 
         transaction.commit().await?;
 
