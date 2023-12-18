@@ -42,7 +42,7 @@ job "commerce" {
 
       resources {
         cpu    = 100
-        memory = 1024
+        memory = 256
       }
 
       vault {
