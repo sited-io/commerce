@@ -41,8 +41,9 @@ job "commerce" {
       driver = "docker"
 
       resources {
-        cpu    = 100
-        memory = 256
+        cpu        = 100
+        memory     = 256
+        memory_max = 256
       }
 
       vault {
