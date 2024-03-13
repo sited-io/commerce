@@ -3,7 +3,7 @@ job "commerce" {
   type        = "service"
 
   group "commerce-api" {
-    count = 2
+    count = 1
 
     network {
       mode = "bridge"
