@@ -7,6 +7,8 @@ use deadpool_postgres::{
     tokio_postgres::NoTls, Config, CreatePoolError, Pool, PoolError, Runtime,
     SslMode,
 };
+use openssl::ssl::{SslConnector, SslMethod};
+use postgres_openssl::MakeTlsConnector;
 use refinery::Target;
 use sea_query::{Expr, Iden, PgFunc, SimpleExpr};
 use tonic::Status;
@@ -115,6 +117,7 @@ pub fn init_db_pool(
     user: String,
     password: String,
     dbname: String,
+    root_cert: Option<String>,
 ) -> Result<Pool, CreatePoolError> {
     let mut config = Config::new();
     config.host = Some(host);
@@ -123,9 +126,17 @@ pub fn init_db_pool(
     config.password = Some(password);
     config.dbname = Some(dbname);
 
-    config.ssl_mode = Some(SslMode::Prefer);
-
-    config.create_pool(Some(Runtime::Tokio1), NoTls)
+    if let Some(root_cert) = root_cert {
+        println!("Using root cert {}", root_cert);
+        config.ssl_mode = Some(SslMode::Require);
+        let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
+        builder.set_ca_file(root_cert).unwrap();
+        let connector = MakeTlsConnector::new(builder.build());
+        config.create_pool(Some(Runtime::Tokio1), connector)
+    } else {
+        config.ssl_mode = Some(SslMode::Prefer);
+        config.create_pool(Some(Runtime::Tokio1), NoTls)
+    }
 }
 
 pub async fn migrate(pool: &Pool) -> Result<(), Box<dyn std::error::Error>> {
