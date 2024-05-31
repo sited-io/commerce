@@ -125,6 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     HeaderName::from_static("grpc-status"),
                     HeaderName::from_static("grpc-message"),
                     HeaderName::from_static("x-grpc-web"),
+                    HeaderName::from_static("x-user-agent"),
                 ])
                 .allow_methods([Method::POST])
                 .allow_origin(AllowOrigin::any())
