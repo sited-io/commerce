@@ -1,0 +1,14 @@
+[Unit]
+Description=Peoplesmarkets commerce service
+After=network.target
+
+[Service]
+User=root
+EnvironmentFile=/opt/services/commerce/.env
+ExecStart=/opt/services/commerce/commerce
+ExecReload=/opt/services/commerce/commerce
+Type=simple
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

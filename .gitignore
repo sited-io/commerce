@@ -3,5 +3,4 @@
 run.sh
 /.vscode
 /dev-db-data
-.env
-commerce.service
+.env*
