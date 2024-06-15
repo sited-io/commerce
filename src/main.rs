@@ -1,11 +1,11 @@
-use commerce::api::peoplesmarkets::commerce::v1::offer_service_server::OfferServiceServer;
+use commerce::api::sited_io::commerce::v1::offer_service_server::OfferServiceServer;
 use http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use http::{HeaderName, Method};
 use tonic::transport::Server;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 
-use commerce::api::peoplesmarkets::commerce::v1::shop_service_server::ShopServiceServer;
+use commerce::api::sited_io::commerce::v1::shop_service_server::ShopServiceServer;
 use commerce::db::{init_db_pool, migrate};
 use commerce::images::ImageService;
 use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tonic_health::pb::FILE_DESCRIPTOR_SET,
         )
         .register_encoded_file_descriptor_set(
-            commerce::api::peoplesmarkets::FILE_DESCRIPTOR_SET,
+            commerce::api::sited_io::FILE_DESCRIPTOR_SET,
         )
         .build()
         .unwrap();

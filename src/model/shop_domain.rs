@@ -5,7 +5,7 @@ use sea_query::{Asterisk, Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::api::peoplesmarkets::commerce::v1::DomainStatus;
+use crate::api::sited_io::commerce::v1::DomainStatus;
 use crate::db::DbError;
 
 #[derive(Debug, Clone, Copy, Iden)]

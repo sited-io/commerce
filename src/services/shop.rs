@@ -2,16 +2,16 @@ use deadpool_postgres::Pool;
 use jwtk::jwk::RemoteJwksVerifier;
 use tonic::{async_trait, Request, Response, Status};
 
-use crate::api::peoplesmarkets::commerce::v1::shop_service_server::{
+use crate::api::sited_io::commerce::v1::shop_service_server::{
     self, ShopServiceServer,
 };
-use crate::api::peoplesmarkets::commerce::v1::{
+use crate::api::sited_io::commerce::v1::{
     CreateShopRequest, CreateShopResponse, DeleteShopRequest,
     DeleteShopResponse, GetShopRequest, GetShopResponse, ListShopsRequest,
     ListShopsResponse, ShopCustomizationResponse, ShopLayoutType, ShopResponse,
     ShopsFilterField, ShopsOrderByField, UpdateShopRequest, UpdateShopResponse,
 };
-use crate::api::peoplesmarkets::ordering::v1::Direction;
+use crate::api::sited_io::ordering::v1::Direction;
 use crate::auth::get_user_id;
 use crate::db::DbError;
 use crate::images::ImageService;

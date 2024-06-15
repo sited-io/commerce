@@ -3,10 +3,10 @@ use jwtk::jwk::RemoteJwksVerifier;
 use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
-use crate::api::peoplesmarkets::commerce::v1::offer_service_server::{
+use crate::api::sited_io::commerce::v1::offer_service_server::{
     self, OfferServiceServer,
 };
-use crate::api::peoplesmarkets::commerce::v1::{
+use crate::api::sited_io::commerce::v1::{
     AddImageToOfferRequest, AddImageToOfferResponse, CreateOfferRequest,
     CreateOfferResponse, Currency, DeleteOfferRequest, DeleteOfferResponse,
     GetMyOfferRequest, GetMyOfferResponse, GetOfferRequest, GetOfferResponse,

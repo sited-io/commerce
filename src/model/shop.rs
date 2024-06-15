@@ -9,10 +9,10 @@ use sea_query::{
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::api::peoplesmarkets::commerce::v1::{
+use crate::api::sited_io::commerce::v1::{
     ShopsFilterField, ShopsOrderByField,
 };
-use crate::api::peoplesmarkets::ordering::v1::Direction;
+use crate::api::sited_io::ordering::v1::Direction;
 use crate::db::{build_simple_plain_ts_query, DbError};
 
 use super::shop_customization::{
@@ -59,9 +59,9 @@ pub struct Shop {
 }
 
 impl Shop {
-    const SHOP_CUSTOMIZATION_ALIAS: &str = "shop_customization";
-    const NAME_TS_RANK_ALIAS: &str = "name_ts_rank";
-    const DESCRIPTION_TS_RANK_ALIAS: &str = "description_ts_rank";
+    const SHOP_CUSTOMIZATION_ALIAS: &'static str = "shop_customization";
+    const NAME_TS_RANK_ALIAS: &'static str = "name_ts_rank";
+    const DESCRIPTION_TS_RANK_ALIAS: &'static str = "description_ts_rank";
 
     fn get_shop_customization_alias() -> Alias {
         Alias::new(Self::SHOP_CUSTOMIZATION_ALIAS)

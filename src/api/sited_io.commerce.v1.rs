@@ -269,7 +269,7 @@ pub mod shop_customization_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/peoplesmarkets.commerce.v1.ShopCustomizationService/PutShopCustomization" => {
+                "/sited_io.commerce.v1.ShopCustomizationService/PutShopCustomization" => {
                     #[allow(non_camel_case_types)]
                     struct PutShopCustomizationSvc<T: ShopCustomizationService>(
                         pub Arc<T>,
@@ -317,7 +317,7 @@ pub mod shop_customization_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopCustomizationService/GetShopCustomization" => {
+                "/sited_io.commerce.v1.ShopCustomizationService/GetShopCustomization" => {
                     #[allow(non_camel_case_types)]
                     struct GetShopCustomizationSvc<T: ShopCustomizationService>(
                         pub Arc<T>,
@@ -365,7 +365,7 @@ pub mod shop_customization_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopCustomizationService/DeleteShopCustomization" => {
+                "/sited_io.commerce.v1.ShopCustomizationService/DeleteShopCustomization" => {
                     #[allow(non_camel_case_types)]
                     struct DeleteShopCustomizationSvc<T: ShopCustomizationService>(
                         pub Arc<T>,
@@ -415,7 +415,7 @@ pub mod shop_customization_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopCustomizationService/PutBannerImageToShop" => {
+                "/sited_io.commerce.v1.ShopCustomizationService/PutBannerImageToShop" => {
                     #[allow(non_camel_case_types)]
                     struct PutBannerImageToShopSvc<T: ShopCustomizationService>(
                         pub Arc<T>,
@@ -463,7 +463,7 @@ pub mod shop_customization_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopCustomizationService/RemoveBannerImageFromShop" => {
+                "/sited_io.commerce.v1.ShopCustomizationService/RemoveBannerImageFromShop" => {
                     #[allow(non_camel_case_types)]
                     struct RemoveBannerImageFromShopSvc<T: ShopCustomizationService>(
                         pub Arc<T>,
@@ -514,7 +514,7 @@ pub mod shop_customization_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopCustomizationService/PutLogoImageToShop" => {
+                "/sited_io.commerce.v1.ShopCustomizationService/PutLogoImageToShop" => {
                     #[allow(non_camel_case_types)]
                     struct PutLogoImageToShopSvc<T: ShopCustomizationService>(
                         pub Arc<T>,
@@ -562,7 +562,7 @@ pub mod shop_customization_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopCustomizationService/RemoveLogoImageFromShop" => {
+                "/sited_io.commerce.v1.ShopCustomizationService/RemoveLogoImageFromShop" => {
                     #[allow(non_camel_case_types)]
                     struct RemoveLogoImageFromShopSvc<T: ShopCustomizationService>(
                         pub Arc<T>,
@@ -651,7 +651,7 @@ pub mod shop_customization_service_server {
     }
     impl<T: ShopCustomizationService> tonic::server::NamedService
     for ShopCustomizationServiceServer<T> {
-        const NAME: &'static str = "peoplesmarkets.commerce.v1.ShopCustomizationService";
+        const NAME: &'static str = "sited_io.commerce.v1.ShopCustomizationService";
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -987,7 +987,7 @@ pub mod shop_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/peoplesmarkets.commerce.v1.ShopService/CreateShop" => {
+                "/sited_io.commerce.v1.ShopService/CreateShop" => {
                     #[allow(non_camel_case_types)]
                     struct CreateShopSvc<T: ShopService>(pub Arc<T>);
                     impl<
@@ -1031,7 +1031,7 @@ pub mod shop_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopService/GetShop" => {
+                "/sited_io.commerce.v1.ShopService/GetShop" => {
                     #[allow(non_camel_case_types)]
                     struct GetShopSvc<T: ShopService>(pub Arc<T>);
                     impl<
@@ -1075,7 +1075,7 @@ pub mod shop_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopService/ListShops" => {
+                "/sited_io.commerce.v1.ShopService/ListShops" => {
                     #[allow(non_camel_case_types)]
                     struct ListShopsSvc<T: ShopService>(pub Arc<T>);
                     impl<
@@ -1119,7 +1119,7 @@ pub mod shop_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopService/UpdateShop" => {
+                "/sited_io.commerce.v1.ShopService/UpdateShop" => {
                     #[allow(non_camel_case_types)]
                     struct UpdateShopSvc<T: ShopService>(pub Arc<T>);
                     impl<
@@ -1163,7 +1163,7 @@ pub mod shop_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopService/DeleteShop" => {
+                "/sited_io.commerce.v1.ShopService/DeleteShop" => {
                     #[allow(non_camel_case_types)]
                     struct DeleteShopSvc<T: ShopService>(pub Arc<T>);
                     impl<
@@ -1245,7 +1245,7 @@ pub mod shop_service_server {
         }
     }
     impl<T: ShopService> tonic::server::NamedService for ShopServiceServer<T> {
-        const NAME: &'static str = "peoplesmarkets.commerce.v1.ShopService";
+        const NAME: &'static str = "sited_io.commerce.v1.ShopService";
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1472,7 +1472,7 @@ pub mod shop_domain_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/peoplesmarkets.commerce.v1.ShopDomainService/AddDomainToShop" => {
+                "/sited_io.commerce.v1.ShopDomainService/AddDomainToShop" => {
                     #[allow(non_camel_case_types)]
                     struct AddDomainToShopSvc<T: ShopDomainService>(pub Arc<T>);
                     impl<
@@ -1518,7 +1518,7 @@ pub mod shop_domain_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopDomainService/GetDomainStatus" => {
+                "/sited_io.commerce.v1.ShopDomainService/GetDomainStatus" => {
                     #[allow(non_camel_case_types)]
                     struct GetDomainStatusSvc<T: ShopDomainService>(pub Arc<T>);
                     impl<
@@ -1564,7 +1564,7 @@ pub mod shop_domain_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopDomainService/GetClientIdForDomain" => {
+                "/sited_io.commerce.v1.ShopDomainService/GetClientIdForDomain" => {
                     #[allow(non_camel_case_types)]
                     struct GetClientIdForDomainSvc<T: ShopDomainService>(pub Arc<T>);
                     impl<
@@ -1610,7 +1610,7 @@ pub mod shop_domain_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopDomainService/UpdateDomainStatus" => {
+                "/sited_io.commerce.v1.ShopDomainService/UpdateDomainStatus" => {
                     #[allow(non_camel_case_types)]
                     struct UpdateDomainStatusSvc<T: ShopDomainService>(pub Arc<T>);
                     impl<
@@ -1656,7 +1656,7 @@ pub mod shop_domain_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShopDomainService/RemoveDomainFromShop" => {
+                "/sited_io.commerce.v1.ShopDomainService/RemoveDomainFromShop" => {
                     #[allow(non_camel_case_types)]
                     struct RemoveDomainFromShopSvc<T: ShopDomainService>(pub Arc<T>);
                     impl<
@@ -1741,7 +1741,7 @@ pub mod shop_domain_service_server {
     }
     impl<T: ShopDomainService> tonic::server::NamedService
     for ShopDomainServiceServer<T> {
-        const NAME: &'static str = "peoplesmarkets.commerce.v1.ShopDomainService";
+        const NAME: &'static str = "sited_io.commerce.v1.ShopDomainService";
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -2351,7 +2351,7 @@ pub mod offer_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/peoplesmarkets.commerce.v1.OfferService/CreateOffer" => {
+                "/sited_io.commerce.v1.OfferService/CreateOffer" => {
                     #[allow(non_camel_case_types)]
                     struct CreateOfferSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2397,7 +2397,7 @@ pub mod offer_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.OfferService/GetOffer" => {
+                "/sited_io.commerce.v1.OfferService/GetOffer" => {
                     #[allow(non_camel_case_types)]
                     struct GetOfferSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2441,7 +2441,7 @@ pub mod offer_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.OfferService/GetMyOffer" => {
+                "/sited_io.commerce.v1.OfferService/GetMyOffer" => {
                     #[allow(non_camel_case_types)]
                     struct GetMyOfferSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2487,7 +2487,7 @@ pub mod offer_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.OfferService/ListOffers" => {
+                "/sited_io.commerce.v1.OfferService/ListOffers" => {
                     #[allow(non_camel_case_types)]
                     struct ListOffersSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2531,7 +2531,7 @@ pub mod offer_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.OfferService/UpdateOffer" => {
+                "/sited_io.commerce.v1.OfferService/UpdateOffer" => {
                     #[allow(non_camel_case_types)]
                     struct UpdateOfferSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2577,7 +2577,7 @@ pub mod offer_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.OfferService/DeleteOffer" => {
+                "/sited_io.commerce.v1.OfferService/DeleteOffer" => {
                     #[allow(non_camel_case_types)]
                     struct DeleteOfferSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2623,7 +2623,7 @@ pub mod offer_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.OfferService/AddImageToOffer" => {
+                "/sited_io.commerce.v1.OfferService/AddImageToOffer" => {
                     #[allow(non_camel_case_types)]
                     struct AddImageToOfferSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2669,7 +2669,7 @@ pub mod offer_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.OfferService/RemoveImageFromOffer" => {
+                "/sited_io.commerce.v1.OfferService/RemoveImageFromOffer" => {
                     #[allow(non_camel_case_types)]
                     struct RemoveImageFromOfferSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2715,7 +2715,7 @@ pub mod offer_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.OfferService/PutPriceToOffer" => {
+                "/sited_io.commerce.v1.OfferService/PutPriceToOffer" => {
                     #[allow(non_camel_case_types)]
                     struct PutPriceToOfferSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2761,7 +2761,7 @@ pub mod offer_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.OfferService/RemovePriceFromOffer" => {
+                "/sited_io.commerce.v1.OfferService/RemovePriceFromOffer" => {
                     #[allow(non_camel_case_types)]
                     struct RemovePriceFromOfferSvc<T: OfferService>(pub Arc<T>);
                     impl<
@@ -2845,7 +2845,7 @@ pub mod offer_service_server {
         }
     }
     impl<T: OfferService> tonic::server::NamedService for OfferServiceServer<T> {
-        const NAME: &'static str = "peoplesmarkets.commerce.v1.OfferService";
+        const NAME: &'static str = "sited_io.commerce.v1.OfferService";
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -3743,7 +3743,7 @@ pub mod shipping_rate_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/peoplesmarkets.commerce.v1.ShippingRateService/PutShippingRate" => {
+                "/sited_io.commerce.v1.ShippingRateService/PutShippingRate" => {
                     #[allow(non_camel_case_types)]
                     struct PutShippingRateSvc<T: ShippingRateService>(pub Arc<T>);
                     impl<
@@ -3789,7 +3789,7 @@ pub mod shipping_rate_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShippingRateService/GetShippingRate" => {
+                "/sited_io.commerce.v1.ShippingRateService/GetShippingRate" => {
                     #[allow(non_camel_case_types)]
                     struct GetShippingRateSvc<T: ShippingRateService>(pub Arc<T>);
                     impl<
@@ -3835,7 +3835,7 @@ pub mod shipping_rate_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.commerce.v1.ShippingRateService/DeleteShippingRate" => {
+                "/sited_io.commerce.v1.ShippingRateService/DeleteShippingRate" => {
                     #[allow(non_camel_case_types)]
                     struct DeleteShippingRateSvc<T: ShippingRateService>(pub Arc<T>);
                     impl<
@@ -3920,6 +3920,6 @@ pub mod shipping_rate_service_server {
     }
     impl<T: ShippingRateService> tonic::server::NamedService
     for ShippingRateServiceServer<T> {
-        const NAME: &'static str = "peoplesmarkets.commerce.v1.ShippingRateService";
+        const NAME: &'static str = "sited_io.commerce.v1.ShippingRateService";
     }
 }

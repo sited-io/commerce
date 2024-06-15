@@ -15,6 +15,10 @@ pub struct MediaResponse {
     pub updated_at: i64,
     #[prost(string, tag = "7")]
     pub name: ::prost::alloc::string::String,
+    #[prost(string, tag = "8")]
+    pub file_name: ::prost::alloc::string::String,
+    #[prost(int64, tag = "9")]
+    pub ordering: i64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -33,6 +37,8 @@ pub struct CreateMediaRequest {
     pub name: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
     pub file: ::core::option::Option<MediaUpload>,
+    #[prost(string, tag = "4")]
+    pub file_name: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -104,7 +110,9 @@ pub struct ListMediaResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListAccessibleMediaRequest {
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::pagination::v1::Pagination>,
+    pub pagination: ::core::option::Option<
+        super::super::pagination::v1::PaginationRequest,
+    >,
     #[prost(message, optional, tag = "3")]
     pub order_by: ::core::option::Option<MediaOrderBy>,
     #[prost(message, optional, tag = "4")]
@@ -116,7 +124,9 @@ pub struct ListAccessibleMediaResponse {
     #[prost(message, repeated, tag = "1")]
     pub medias: ::prost::alloc::vec::Vec<MediaResponse>,
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::pagination::v1::Pagination>,
+    pub pagination: ::core::option::Option<
+        super::super::pagination::v1::PaginationResponse,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -127,6 +137,8 @@ pub struct UpdateMediaRequest {
     pub name: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(message, optional, tag = "3")]
     pub file: ::core::option::Option<MediaUpload>,
+    #[prost(string, optional, tag = "4")]
+    pub file_name: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -205,10 +217,25 @@ pub struct AddMediaToOfferRequest {
     pub media_id: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub offer_id: ::prost::alloc::string::String,
+    #[prost(int64, optional, tag = "3")]
+    pub ordering: ::core::option::Option<i64>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddMediaToOfferResponse {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UpdateMediaOfferOrderingRequest {
+    #[prost(string, tag = "1")]
+    pub media_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub offer_id: ::prost::alloc::string::String,
+    #[prost(int64, tag = "3")]
+    pub ordering: i64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UpdateMediaOfferOrderingResponse {}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RemoveMediaFromOfferRequest {
@@ -226,6 +253,7 @@ pub enum MediaOrderByField {
     Unspecified = 0,
     CreatedAt = 1,
     UpdatedAt = 2,
+    Ordering = 3,
 }
 impl MediaOrderByField {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -237,6 +265,7 @@ impl MediaOrderByField {
             MediaOrderByField::Unspecified => "MEDIA_ORDER_BY_FIELD_UNSPECIFIED",
             MediaOrderByField::CreatedAt => "MEDIA_ORDER_BY_FIELD_CREATED_AT",
             MediaOrderByField::UpdatedAt => "MEDIA_ORDER_BY_FIELD_UPDATED_AT",
+            MediaOrderByField::Ordering => "MEDIA_ORDER_BY_FIELD_ORDERING",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -245,6 +274,7 @@ impl MediaOrderByField {
             "MEDIA_ORDER_BY_FIELD_UNSPECIFIED" => Some(Self::Unspecified),
             "MEDIA_ORDER_BY_FIELD_CREATED_AT" => Some(Self::CreatedAt),
             "MEDIA_ORDER_BY_FIELD_UPDATED_AT" => Some(Self::UpdatedAt),
+            "MEDIA_ORDER_BY_FIELD_ORDERING" => Some(Self::Ordering),
             _ => None,
         }
     }
@@ -362,6 +392,13 @@ pub mod media_service_server {
             tonic::Response<super::AddMediaToOfferResponse>,
             tonic::Status,
         >;
+        async fn update_media_offer_ordering(
+            &self,
+            request: tonic::Request<super::UpdateMediaOfferOrderingRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::UpdateMediaOfferOrderingResponse>,
+            tonic::Status,
+        >;
         async fn remove_media_from_offer(
             &self,
             request: tonic::Request<super::RemoveMediaFromOfferRequest>,
@@ -449,7 +486,7 @@ pub mod media_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/peoplesmarkets.media.v1.MediaService/CreateMedia" => {
+                "/sited_io.media.v1.MediaService/CreateMedia" => {
                     #[allow(non_camel_case_types)]
                     struct CreateMediaSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -495,7 +532,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/GetMedia" => {
+                "/sited_io.media.v1.MediaService/GetMedia" => {
                     #[allow(non_camel_case_types)]
                     struct GetMediaSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -539,7 +576,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/DownloadMedia" => {
+                "/sited_io.media.v1.MediaService/DownloadMedia" => {
                     #[allow(non_camel_case_types)]
                     struct DownloadMediaSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -585,7 +622,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/ListMedia" => {
+                "/sited_io.media.v1.MediaService/ListMedia" => {
                     #[allow(non_camel_case_types)]
                     struct ListMediaSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -629,7 +666,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/ListAccessibleMedia" => {
+                "/sited_io.media.v1.MediaService/ListAccessibleMedia" => {
                     #[allow(non_camel_case_types)]
                     struct ListAccessibleMediaSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -675,7 +712,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/UpdateMedia" => {
+                "/sited_io.media.v1.MediaService/UpdateMedia" => {
                     #[allow(non_camel_case_types)]
                     struct UpdateMediaSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -721,7 +758,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/DeleteMedia" => {
+                "/sited_io.media.v1.MediaService/DeleteMedia" => {
                     #[allow(non_camel_case_types)]
                     struct DeleteMediaSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -767,7 +804,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/InitiateMultipartUpload" => {
+                "/sited_io.media.v1.MediaService/InitiateMultipartUpload" => {
                     #[allow(non_camel_case_types)]
                     struct InitiateMultipartUploadSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -815,7 +852,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/PutMultipartChunk" => {
+                "/sited_io.media.v1.MediaService/PutMultipartChunk" => {
                     #[allow(non_camel_case_types)]
                     struct PutMultipartChunkSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -861,7 +898,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/CompleteMultipartUpload" => {
+                "/sited_io.media.v1.MediaService/CompleteMultipartUpload" => {
                     #[allow(non_camel_case_types)]
                     struct CompleteMultipartUploadSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -909,7 +946,7 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/AddMediaToOffer" => {
+                "/sited_io.media.v1.MediaService/AddMediaToOffer" => {
                     #[allow(non_camel_case_types)]
                     struct AddMediaToOfferSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -955,7 +992,55 @@ pub mod media_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/peoplesmarkets.media.v1.MediaService/RemoveMediaFromOffer" => {
+                "/sited_io.media.v1.MediaService/UpdateMediaOfferOrdering" => {
+                    #[allow(non_camel_case_types)]
+                    struct UpdateMediaOfferOrderingSvc<T: MediaService>(pub Arc<T>);
+                    impl<
+                        T: MediaService,
+                    > tonic::server::UnaryService<super::UpdateMediaOfferOrderingRequest>
+                    for UpdateMediaOfferOrderingSvc<T> {
+                        type Response = super::UpdateMediaOfferOrderingResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::UpdateMediaOfferOrderingRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).update_media_offer_ordering(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = UpdateMediaOfferOrderingSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/sited_io.media.v1.MediaService/RemoveMediaFromOffer" => {
                     #[allow(non_camel_case_types)]
                     struct RemoveMediaFromOfferSvc<T: MediaService>(pub Arc<T>);
                     impl<
@@ -1039,6 +1124,6 @@ pub mod media_service_server {
         }
     }
     impl<T: MediaService> tonic::server::NamedService for MediaServiceServer<T> {
-        const NAME: &'static str = "peoplesmarkets.media.v1.MediaService";
+        const NAME: &'static str = "sited_io.media.v1.MediaService";
     }
 }

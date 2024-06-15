@@ -9,10 +9,10 @@ use sea_query::{
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::api::peoplesmarkets::commerce::v1::{
+use crate::api::sited_io::commerce::v1::{
     OffersFilterField, OffersOrderByField,
 };
-use crate::api::peoplesmarkets::ordering::v1::Direction;
+use crate::api::sited_io::ordering::v1::Direction;
 use crate::db::{build_simple_plain_ts_query, get_count_from_rows, DbError};
 
 use super::offer_image::{OfferImageAsRel, OfferImageAsRelVec};
@@ -58,13 +58,13 @@ pub struct Offer {
 }
 
 impl Offer {
-    const OFFER_IMAGES_ALIAS: &str = "images";
-    const OFFER_PRICES_ALIAS: &str = "prices";
-    const SHOP_NAME_ALIAS: &str = "shop_name";
-    const SHOP_SLUG_ALIAS: &str = "shop_slug";
-    const SHOP_DOMAIN_ALIAS: &str = "shop_domain";
-    const NAME_TS_RANK_ALIAS: &str = "name_ts_rank";
-    const DESCRIPTION_TS_RANK_ALIAS: &str = "description_ts_rank";
+    const OFFER_IMAGES_ALIAS: &'static str = "images";
+    const OFFER_PRICES_ALIAS: &'static str = "prices";
+    const SHOP_NAME_ALIAS: &'static str = "shop_name";
+    const SHOP_SLUG_ALIAS: &'static str = "shop_slug";
+    const SHOP_DOMAIN_ALIAS: &'static str = "shop_domain";
+    const NAME_TS_RANK_ALIAS: &'static str = "name_ts_rank";
+    const DESCRIPTION_TS_RANK_ALIAS: &'static str = "description_ts_rank";
 
     fn get_offer_images_alias() -> Alias {
         Alias::new(Self::OFFER_IMAGES_ALIAS)

@@ -13,7 +13,7 @@ pub use shop_domain::ShopDomainService;
 use tonic::Status;
 use uuid::Uuid;
 
-use crate::api::peoplesmarkets::pagination::v1::{
+use crate::api::sited_io::pagination::v1::{
     Pagination, PaginationRequest, PaginationResponse,
 };
 

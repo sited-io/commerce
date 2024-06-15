@@ -2,10 +2,10 @@ use deadpool_postgres::Pool;
 use jwtk::jwk::RemoteJwksVerifier;
 use tonic::{async_trait, Request, Response, Status};
 
-use crate::api::peoplesmarkets::commerce::v1::shipping_rate_service_server::{
+use crate::api::sited_io::commerce::v1::shipping_rate_service_server::{
     self, ShippingRateServiceServer,
 };
-use crate::api::peoplesmarkets::commerce::v1::{
+use crate::api::sited_io::commerce::v1::{
     Currency, DeleteShippingRateRequest, DeleteShippingRateResponse,
     GetShippingRateRequest, GetShippingRateResponse, PutShippingRateRequest,
     PutShippingRateResponse, ShippingRateResponse,
@@ -20,7 +20,7 @@ pub struct ShippingRateService {
 }
 
 impl ShippingRateService {
-    const COUNTRIES_SEPARATOR: &str = ",";
+    const COUNTRIES_SEPARATOR: &'static str = ",";
 
     fn new(pool: Pool, verifier: RemoteJwksVerifier) -> Self {
         Self { pool, verifier }

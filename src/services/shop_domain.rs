@@ -3,10 +3,10 @@ use jwtk::jwk::RemoteJwksVerifier;
 
 use tonic::{async_trait, Request, Response, Status};
 
-use crate::api::peoplesmarkets::commerce::v1::shop_domain_service_server::{
+use crate::api::sited_io::commerce::v1::shop_domain_service_server::{
     self, ShopDomainServiceServer,
 };
-use crate::api::peoplesmarkets::commerce::v1::{
+use crate::api::sited_io::commerce::v1::{
     AddDomainToShopRequest, AddDomainToShopResponse, DomainStatus,
     DomainStatusResponse, GetClientIdForDomainRequest,
     GetClientIdForDomainResponse, GetDomainStatusRequest,
