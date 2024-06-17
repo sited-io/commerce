@@ -88,6 +88,7 @@ impl ShopService {
             is_active: shop.is_active,
             contact_email_address: shop.contact_email_address,
             client_id: shop.client_id,
+            website_id: shop.website_id,
         }
     }
 
@@ -212,17 +213,18 @@ impl shop_service_server::ShopService for ShopService {
             domain,
             slug,
             owner,
+            website_id,
         } = request.into_inner();
 
         let extended = extended.unwrap_or(false);
 
-        let found_shop = match (shop_id, domain, slug) {
-            (Some(shop_id), _, _) => {
+        let found_shop = match (shop_id, domain, slug, website_id) {
+            (Some(shop_id), _, _, _) => {
                 let shop_id = parse_uuid(&shop_id, "shop_id")?;
                 Shop::get(&self.pool, &shop_id, user_id.as_ref(), extended)
                     .await?
             }
-            (_, Some(domain), _) => {
+            (_, Some(domain), _, _) => {
                 Shop::get_by_domain(
                     &self.pool,
                     &domain,
@@ -231,11 +233,14 @@ impl shop_service_server::ShopService for ShopService {
                 )
                 .await?
             }
-            (_, _, Some(slug)) => {
+            (_, _, Some(slug), _) => {
                 Shop::get_by_slug(&self.pool, &slug, user_id.as_ref(), extended)
                     .await?
             }
-            (None, None, None) => {
+            (_, _, _, Some(website_id)) => {
+                Shop::get_by_website_id(&self.pool, &website_id).await?
+            }
+            (None, None, None, None) => {
                 return Err(Status::invalid_argument(
                     "provide one of shop_id, slug or domain",
                 ))

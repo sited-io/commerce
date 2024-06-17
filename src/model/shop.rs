@@ -9,9 +9,7 @@ use sea_query::{
 use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
-use crate::api::sited_io::commerce::v1::{
-    ShopsFilterField, ShopsOrderByField,
-};
+use crate::api::sited_io::commerce::v1::{ShopsFilterField, ShopsOrderByField};
 use crate::api::sited_io::ordering::v1::Direction;
 use crate::db::{build_simple_plain_ts_query, DbError};
 
@@ -38,6 +36,7 @@ pub enum ShopIden {
     IsActive,
     ContactEmailAddress,
     ClientId,
+    WebsiteId,
 }
 
 #[derive(Debug, Clone)]
@@ -56,6 +55,7 @@ pub struct Shop {
     pub is_active: bool,
     pub contact_email_address: Option<String>,
     pub client_id: Option<String>,
+    pub website_id: String,
 }
 
 impl Shop {
@@ -321,6 +321,23 @@ impl Shop {
         Ok(row.map(Self::from))
     }
 
+    pub async fn get_by_website_id(
+        pool: &Pool,
+        website_id: &String,
+    ) -> Result<Option<Self>, DbError> {
+        let conn = pool.get().await?;
+
+        let (sql, values) = Query::select()
+            .column(Asterisk)
+            .from(ShopIden::Table)
+            .cond_where(Expr::col(ShopIden::WebsiteId).eq(website_id))
+            .build_postgres(PostgresQueryBuilder);
+
+        let row = conn.query_opt(sql.as_str(), &values.as_params()).await?;
+
+        Ok(row.map(Self::from))
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn list(
         pool: &Pool,
@@ -508,6 +525,7 @@ impl From<&Row> for Shop {
             contact_email_address: row
                 .get(ShopIden::ContactEmailAddress.to_string().as_str()),
             client_id: row.get(ShopIden::ClientId.to_string().as_str()),
+            website_id: row.get(ShopIden::WebsiteId.to_string().as_str()),
         }
     }
 }
