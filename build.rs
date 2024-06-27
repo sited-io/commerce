@@ -7,7 +7,8 @@ fn main() -> Result<()> {
         "service-apis/proto/sited_io/commerce/v1/shop_domain.proto",
         "service-apis/proto/sited_io/commerce/v1/offer.proto",
         "service-apis/proto/sited_io/commerce/v1/shipping_rate.proto",
-        ];
+        "service-apis/proto/sited_io/websites/v1/website.proto",
+    ];
     const INCLUDES: &[&str] = &["service-apis/proto"];
 
     tonic_build::configure()

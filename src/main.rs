@@ -1,4 +1,5 @@
 use commerce::api::sited_io::commerce::v1::offer_service_server::OfferServiceServer;
+use commerce::websites::WebsitesSubscriber;
 use http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use http::{HeaderName, Method};
 use tonic::transport::Server;
@@ -56,6 +57,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await;
 
+    // initialize NATS client
+    let nats_client = async_nats::ConnectOptions::new()
+        .user_and_password(
+            get_env_var("NATS_USER"),
+            get_env_var("NATS_PASSWORD"),
+        )
+        .connect(get_env_var("NATS_HOST"))
+        .await?;
+
+    // initialize and run website subscriber
+    let website_subscriber = WebsitesSubscriber::new(
+        nats_client,
+        db_pool.clone(),
+        allowed_min_platform_fee_percent,
+        allowed_min_minimum_platform_fee_cent,
+    );
+
     // configure gRPC health reporter
     let (mut health_reporter, health_service) =
         tonic_health::server::health_reporter();
@@ -109,38 +127,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::log::info!("gRPC+web server listening on {}", host);
 
-    Server::builder()
-        .layer(
-            TraceLayer::new_for_grpc()
-                .on_request(LogOnRequest::default())
-                .on_response(LogOnResponse::default())
-                .on_failure(LogOnFailure::default()),
-        )
-        .layer(
-            CorsLayer::new()
-                .allow_headers([
-                    AUTHORIZATION,
-                    ACCEPT,
-                    CONTENT_TYPE,
-                    HeaderName::from_static("grpc-status"),
-                    HeaderName::from_static("grpc-message"),
-                    HeaderName::from_static("x-grpc-web"),
-                    HeaderName::from_static("x-user-agent"),
-                ])
-                .allow_methods([Method::POST])
-                .allow_origin(AllowOrigin::any())
-                .allow_private_network(true),
-        )
-        .accept_http1(true)
-        .add_service(tonic_web::enable(reflection_service))
-        .add_service(tonic_web::enable(health_service))
-        .add_service(tonic_web::enable(shop_service))
-        .add_service(tonic_web::enable(shop_customization_service))
-        .add_service(tonic_web::enable(shop_domain_service))
-        .add_service(tonic_web::enable(offer_service))
-        .add_service(tonic_web::enable(shipping_rate_service))
-        .serve(host.parse().unwrap())
-        .await?;
+    let res = tokio::join!(
+        tokio::spawn(async move {
+            website_subscriber.subscribe().await;
+        }),
+        Server::builder()
+            .layer(
+                TraceLayer::new_for_grpc()
+                    .on_request(LogOnRequest::default())
+                    .on_response(LogOnResponse::default())
+                    .on_failure(LogOnFailure::default()),
+            )
+            .layer(
+                CorsLayer::new()
+                    .allow_headers([
+                        AUTHORIZATION,
+                        ACCEPT,
+                        CONTENT_TYPE,
+                        HeaderName::from_static("grpc-status"),
+                        HeaderName::from_static("grpc-message"),
+                        HeaderName::from_static("x-grpc-web"),
+                        HeaderName::from_static("x-user-agent"),
+                    ])
+                    .allow_methods([Method::POST])
+                    .allow_origin(AllowOrigin::any())
+                    .allow_private_network(true),
+            )
+            .accept_http1(true)
+            .add_service(tonic_web::enable(reflection_service))
+            .add_service(tonic_web::enable(health_service))
+            .add_service(tonic_web::enable(shop_service))
+            .add_service(tonic_web::enable(shop_customization_service))
+            .add_service(tonic_web::enable(shop_domain_service))
+            .add_service(tonic_web::enable(offer_service))
+            .add_service(tonic_web::enable(shipping_rate_service))
+            .serve(host.parse().unwrap())
+    );
+
+    res.0?;
+    res.1?;
 
     Ok(())
 }

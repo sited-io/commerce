@@ -23,4 +23,10 @@ pub mod sited_io {
             include!("sited_io.media.v1.rs");
         }
     }
+
+    pub mod websites {
+        pub mod v1 {
+            include!("sited_io.websites.v1.rs");
+        }
+    }
 }

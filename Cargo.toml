@@ -4,12 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+async-nats = "0.35.1"
 aws-config = { version = "0.56.1", default-features = false, features = ["rt-tokio"] }
 aws-credential-types = { version = "0.56.1", default-features = false, features = ["hardcoded-credentials"] }
 aws-sdk-s3 = { version = "0.30.0", default-features = false, features = ["rt-tokio", "rustls"] }
 chrono = "0.4.26"
 deadpool-postgres = "0.10.5"
 fallible-iterator = "0.2.0"
+futures = "0.3.30"
 http = "0.2.9"
 image = { version = "0.24.7", default-features = false, features = [
   "jpeg",

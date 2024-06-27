@@ -227,6 +227,43 @@ impl Shop {
         Ok(Self::from(row))
     }
 
+    pub async fn create_internal(
+        pool: &Pool,
+        user_id: &String,
+        website_id: &String,
+        name: &String,
+        slug: &String,
+        platform_fee_percent: u32,
+        minimum_platform_fee_cent: u32,
+    ) -> Result<Self, DbError> {
+        let client = pool.get().await?;
+
+        let (sql, values) = Query::insert()
+            .into_table(ShopIden::Table)
+            .columns([
+                ShopIden::UserId,
+                ShopIden::WebsiteId,
+                ShopIden::Name,
+                ShopIden::Slug,
+                ShopIden::PlatformFeePercent,
+                ShopIden::MinimumPlatformFeeCent,
+            ])
+            .values([
+                user_id.into(),
+                website_id.into(),
+                name.into(),
+                slug.into(),
+                i64::from(platform_fee_percent).into(),
+                i64::from(minimum_platform_fee_cent).into(),
+            ])?
+            .returning_all()
+            .build_postgres(PostgresQueryBuilder);
+
+        let row = client.query_one(sql.as_str(), &values.as_params()).await?;
+
+        Ok(Self::from(row))
+    }
+
     pub async fn get(
         pool: &Pool,
         shop_id: &Uuid,
@@ -495,6 +532,22 @@ impl Shop {
             .await?;
 
         Ok(Self::from(row))
+    }
+
+    pub async fn delete_for_website_id(
+        pool: &Pool,
+        website_id: &String,
+    ) -> Result<(), DbError> {
+        let conn = pool.get().await?;
+
+        let (sql, values) = Query::delete()
+            .from_table(ShopIden::Table)
+            .cond_where(Expr::col(ShopIden::WebsiteId).eq(website_id))
+            .build_postgres(PostgresQueryBuilder);
+
+        conn.query(sql.as_str(), &values.as_params()).await?;
+
+        Ok(())
     }
 }
 
