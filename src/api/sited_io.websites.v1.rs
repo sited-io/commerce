@@ -757,9 +757,7 @@ pub struct ListPagesRequest {
     #[prost(string, optional, tag = "1")]
     pub website_id: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::pagination::v1::PaginationRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::types::v1::PaginationRequest>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -767,9 +765,7 @@ pub struct ListPagesResponse {
     #[prost(message, repeated, tag = "1")]
     pub pages: ::prost::alloc::vec::Vec<PageResponse>,
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::pagination::v1::PaginationResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::types::v1::PaginationResponse>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1267,9 +1263,7 @@ pub struct ListWebsitesRequest {
     #[prost(string, optional, tag = "1")]
     pub user_id: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::pagination::v1::PaginationRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::types::v1::PaginationRequest>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1277,9 +1271,7 @@ pub struct ListWebsitesResponse {
     #[prost(message, repeated, tag = "1")]
     pub websites: ::prost::alloc::vec::Vec<WebsiteResponse>,
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::pagination::v1::PaginationResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::types::v1::PaginationResponse>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

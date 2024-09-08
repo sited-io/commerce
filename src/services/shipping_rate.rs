@@ -44,8 +44,7 @@ impl ShippingRateService {
                 "error parsing currency '{}'",
                 shipping_rate.currency
             )))?
-            .try_into()
-            .unwrap();
+            .into();
 
         Ok(ShippingRateResponse {
             shipping_rate_id: shipping_rate.shipping_rate_id.to_string(),

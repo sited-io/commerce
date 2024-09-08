@@ -10,7 +10,7 @@ use sea_query_postgres::PostgresBinder;
 use uuid::Uuid;
 
 use crate::api::sited_io::commerce::v1::{ShopsFilterField, ShopsOrderByField};
-use crate::api::sited_io::ordering::v1::Direction;
+use crate::api::sited_io::types::v1::Direction;
 use crate::db::{build_simple_plain_ts_query, DbError};
 
 use super::shop_customization::{

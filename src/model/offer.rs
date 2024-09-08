@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::api::sited_io::commerce::v1::{
     OffersFilterField, OffersOrderByField,
 };
-use crate::api::sited_io::ordering::v1::Direction;
+use crate::api::sited_io::types::v1::Direction;
 use crate::db::{build_simple_plain_ts_query, get_count_from_rows, DbError};
 
 use super::offer_image::{OfferImageAsRel, OfferImageAsRelVec};

@@ -11,14 +11,14 @@ use crate::api::sited_io::commerce::v1::{
     ListShopsResponse, ShopCustomizationResponse, ShopLayoutType, ShopResponse,
     ShopsFilterField, ShopsOrderByField, UpdateShopRequest, UpdateShopResponse,
 };
-use crate::api::sited_io::ordering::v1::Direction;
+use crate::api::sited_io::types::v1::Direction;
 use crate::auth::get_user_id;
 use crate::db::DbError;
 use crate::images::ImageService;
 use crate::model::{Offer, Shop, ShopCustomization};
 use crate::parse_uuid;
 
-use super::paginate;
+use super::get_limit_offset_from_pagination;
 
 pub struct ShopService {
     pool: Pool,
@@ -272,7 +272,8 @@ impl shop_service_server::ShopService for ShopService {
             extended,
         } = request.into_inner();
 
-        let (limit, offset, pagination) = paginate(pagination)?;
+        let (limit, offset, pagination) =
+            get_limit_offset_from_pagination(pagination)?;
 
         if filter.is_none() && order_by.is_none() {
             return Err(Status::invalid_argument("filter,order_by"));
@@ -310,8 +311,8 @@ impl shop_service_server::ShopService for ShopService {
         let found_shops = Shop::list(
             &self.pool,
             user_id.as_ref(),
-            limit,
-            offset,
+            limit.into(),
+            offset.into(),
             filter,
             order_by,
             extended,

@@ -3,6 +3,9 @@ use jwtk::jwk::RemoteJwksVerifier;
 use tonic::{async_trait, Request, Response, Status};
 use uuid::Uuid;
 
+use crate::api::sited_io::commerce::v1::shop_customization_service_server::{
+    self, ShopCustomizationServiceServer,
+};
 use crate::api::sited_io::commerce::v1::{
     DeleteShopCustomizationRequest, DeleteShopCustomizationResponse,
     GetShopCustomizationRequest, GetShopCustomizationResponse,
@@ -13,7 +16,6 @@ use crate::api::sited_io::commerce::v1::{
     RemoveLogoImageFromShopRequest, RemoveLogoImageFromShopResponse,
     ShopCustomizationResponse, ShopLayoutType,
 };
-use crate::api::sited_io::commerce::v1::shop_customization_service_server::{ShopCustomizationServiceServer, self};
 use crate::auth::get_user_id;
 use crate::db::DbError;
 use crate::images::ImageService;

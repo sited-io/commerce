@@ -186,6 +186,6 @@ where
     }
 }
 
-pub fn get_count_from_rows(rows: &Vec<Row>) -> i64 {
+pub fn get_count_from_rows(rows: &[Row]) -> i64 {
     rows.first().map(|row| row.get("count")).unwrap_or(0)
 }
