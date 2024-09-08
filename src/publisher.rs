@@ -84,7 +84,7 @@ impl Publisher {
             )
             .await
         {
-            tracing::error!("[Publisher.publish_upsert_offer]: {err}");
+            tracing::error!("[Publisher.publish_upsert_shipping_rate]: {err}");
         }
     }
 
@@ -100,7 +100,7 @@ impl Publisher {
             )
             .await
         {
-            tracing::error!("[Publisher.publish_delete_offer]: {err}")
+            tracing::error!("[Publisher.publish_delete_shipping_rate]: {err}")
         }
     }
 }
