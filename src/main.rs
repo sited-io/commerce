@@ -1,15 +1,15 @@
-use commerce::api::sited_io::commerce::v1::offer_service_server::OfferServiceServer;
-use commerce::websites::WebsitesSubscriber;
 use http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use http::{HeaderName, Method};
 use tonic::transport::Server;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 
+use commerce::api::sited_io::commerce::v1::offer_service_server::OfferServiceServer;
 use commerce::api::sited_io::commerce::v1::shop_service_server::ShopServiceServer;
 use commerce::db::{init_db_pool, migrate};
 use commerce::images::ImageService;
 use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
+use commerce::subscribers::WebsitesSubscriber;
 use commerce::{
     get_env_var, init_jwks_verifier, OfferService, ShippingRateService,
     ShopCustomizationService, ShopDomainService, ShopService,

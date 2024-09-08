@@ -708,7 +708,9 @@ pub struct PageResponse {
     pub content_id: ::prost::alloc::string::String,
     #[prost(string, tag = "4")]
     pub title: ::prost::alloc::string::String,
-    #[prost(string, tag = "5")]
+    #[prost(bool, tag = "5")]
+    pub is_home_page: bool,
+    #[prost(string, tag = "6")]
     pub path: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -724,6 +726,8 @@ pub struct CreatePageRequest {
     pub title: ::prost::alloc::string::String,
     #[prost(bool, tag = "5")]
     pub is_home_page: bool,
+    #[prost(string, optional, tag = "6")]
+    pub path: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -780,6 +784,8 @@ pub struct UpdatePageRequest {
     pub title: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(bool, optional, tag = "5")]
     pub is_home_page: ::core::option::Option<bool>,
+    #[prost(string, optional, tag = "6")]
+    pub path: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -799,7 +805,7 @@ pub struct DeletePageResponse {}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PageType {
-    Uspecified = 0,
+    Unspecified = 0,
     Static = 1,
     Shop = 2,
 }
@@ -810,7 +816,7 @@ impl PageType {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            PageType::Uspecified => "PAGE_TYPE_USPECIFIED",
+            PageType::Unspecified => "PAGE_TYPE_UNSPECIFIED",
             PageType::Static => "PAGE_TYPE_STATIC",
             PageType::Shop => "PAGE_TYPE_SHOP",
         }
@@ -818,7 +824,7 @@ impl PageType {
     /// Creates an enum from field names used in the ProtoBuf definition.
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
         match value {
-            "PAGE_TYPE_USPECIFIED" => Some(Self::Uspecified),
+            "PAGE_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
             "PAGE_TYPE_STATIC" => Some(Self::Static),
             "PAGE_TYPE_SHOP" => Some(Self::Shop),
             _ => None,
@@ -1269,7 +1275,7 @@ pub struct ListWebsitesRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListWebsitesResponse {
     #[prost(message, repeated, tag = "1")]
-    pub webistes: ::prost::alloc::vec::Vec<WebsiteResponse>,
+    pub websites: ::prost::alloc::vec::Vec<WebsiteResponse>,
     #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<
         super::super::pagination::v1::PaginationResponse,

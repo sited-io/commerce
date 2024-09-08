@@ -5,7 +5,7 @@ pub mod images;
 pub mod logging;
 mod model;
 mod services;
-pub mod websites;
+pub mod subscribers;
 
 pub use auth::init_jwks_verifier;
 pub use services::*;
