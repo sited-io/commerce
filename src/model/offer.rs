@@ -506,18 +506,20 @@ impl Offer {
         transaction: &Transaction<'a>,
         user_id: &String,
         offer_id: &Uuid,
-    ) -> Result<(), DbError> {
+    ) -> Result<Self, DbError> {
         let (sql, values) = Query::delete()
             .from_table(OfferIden::Table)
             .and_where(Expr::col(OfferIden::UserId).eq(user_id))
             .and_where(Expr::col(OfferIden::OfferId).eq(*offer_id))
+            .returning_all()
             .build_postgres(PostgresQueryBuilder);
 
-        transaction
-            .execute(sql.as_str(), &values.as_params())
-            .await?;
+        let offer = transaction
+            .query_one(sql.as_str(), &values.as_params())
+            .await?
+            .into();
 
-        Ok(())
+        Ok(offer)
     }
 }
 

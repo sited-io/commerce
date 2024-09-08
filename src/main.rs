@@ -11,8 +11,9 @@ use commerce::images::ImageService;
 use commerce::logging::{LogOnFailure, LogOnRequest, LogOnResponse};
 use commerce::subscribers::WebsitesSubscriber;
 use commerce::{
-    get_env_var, init_jwks_verifier, OfferService, ShippingRateService,
-    ShopCustomizationService, ShopDomainService, ShopService,
+    get_env_var, init_jwks_verifier, OfferService, Publisher,
+    ShippingRateService, ShopCustomizationService, ShopDomainService,
+    ShopService,
 };
 
 #[tokio::main(flavor = "current_thread")]
@@ -68,10 +69,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // initialize and run website subscriber
     let website_subscriber = WebsitesSubscriber::new(
-        nats_client,
+        nats_client.clone(),
         db_pool.clone(),
         allowed_min_platform_fee_percent,
         allowed_min_minimum_platform_fee_cent,
+    );
+
+    // initialize publisher
+    let publisher = Publisher::new(nats_client);
+
+    let shop_service = ShopService::build(
+        db_pool.clone(),
+        init_jwks_verifier(&jwks_host, &jwks_url)?,
+        publisher.clone(),
+        image_service.clone(),
+        allowed_min_platform_fee_percent,
+        allowed_min_minimum_platform_fee_cent,
+    );
+
+    let shop_customization_service = ShopCustomizationService::build(
+        db_pool.clone(),
+        init_jwks_verifier(&jwks_host, &jwks_url)?,
+        image_service.clone(),
+    );
+
+    let shop_domain_service = ShopDomainService::build(
+        db_pool.clone(),
+        init_jwks_verifier(&jwks_host, &jwks_url)?,
+    );
+
+    let offer_service = OfferService::build(
+        db_pool.clone(),
+        init_jwks_verifier(&jwks_host, &jwks_url)?,
+        publisher.clone(),
+        image_service,
+    );
+
+    let shipping_rate_service = ShippingRateService::build(
+        db_pool,
+        init_jwks_verifier(&jwks_host, &jwks_url)?,
+        publisher.clone(),
     );
 
     // configure gRPC health reporter
@@ -94,36 +131,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .build()
         .unwrap();
-
-    let shop_service = ShopService::build(
-        db_pool.clone(),
-        init_jwks_verifier(&jwks_host, &jwks_url)?,
-        image_service.clone(),
-        allowed_min_platform_fee_percent,
-        allowed_min_minimum_platform_fee_cent,
-    );
-
-    let shop_customization_service = ShopCustomizationService::build(
-        db_pool.clone(),
-        init_jwks_verifier(&jwks_host, &jwks_url)?,
-        image_service.clone(),
-    );
-
-    let shop_domain_service = ShopDomainService::build(
-        db_pool.clone(),
-        init_jwks_verifier(&jwks_host, &jwks_url)?,
-    );
-
-    let offer_service = OfferService::build(
-        db_pool.clone(),
-        init_jwks_verifier(&jwks_host, &jwks_url)?,
-        image_service,
-    );
-
-    let shipping_rate_service = ShippingRateService::build(
-        db_pool,
-        init_jwks_verifier(&jwks_host, &jwks_url)?,
-    );
 
     tracing::log::info!("gRPC+web server listening on {}", host);
 
@@ -166,6 +173,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     res.0?;
     res.1?;
+
+    publisher.flush().await?;
 
     Ok(())
 }

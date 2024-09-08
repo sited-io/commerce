@@ -24,35 +24,30 @@ use crate::model::{
     Offer, OfferImage, OfferImageAsRel, OfferPrice, OfferPriceAsRel,
     ShippingRate,
 };
-use crate::parse_uuid;
+use crate::{parse_uuid, Publisher};
 
 use super::get_limit_offset_from_pagination;
 
 pub struct OfferService {
     pool: Pool,
     verifier: RemoteJwksVerifier,
+    publisher: Publisher,
     image_service: ImageService,
 }
 
 impl OfferService {
-    fn new(
-        pool: Pool,
-        verifier: RemoteJwksVerifier,
-        image_service: ImageService,
-    ) -> Self {
-        Self {
-            pool,
-            verifier,
-            image_service,
-        }
-    }
-
     pub fn build(
         pool: Pool,
         verifier: RemoteJwksVerifier,
+        publisher: Publisher,
         image_service: ImageService,
     ) -> OfferServiceServer<Self> {
-        OfferServiceServer::new(Self::new(pool, verifier, image_service))
+        OfferServiceServer::new(Self {
+            pool,
+            verifier,
+            publisher,
+            image_service,
+        })
     }
 
     fn offer_to_response(&self, offer: Offer) -> Result<OfferResponse, Status> {
@@ -214,8 +209,12 @@ impl offer_service_server::OfferService for OfferService {
         )
         .await?;
 
+        let offer_response = self.offer_to_response(created_offer)?;
+
+        self.publisher.publish_upsert_offer(&offer_response).await;
+
         Ok(Response::new(CreateOfferResponse {
-            offer: Some(self.offer_to_response(created_offer)?),
+            offer: Some(offer_response),
         }))
     }
 
@@ -354,8 +353,12 @@ impl offer_service_server::OfferService for OfferService {
         )
         .await?;
 
+        let offer_response = self.offer_to_response(updated_offer)?;
+
+        self.publisher.publish_upsert_offer(&offer_response).await;
+
         Ok(Response::new(UpdateOfferResponse {
-            offer: Some(self.offer_to_response(updated_offer)?),
+            offer: Some(offer_response),
         }))
     }
 
@@ -386,9 +389,15 @@ impl offer_service_server::OfferService for OfferService {
         }
 
         ShippingRate::delete_all(&transaction, &user_id, &offer_id).await?;
-        Offer::delete(&transaction, &user_id, &offer_id).await?;
+
+        let deleted_offer =
+            Offer::delete(&transaction, &user_id, &offer_id).await?;
 
         transaction.commit().await.map_err(DbError::from)?;
+
+        self.publisher
+            .publish_delete_offer(&self.offer_to_response(deleted_offer)?)
+            .await;
 
         Ok(Response::new(DeleteOfferResponse {}))
     }

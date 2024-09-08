@@ -107,7 +107,7 @@ impl ShippingRate {
         pool: &Pool,
         shipping_rate_id: &Uuid,
         user_id: &String,
-    ) -> Result<(), DbError> {
+    ) -> Result<Self, DbError> {
         let conn = pool.get().await?;
 
         let (sql, values) = Query::delete()
@@ -117,11 +117,15 @@ impl ShippingRate {
                     .eq(*shipping_rate_id),
                 Expr::col(ShippingRateIden::UserId).eq(user_id)
             ])
+            .returning_all()
             .build_postgres(PostgresQueryBuilder);
 
-        conn.execute(sql.as_str(), &values.as_params()).await?;
+        let shipping_rate = conn
+            .query_one(sql.as_str(), &values.as_params())
+            .await?
+            .into();
 
-        Ok(())
+        Ok(shipping_rate)
     }
 
     pub async fn delete_all<'a>(

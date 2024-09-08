@@ -669,6 +669,7 @@ pub struct ShopResponse {
     pub name: ::prost::alloc::string::String,
     #[prost(string, tag = "6")]
     pub slug: ::prost::alloc::string::String,
+    #[deprecated]
     #[prost(string, optional, tag = "7")]
     pub domain: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "8")]
@@ -677,12 +678,14 @@ pub struct ShopResponse {
     pub platform_fee_percent: u32,
     #[prost(uint32, tag = "10")]
     pub minimum_platform_fee_cent: u32,
+    #[deprecated]
     #[prost(message, optional, tag = "11")]
     pub customization: ::core::option::Option<ShopCustomizationResponse>,
     #[prost(bool, tag = "12")]
     pub is_active: bool,
     #[prost(string, optional, tag = "13")]
     pub contact_email_address: ::core::option::Option<::prost::alloc::string::String>,
+    #[deprecated]
     #[prost(string, optional, tag = "14")]
     pub client_id: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, tag = "15")]
@@ -713,6 +716,7 @@ pub struct CreateShopResponse {
 pub struct GetShopRequest {
     #[prost(string, optional, tag = "1")]
     pub shop_id: ::core::option::Option<::prost::alloc::string::String>,
+    #[deprecated]
     #[prost(bool, optional, tag = "2")]
     pub extended: ::core::option::Option<bool>,
     #[prost(string, optional, tag = "3")]

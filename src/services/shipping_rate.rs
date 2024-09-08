@@ -12,27 +12,27 @@ use crate::api::sited_io::commerce::v1::{
 };
 use crate::auth::get_user_id;
 use crate::model::ShippingRate;
-use crate::parse_uuid;
+use crate::{parse_uuid, Publisher};
 
 pub struct ShippingRateService {
     pool: Pool,
     verifier: RemoteJwksVerifier,
+    publisher: Publisher,
 }
 
 impl ShippingRateService {
     const COUNTRIES_SEPARATOR: &'static str = ",";
 
-    fn new(pool: Pool, verifier: RemoteJwksVerifier) -> Self {
-        Self { pool, verifier }
-    }
-
     pub fn build(
         pool: Pool,
         verifier: RemoteJwksVerifier,
+        publisher: Publisher,
     ) -> ShippingRateServiceServer<Self> {
-        let service = Self::new(pool, verifier);
-
-        ShippingRateServiceServer::new(service)
+        ShippingRateServiceServer::new(Self {
+            pool,
+            verifier,
+            publisher,
+        })
     }
 
     fn to_response(
@@ -109,7 +109,7 @@ impl shipping_rate_service_server::ShippingRateService for ShippingRateService {
 
         let specific_countries = Self::encode_countries(specific_countries);
 
-        ShippingRate::put(
+        let shipping_rate = ShippingRate::put(
             &self.pool,
             &offer_uuid,
             &user_id,
@@ -119,6 +119,10 @@ impl shipping_rate_service_server::ShippingRateService for ShippingRateService {
             specific_countries,
         )
         .await?;
+
+        self.publisher
+            .publish_upsert_shipping_rate(&self.to_response(shipping_rate)?)
+            .await;
 
         Ok(Response::new(PutShippingRateResponse {}))
     }
@@ -154,7 +158,15 @@ impl shipping_rate_service_server::ShippingRateService for ShippingRateService {
         let shipping_rate_uuid =
             parse_uuid(&shipping_rate_id, "shipping_rate_id")?;
 
-        ShippingRate::delete(&self.pool, &shipping_rate_uuid, &user_id).await?;
+        let deleted_shipping_rate =
+            ShippingRate::delete(&self.pool, &shipping_rate_uuid, &user_id)
+                .await?;
+
+        self.publisher
+            .publish_delete_shipping_rate(
+                &self.to_response(deleted_shipping_rate)?,
+            )
+            .await;
 
         Ok(Response::new(DeleteShippingRateResponse {}))
     }

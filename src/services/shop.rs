@@ -16,13 +16,14 @@ use crate::auth::get_user_id;
 use crate::db::DbError;
 use crate::images::ImageService;
 use crate::model::{Offer, Shop, ShopCustomization};
-use crate::parse_uuid;
+use crate::{parse_uuid, Publisher};
 
 use super::get_limit_offset_from_pagination;
 
 pub struct ShopService {
     pool: Pool,
     verifier: RemoteJwksVerifier,
+    publisher: Publisher,
     image_service: ImageService,
     allowed_min_platform_fee_percent: u32,
     allowed_min_minimum_platform_fee_cent: u32,
@@ -37,37 +38,22 @@ impl ShopService {
         'V', 'W', 'X', 'Y', 'Z', '-', '+', '_', '!',
     ];
 
-    fn new(
-        pool: Pool,
-        verifier: RemoteJwksVerifier,
-        image_service: ImageService,
-        allowed_min_platform_fee_percent: u32,
-        allowed_min_minimum_platform_fee_cent: u32,
-    ) -> Self {
-        Self {
-            pool,
-            verifier,
-            image_service,
-            allowed_min_platform_fee_percent,
-            allowed_min_minimum_platform_fee_cent,
-        }
-    }
-
     pub fn build(
         pool: Pool,
         verifier: RemoteJwksVerifier,
+        publisher: Publisher,
         image_service: ImageService,
         allowed_min_platform_fee_percent: u32,
         allowed_min_minimum_platform_fee_cent: u32,
     ) -> ShopServiceServer<Self> {
-        let service = Self::new(
+        ShopServiceServer::new(Self {
             pool,
             verifier,
+            publisher,
             image_service,
             allowed_min_platform_fee_percent,
             allowed_min_minimum_platform_fee_cent,
-        );
-        ShopServiceServer::new(service)
+        })
     }
 
     fn shop_to_response(&self, shop: Shop) -> ShopResponse {
@@ -195,8 +181,12 @@ impl shop_service_server::ShopService for ShopService {
         ShopCustomization::create(&self.pool, &created_shop.shop_id, &user_id)
             .await?;
 
+        let shop_response = self.shop_to_response(created_shop);
+
+        self.publisher.publish_upsert_shop(&shop_response).await;
+
         Ok(Response::new(CreateShopResponse {
-            shop: Some(self.shop_to_response(created_shop)),
+            shop: Some(shop_response),
         }))
     }
 
@@ -388,8 +378,12 @@ impl shop_service_server::ShopService for ShopService {
         )
         .await?;
 
+        let shop_response = self.shop_to_response(updated_shop);
+
+        self.publisher.publish_upsert_shop(&shop_response).await;
+
         Ok(Response::new(UpdateShopResponse {
-            shop: Some(self.shop_to_response(updated_shop)),
+            shop: Some(shop_response),
         }))
     }
 
@@ -422,9 +416,14 @@ impl shop_service_server::ShopService for ShopService {
             }
         }
 
-        Shop::delete(&transaction, &user_id, &shop_id).await?;
+        let deleted_shop =
+            Shop::delete(&transaction, &user_id, &shop_id).await?;
 
         transaction.commit().await.map_err(DbError::from)?;
+
+        self.publisher
+            .publish_delete_shop(&self.shop_to_response(deleted_shop))
+            .await;
 
         Ok(Response::new(DeleteShopResponse {}))
     }
