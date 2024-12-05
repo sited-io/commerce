@@ -41,6 +41,17 @@ job "commerce" {
       }
 
       template {
+        destination = "${NOMAD_SECRETS_DIR}/database_root_cert.crt"
+        env         = false 
+        change_mode = "restart"
+        data        = <<EOF
+{{- with secret "kv2/data/services" -}}
+{{ .Data.data.DATABASE_ROOT_CERT }}
+{{- end -}}
+EOF
+      }
+
+      template {
         destination = "${NOMAD_SECRETS_DIR}/.env"
         env         = true
         change_mode = "restart"
@@ -51,12 +62,15 @@ RUST_LOG='{{ .RUST_LOG }}'
 
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
-DB_HOST='{{ env "NOMAD_UPSTREAM_IP_postgres-sql" }}'
-DB_PORT='{{ env "NOMAD_UPSTREAM_PORT_postgres-sql" }}'
-DB_DBNAME='commerce'
-DB_USER='commerce_user'
-{{ with secret "database/static-creds/commerce_user" }}
-DB_PASSWORD='{{ .Data.password }}'
+{{ with nomadVar "nomad/jobs/commerce"}}
+DB_HOST='{{ .DB_HOST }}'
+DB_PORT='{{ .DB_PORT }}'
+DB_DBNAME='{{ .DB_DBNAME }}'
+DB_USER='{{ .DB_USER }}'
+{{ end }}
+DB_ROOT_CERT='{{ env "NOMAD_SECRETS_DIR" }}/database_root_cert.crt'
+{{ with secret "kv2/data/services/commerce" }}
+DB_PASSWORD='{{ .Data.data.DB_PASSWORD }}'
 {{ end }}
 
 {{ with nomadVar "nomad/jobs/" }}
