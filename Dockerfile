@@ -8,6 +8,7 @@ RUN cargo build --release
 
 
 COPY src src
+COPY migrations migrations
 RUN touch src/main.rs
 RUN cargo build --release
 
