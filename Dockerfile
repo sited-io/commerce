@@ -1,10 +1,25 @@
-FROM debian:bookworm-slim
+FROM rust:latest AS builder
+
+WORKDIR /app
+
+COPY Cargo.toml .
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN cargo build --release
+
+
+COPY src src
+RUN touch src/main.rs
+RUN cargo build --release
+
+RUN strip target/release/commerce
+
+FROM debian:bookworm-slim AS release
+WORKDIR /app
+
+COPY --from=builder /app/target/release/commerce .
 
 RUN apt update && apt install -y --no-install-recommends ca-certificates adduser
 RUN update-ca-certificates
-
-# Copy our build
-COPY target/release/commerce /usr/local/bin/commerce
 
 # Create appuser
 ENV USER=commerce_user
@@ -22,4 +37,4 @@ RUN adduser \
 # Use an unprivileged user.
 USER ${USER}:${USER}
 
-ENTRYPOINT ["commerce"]
+ENTRYPOINT [ "./commerce" ]
