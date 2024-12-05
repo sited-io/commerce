@@ -19,21 +19,11 @@ job "commerce" {
         sidecar_service {
           proxy {
             upstreams {
-              destination_name = "zitadel"
-              local_bind_port  = 8080
-            }
-            upstreams {
-              destination_name = "cockroach-sql"
+              destination_name = "postgres-sql"
               local_bind_port  = 5432
             }
           }
         }
-      }
-
-      check {
-        type     = "grpc"
-        interval = "20s"
-        timeout  = "2s"
       }
     }
 
@@ -56,13 +46,13 @@ job "commerce" {
         change_mode = "restart"
         data        = <<EOF
 {{ with nomadVar "nomad/jobs/commerce" }}
-RUST_LOG='{{ .LOG_LEVEL }}'
+RUST_LOG='{{ .RUST_LOG }}'
 {{ end }}
 
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
-DB_HOST='{{ env "NOMAD_UPSTREAM_IP_cockroach-sql" }}'
-DB_PORT='{{ env "NOMAD_UPSTREAM_PORT_cockroach-sql" }}'
+DB_HOST='{{ env "NOMAD_UPSTREAM_IP_postgres-sql" }}'
+DB_PORT='{{ env "NOMAD_UPSTREAM_PORT_postgres-sql" }}'
 DB_DBNAME='commerce'
 DB_USER='commerce_user'
 {{ with secret "database/static-creds/commerce_user" }}
@@ -71,21 +61,31 @@ DB_PASSWORD='{{ .Data.password }}'
 
 {{ with nomadVar "nomad/jobs/" }}
 JWKS_HOST='{{ .JWKS_HOST }}'
+JWKS_URL='{{ .JWKS_URL }}'
 {{ end }}
-JWKS_URL='http://{{ env "NOMAD_UPSTREAM_ADDR_zitadel" }}/oauth/v2/keys'
 
 {{ with nomadVar "nomad/jobs/commerce" }}
 BUCKET_NAME='{{ .BUCKET_NAME }}'
 BUCKET_URL='{{ .BUCKET_URL }}'
 BUCKET_ENDPOINT='{{ .BUCKET_ENDPOINT }}'
 IMAGE_MAX_SIZE='{{ .IMAGE_MAX_SIZE }}'
-ALLOWED_MIN_PLATFORM_FEE_PERCENT='{{ .ALLOWED_MIN_PLATFORM_FEE_PERCENT }}'
-ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT='{{ .ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT }}'
 {{ end }}
-
 {{ with secret "kv2/data/services/commerce" }}
 BUCKET_ACCESS_KEY_ID='{{ .Data.data.BUCKET_ACCESS_KEY_ID }}'
 BUCKET_SECRET_ACCESS_KEY='{{ .Data.data.BUCKET_SECRET_ACCESS_KEY }}'
+{{ end }}
+
+{{ with nomadVar "nomad/jobs" }}
+NATS_HOST='{{ .NATS_HOST }}'
+NATS_USER='{{ .NATS_USER }}'
+{{ end }}
+{{ with secret "kv2/data/services" }}
+NATS_PASSWORD='{{ .Data.data.NATS_PASSWORD }}'
+{{ end }}
+
+{{ with nomadVar "nomad/jobs/commerce" }}
+ALLOWED_MIN_PLATFORM_FEE_PERCENT='{{ .ALLOWED_MIN_PLATFORM_FEE_PERCENT }}'
+ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT='{{ .ALLOWED_MIN_MINIMUM_PLATFORM_FEE_CENT }}'
 {{ end }}
 EOF
       }
