@@ -19,8 +19,8 @@ job "commerce" {
         sidecar_service {
           proxy {
             upstreams {
-              destination_name = "postgres-sql"
-              local_bind_port  = 5432
+              destination_name = "nats"
+              local_bind_port = 4222
             }
           }
         }
@@ -62,7 +62,11 @@ RUST_LOG='{{ .RUST_LOG }}'
 
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
-{{ with nomadVar "nomad/jobs/commerce"}}
+NATS_HOST='{{ env "NOMAD_UPSTREAM_ADDR_nats" }}'
+NATS_USER='{{- with nomadVar "nomad/jobs" -}}{{ .NATS_USER }}{{- end -}}'
+NATS_PASSWORD='{{- with secret "kv2/data/services" -}}{{ .Data.data.NATS_PASSWORD }}{{- end -}}'
+
+{{ with nomadVar "nomad/jobs/commerce" }}
 DB_HOST='{{ .DB_HOST }}'
 DB_PORT='{{ .DB_PORT }}'
 DB_DBNAME='{{ .DB_DBNAME }}'
@@ -87,14 +91,6 @@ IMAGE_MAX_SIZE='{{ .IMAGE_MAX_SIZE }}'
 {{ with secret "kv2/data/services/commerce" }}
 BUCKET_ACCESS_KEY_ID='{{ .Data.data.BUCKET_ACCESS_KEY_ID }}'
 BUCKET_SECRET_ACCESS_KEY='{{ .Data.data.BUCKET_SECRET_ACCESS_KEY }}'
-{{ end }}
-
-{{ with nomadVar "nomad/jobs" }}
-NATS_HOST='{{ .NATS_HOST }}'
-NATS_USER='{{ .NATS_USER }}'
-{{ end }}
-{{ with secret "kv2/data/services" }}
-NATS_PASSWORD='{{ .Data.data.NATS_PASSWORD }}'
 {{ end }}
 
 {{ with nomadVar "nomad/jobs/commerce" }}
