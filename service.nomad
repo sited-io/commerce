@@ -68,10 +68,8 @@ NATS_PASSWORD='{{- with secret "kv2/data/services" -}}{{ .Data.data.NATS_PASSWOR
 
 DB_HOST='{{ env "NOMAD_UPSTREAM_IP_postgres-sql" }}'
 DB_PORT='{{ env "NOMAD_UPSTREAM_PORT_postgres-sql" }}'
-{{ with nomadVar "nomad/jobs/commerce" }}
-DB_DBNAME='{{ .DB_DBNAME }}'
-DB_USER='{{ .DB_USER }}'
-{{ end }}
+DB_DBNAME='commerce'
+DB_USER='commerce_user'
 DB_PASSWORD='{{- with secret "database/static-creds/commerce_user" -}}{{ .Data.password }}{{- end -}}'
 
 {{ with nomadVar "nomad/jobs/" }}
