@@ -1,8 +1,16 @@
+CREATE OR REPLACE FUNCTION updated_at_now()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at = now(); 
+   RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 CREATE TABLE shops (
     shop_id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() ON UPDATE NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     slug VARCHAR NOT NULL UNIQUE,
     domain VARCHAR UNIQUE,
     name VARCHAR NOT NULL,
@@ -13,3 +21,7 @@ CREATE TABLE shops (
     minimum_platform_fee_cent INT NOT NULL DEFAULT(50),
     CONSTRAINT uq_user_id_shop_name UNIQUE (user_id, name)
 );
+
+CREATE TRIGGER update_shops_updated_at BEFORE UPDATE
+    ON shops FOR EACH ROW EXECUTE PROCEDURE 
+    updated_at_now();

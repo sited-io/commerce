@@ -3,7 +3,7 @@ CREATE TABLE offers (
   shop_id UUID NOT NULL REFERENCES shops(shop_id),
   user_id VARCHAR NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() ON UPDATE NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   name VARCHAR NOT NULL,
   name_ts tsvector GENERATED ALWAYS AS (to_tsvector('simple', name)) STORED,
   description TEXT,
@@ -13,3 +13,7 @@ CREATE TABLE offers (
   is_featured BOOLEAN NOT NULL DEFAULT 'f',
   CONSTRAINT uq_shop_id_user_id_offer_name UNIQUE (shop_id, user_id, name)
 );
+
+CREATE TRIGGER update_shops_updated_at BEFORE UPDATE
+    ON offers FOR EACH ROW EXECUTE PROCEDURE 
+    updated_at_now();
