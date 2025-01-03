@@ -72,7 +72,7 @@ DB_PORT='{{ env "NOMAD_UPSTREAM_PORT_postgres-sql" }}'
 DB_DBNAME='{{ .DB_DBNAME }}'
 DB_USER='{{ .DB_USER }}'
 {{ end }}
-DB_PASSWORD='{{- with secret "database/static-creds/commerce_v2_user" -}}{{ .Data.password }}{{- end -}}'
+DB_PASSWORD='{{- with secret "database/static-creds/commerce_user" -}}{{ .Data.password }}{{- end -}}'
 
 {{ with nomadVar "nomad/jobs/" }}
 JWKS_HOST='{{ .JWKS_HOST }}'
