@@ -22,6 +22,10 @@ job "commerce" {
               destination_name = "nats"
               local_bind_port = 4222
             }
+            upstreams {
+              destination_name = "postgres-sql"
+              local_bind_port  = 5432
+            }
           }
         }
       }
