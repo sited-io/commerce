@@ -67,8 +67,11 @@ impl ShopService {
             name: shop.name,
             slug: shop.slug,
             description: shop.description,
-            platform_fee_percent: shop.platform_fee_percent,
-            minimum_platform_fee_cent: shop.minimum_platform_fee_cent,
+            platform_fee_percent: shop.platform_fee_percent.try_into().unwrap(),
+            minimum_platform_fee_cent: shop
+                .minimum_platform_fee_cent
+                .try_into()
+                .unwrap(),
             customization,
             domain: shop.domain,
             is_active: shop.is_active,
