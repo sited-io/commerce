@@ -564,14 +564,10 @@ impl From<&Row> for Shop {
             name: row.get(ShopIden::Name.to_string().as_str()),
             slug: row.get(ShopIden::Slug.to_string().as_str()),
             description: row.get(ShopIden::Description.to_string().as_str()),
-            platform_fee_percent: u32::try_from(row.get::<&str, i64>(
-                ShopIden::PlatformFeePercent.to_string().as_str(),
-            ))
-            .expect("Should never be greater than 100"),
-            minimum_platform_fee_cent: u32::try_from(row.get::<&str, i64>(
-                ShopIden::MinimumPlatformFeeCent.to_string().as_str(),
-            ))
-            .expect("Should not be greater than 4294967295"),
+            platform_fee_percent: row
+                .get(ShopIden::PlatformFeePercent.to_string().as_str()),
+            minimum_platform_fee_cent: row
+                .get(ShopIden::MinimumPlatformFeeCent.to_string().as_str()),
             customization: customization.and_then(|c| c.0.first().cloned()),
             domain: row.get(ShopIden::Domain.to_string().as_str()),
             is_active: row.get(ShopIden::IsActive.to_string().as_str()),
