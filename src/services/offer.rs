@@ -24,7 +24,7 @@ use crate::model::{
     Offer, OfferImage, OfferImageAsRel, OfferPrice, OfferPriceAsRel,
     ShippingRate,
 };
-use crate::{parse_uuid, Publisher};
+use crate::{i64_to_i32, parse_uuid, Publisher};
 
 use super::get_limit_offset_from_pagination;
 
@@ -89,7 +89,7 @@ impl OfferService {
             .map(|oi| OfferImageResponse {
                 offer_image_id: oi.offer_image_id.to_string(),
                 image_url: self.image_service.get_image_url(&oi.image_url_path),
-                ordering: oi.ordering,
+                ordering: oi.ordering.into(),
             })
             .collect()
     }
@@ -441,7 +441,7 @@ impl offer_service_server::OfferService for OfferService {
             &offer_id,
             &user_id,
             image_path,
-            ordering,
+            i64_to_i32(ordering)?,
         )
         .await?;
 

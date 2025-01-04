@@ -33,7 +33,7 @@ pub struct OfferImage {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub image_url_path: String,
-    pub ordering: i64,
+    pub ordering: i32,
 }
 
 impl OfferImage {
@@ -43,7 +43,7 @@ impl OfferImage {
         offer_id: &Uuid,
         user_id: &String,
         image_url_path: &String,
-        ordering: i64,
+        ordering: i32,
     ) -> Result<Self, DbError> {
         let (sql, values) = Query::insert()
             .into_table(OfferImageIden::Table)
@@ -164,7 +164,7 @@ impl From<Row> for OfferImage {
 pub struct OfferImageAsRel {
     pub offer_image_id: Uuid,
     pub image_url_path: String,
-    pub ordering: i64,
+    pub ordering: i32,
 }
 
 impl OfferImageAsRel {
@@ -215,8 +215,8 @@ impl<'a> FromSql<'a> for OfferImageAsRel {
         let image_url_path: String = private::read_value(&ty, &mut raw)?;
 
         let oid = private::read_be_i32(&mut raw)?;
-        let ty = get_type_from_oid::<i64>(oid)?;
-        let ordering: i64 = private::read_value(&ty, &mut raw)?;
+        let ty = get_type_from_oid::<i32>(oid)?;
+        let ordering: i32 = private::read_value(&ty, &mut raw)?;
 
         Ok(Self {
             offer_image_id,
