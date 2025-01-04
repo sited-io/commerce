@@ -26,6 +26,10 @@ job "commerce" {
               destination_name = "postgres-sql"
               local_bind_port  = 5432
             }
+            upstreams {
+              destination_name = "zitadel"
+              local_bind_port = 8080
+            }
           }
         }
       }
@@ -77,9 +81,9 @@ DB_USER='commerce_user'
 DB_PASSWORD='{{- with secret "database/static-creds/commerce_user" -}}{{ .Data.password }}{{- end -}}'
 
 {{ with nomadVar "nomad/jobs/" }}
-JWKS_HOST='{{ .JWKS_HOST }}'
-JWKS_URL='{{ .JWKS_URL }}'
+JWKS_HOST='{{ .JWKS_HOST_V2 }}'
 {{ end }}
+JWKS_URL='http://{{ env "NOMAD_UPSTREAM_ADDR_zitadel" }}/oauth/v2/keys'
 
 {{ with nomadVar "nomad/jobs/commerce" }}
 BUCKET_NAME='{{ .BUCKET_NAME }}'
